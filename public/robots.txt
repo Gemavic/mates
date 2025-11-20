@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /staff-panel
+Disallow: /checkout
+Disallow: /payment-setup
+Disallow: /#staff-panel
+Disallow: /#checkout
+Disallow: /#payment-setup
+
+Sitemap: https://dates.care/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

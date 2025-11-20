@@ -1,0 +1,419 @@
+import { supabaseClient } from './supabase';
+import type { Database } from './supabase';
+
+// Database types
+export type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
+export type UserCredits = Database['public']['Tables']['user_credits']['Row'];
+export type CreditTransaction = Database['public']['Tables']['credit_transactions']['Row'];
+export type Match = Database['public']['Tables']['matches']['Row'];
+export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
+export type MailMessage = Database['public']['Tables']['mail_messages']['Row'];
+
+// User Profile Management
+export class ProfileManager {
+  static async createProfile(userId: string, profileData: {
+    email: string;
+    full_name: string;
+    age?: number;
+    location?: string;
+    occupation?: string;
+    education?: string;
+    bio?: string;
+    interests?: string[];
+  }) {
+    const { data, error } = await supabaseClient
+      .from('user_profiles')
+      .insert({
+        user_id: userId,
+        ...profileData,
+        first_name: profileData.full_name.split(' ')[0]
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getProfile(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async updateProfile(userId: string, updates: Partial<UserProfile>) {
+    const { data, error } = await supabaseClient
+      .from('user_profiles')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getDiscoveryProfiles(currentUserId: string, limit = 10) {
+    const { data, error } = await supabaseClient
+      .from('user_profiles')
+      .select('*')
+      .neq('user_id', currentUserId)
+      .eq('profile_visibility', 'public')
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+}
+
+// Credit System Management
+export class CreditManager {
+  static async getUserCredits(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      return this.initializeUserCredits(userId);
+    }
+
+    return data;
+  }
+
+  static async initializeUserCredits(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('user_credits')
+      .insert({
+        user_id: userId,
+        complimentary_credits: 20,
+        total_kobos: 20
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getTransactions(userId: string, limit = 50) {
+    const { data, error } = await supabaseClient
+      .from('credit_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async spendCredits(userId: string, amount: number, description: string) {
+    // Start transaction
+    const { data: credits, error: creditsError } = await supabaseClient
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (creditsError) throw creditsError;
+
+    const totalCredits = credits.complimentary_credits + credits.purchased_credits;
+    if (totalCredits < amount) {
+      throw new Error('Insufficient credits');
+    }
+
+    // Update credits
+    let newComplimentary = credits.complimentary_credits;
+    let newPurchased = credits.purchased_credits;
+
+    if (newPurchased >= amount) {
+      newPurchased -= amount;
+    } else {
+      const remainingAmount = amount - newPurchased;
+      newPurchased = 0;
+      newComplimentary -= remainingAmount;
+    }
+
+    const { error: updateError } = await supabaseClient
+      .from('user_credits')
+      .update({
+        complimentary_credits: newComplimentary,
+        purchased_credits: newPurchased,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
+
+    if (updateError) throw updateError;
+
+    // Record transaction
+    const { error: transactionError } = await supabaseClient
+      .from('credit_transactions')
+      .insert({
+        user_id: userId,
+        transaction_type: 'spend',
+        amount,
+        description
+      });
+
+    if (transactionError) throw transactionError;
+
+    return true;
+  }
+
+  static async addCredits(userId: string, amount: number, description: string, isPurchased = false) {
+    const { data: credits, error: creditsError } = await supabaseClient
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (creditsError) throw creditsError;
+
+    const updateData = isPurchased 
+      ? { purchased_credits: credits.purchased_credits + amount }
+      : { complimentary_credits: credits.complimentary_credits + amount };
+
+    const { error: updateError } = await supabaseClient
+      .from('user_credits')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
+
+    if (updateError) throw updateError;
+
+    // Record transaction
+    const { error: transactionError } = await supabaseClient
+      .from('credit_transactions')
+      .insert({
+        user_id: userId,
+        transaction_type: 'earn',
+        amount,
+        description
+      });
+
+    if (transactionError) throw transactionError;
+
+    return true;
+  }
+}
+
+// Matching System
+export class MatchManager {
+  static async likeUser(userId: string, targetUserId: string, likeType: 'like' | 'super_like' | 'pass' | 'blink') {
+    const { data, error } = await supabaseClient
+      .from('user_likes')
+      .upsert({
+        user_id: userId,
+        target_user_id: targetUserId,
+        like_type: likeType
+      }, { 
+        onConflict: 'user_id,target_user_id'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getUserMatches(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('matches')
+      .select(`
+        *,
+        user1:user_profiles!matches_user1_id_fkey(*),
+        user2:user_profiles!matches_user2_id_fkey(*)
+      `)
+      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+      .eq('is_active', true)
+      .order('last_activity', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getLikesReceived(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('user_likes')
+      .select(`
+        *,
+        user_profile:user_profiles!user_likes_user_id_fkey(*)
+      `)
+      .eq('target_user_id', userId)
+      .in('like_type', ['like', 'super_like'])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+}
+
+// Messaging System
+export class MessagingManager {
+  static async getChatThreads(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('chat_threads')
+      .select(`
+        *,
+        match:matches!inner(*),
+        latest_message:chat_messages(message_text, created_at)
+      `)
+      .eq('matches.user1_id', userId)
+      .or(`matches.user2_id.eq.${userId}`)
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async sendChatMessage(threadId: string, senderId: string, message: string, creditsSpent = 0) {
+    const { data, error } = await supabaseClient
+      .from('chat_messages')
+      .insert({
+        thread_id: threadId,
+        sender_id: senderId,
+        message_text: message,
+        credits_spent: creditsSpent
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update thread activity
+    await supabaseClient
+      .from('chat_threads')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', threadId);
+
+    return data;
+  }
+
+  static async getMailThreads(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('mail_threads')
+      .select(`
+        *,
+        latest_message:mail_messages(subject, message_text, created_at, is_read)
+      `)
+      .or(`participant1_id.eq.${userId},participant2_id.eq.${userId}`)
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async sendMailMessage(
+    threadId: string, 
+    senderId: string, 
+    subject: string, 
+    message: string, 
+    creditsSpent = 0
+  ) {
+    const { data, error } = await supabaseClient
+      .from('mail_messages')
+      .insert({
+        thread_id: threadId,
+        sender_id: senderId,
+        subject,
+        message_text: message,
+        credits_spent: creditsSpent
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update thread activity
+    await supabaseClient
+      .from('mail_threads')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', threadId);
+
+    return data;
+  }
+}
+
+// Gift System
+export class GiftManager {
+  static async getGiftCatalog() {
+    const { data, error } = await supabaseClient
+      .from('virtual_gifts')
+      .select('*')
+      .eq('is_active', true)
+      .order('popularity_score', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async sendGift(senderId: string, recipientId: string, giftId: string, creditsSpent: number, message = '') {
+    const { data, error } = await supabaseClient
+      .from('sent_gifts')
+      .insert({
+        sender_id: senderId,
+        recipient_id: recipientId,
+        gift_id: giftId,
+        credits_spent: creditsSpent,
+        message
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getReceivedGifts(userId: string) {
+    const { data, error } = await supabaseClient
+      .from('sent_gifts')
+      .select(`
+        *,
+        gift:virtual_gifts(*),
+        sender:user_profiles!sent_gifts_sender_id_fkey(*)
+      `)
+      .eq('recipient_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+}
+
+// Utility functions
+export const createUserProfile = ProfileManager.createProfile;
+export const getUserProfile = ProfileManager.getProfile;
+export const updateUserProfile = ProfileManager.updateProfile;
+export const getDiscoveryProfiles = ProfileManager.getDiscoveryProfiles;
+
+export const getUserCredits = CreditManager.getUserCredits;
+export const spendCredits = CreditManager.spendCredits;
+export const addCredits = CreditManager.addCredits;
+export const getCreditTransactions = CreditManager.getTransactions;
+
+export const likeUser = MatchManager.likeUser;
+export const getUserMatches = MatchManager.getUserMatches;
+export const getLikesReceived = MatchManager.getLikesReceived;
+
+export const getChatThreads = MessagingManager.getChatThreads;
+export const sendChatMessage = MessagingManager.sendChatMessage;
+export const getMailThreads = MessagingManager.getMailThreads;
+export const sendMailMessage = MessagingManager.sendMailMessage;
+
+export const getGiftCatalog = GiftManager.getGiftCatalog;
+export const sendGift = GiftManager.sendGift;
+export const getReceivedGifts = GiftManager.getReceivedGifts;
