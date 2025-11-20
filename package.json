@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "source": "./index.html",
+  "type": "module",
+  "name": "dates-app",
+  "description": "Dates - Modern Dating App with Advanced Features and La-Date Pricing System",
+  "scripts": {
+    "dev": "CHOKIDAR_USEPOLLING=true vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "vercel-build": "npm run build"
+  },
+  "dependencies": {
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@supabase/supabase-js": "^2.53.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "2.1.1",
+    "lucide-react": "^0.453.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.1",
+    "tailwind-merge": "2.5.4",
+    "tailwindcss-animate": "1.0.7",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "18.2.0",
+    "@vercel/static-build": "^2.7.17",
+    "@vitejs/plugin-react": "4.3.4",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.21.5",
+    "globals": "15.12.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "3.4.16",
+    "typescript": "^5.9.2",
+    "vite": "^5.0.12"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
