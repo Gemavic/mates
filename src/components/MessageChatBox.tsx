@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { MessagingManager, CreditManager } from '@/lib/database';
 
 interface GiftItem {
   id: string;
@@ -50,7 +51,19 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits('current-user'));
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { getFirstName } = useAuth();
+  const { getFirstName, user } = useAuth();
+
+  // Load user credits from database
+  useEffect(() => {
+    if (user) {
+      CreditManager.getUserCredits(user.id)
+        .then(credits => {
+          const total = (credits?.complimentary_credits || 0) + (credits?.purchased_credits || 0);
+          setUserBalance(total);
+        })
+        .catch(err => console.error('Failed to load credits:', err));
+    }
+  }, [user]);
 
   // Quick gift items for chat
   const quickGifts: GiftItem[] = [

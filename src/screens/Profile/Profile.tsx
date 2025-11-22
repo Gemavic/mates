@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { User, Camera, MapPin, Briefcase, GraduationCap, Heart, Settings, Edit, Shield, Star } from 'lucide-react';
+import { User, Camera, MapPin, Briefcase, GraduationCap, Heart, Settings, Edit, Shield, Star, Upload, X } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
+import { ProfileManager } from '@/lib/database';
 
 interface ProfileProps {
   onNavigate: (screen: string) => void;
@@ -13,7 +15,7 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const { user, getFirstName, getFullName } = useAuth();
+  const { user, getFirstName, getFullName, profile, loadUserProfile } = useAuth();
   const [profileData, setProfileData] = useState({
     name: getFullName(),
     age: '25',
@@ -23,21 +25,169 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
     bio: 'Hello! I\'m excited to meet new people and see where things go.',
     interests: ['Travel', 'Music', 'Food', 'Movies']
   });
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [userPhotos, setUserPhotos] = useState<Array<{id: string, url: string, isPrimary: boolean}>>([]);
 
   const userStats = {
     profileViews: 124,
     likes: 23,
     matches: 8,
-    verified: false
+    verified: profile?.is_verified || false
   };
 
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    successMessage.textContent = '✅ Profile updated successfully!';
-    document.body.appendChild(successMessage);
-    setTimeout(() => document.body.removeChild(successMessage), 3000);
+  // Load profile data from database
+  useEffect(() => {
+    if (profile) {
+      setProfileData({
+        name: profile.full_name || getFullName(),
+        age: profile.age?.toString() || '25',
+        location: profile.location || 'New York, NY',
+        occupation: profile.occupation || 'Professional',
+        education: profile.education || 'University',
+        bio: profile.bio || '',
+        interests: profile.interests || ['Travel', 'Music', 'Food', 'Movies']
+      });
+    }
+  }, [profile]);
+
+  // Load user photos
+  useEffect(() => {
+    if (user) {
+      loadUserPhotos();
+    }
+  }, [user]);
+
+  const loadUserPhotos = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabaseClient
+        .from('user_photos')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('upload_order', { ascending: true });
+
+      if (error) throw error;
+      setUserPhotos(data?.map(p => ({ id: p.id, url: p.photo_url, isPrimary: p.is_primary })) || []);
+    } catch (error) {
+      console.error('Failed to load photos:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      await ProfileManager.updateProfile(user.id, {
+        full_name: profileData.name,
+        age: parseInt(profileData.age) || null,
+        location: profileData.location,
+        occupation: profileData.occupation,
+        education: profileData.education,
+        bio: profileData.bio,
+        interests: profileData.interests
+      });
+
+      await loadUserProfile();
+      setIsEditing(false);
+
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMessage.textContent = '✅ Profile updated successfully!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => document.body.removeChild(successMessage), 3000);
+    } catch (error: any) {
+      alert('Failed to update profile: ' + (error?.message || 'Unknown error'));
+    }
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!user) {
+      alert('Please sign in to upload photos');
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+
+      setUploadingPhoto(true);
+
+      try {
+        for (const file of Array.from(files)) {
+          // Create a data URL for immediate display
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const dataUrl = e.target?.result as string;
+
+            // Save to database (using data URL as placeholder)
+            const { data, error } = await supabaseClient
+              .from('user_photos')
+              .insert({
+                user_id: user.id,
+                photo_url: dataUrl,
+                is_primary: userPhotos.length === 0,
+                upload_order: userPhotos.length + 1
+              })
+              .select()
+              .single();
+
+            if (error) throw error;
+
+            // Reload photos
+            await loadUserPhotos();
+          };
+          reader.readAsDataURL(file);
+        }
+
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successMessage.textContent = '✅ Photos uploaded successfully!';
+        document.body.appendChild(successMessage);
+        setTimeout(() => {
+          if (document.body.contains(successMessage)) {
+            document.body.removeChild(successMessage);
+          }
+        }, 3000);
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        alert('Failed to upload photos: ' + (error?.message || 'Unknown error'));
+      } finally {
+        setUploadingPhoto(false);
+      }
+    };
+    input.click();
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabaseClient
+        .from('user_photos')
+        .delete()
+        .eq('id', photoId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      await loadUserPhotos();
+
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMessage.textContent = '✅ Photo deleted!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 2000);
+    } catch (error: any) {
+      alert('Failed to delete photo: ' + (error?.message || 'Unknown error'));
+    }
   };
 
   if (isEditing) {
@@ -164,6 +314,61 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
             <div className="text-2xl">{userStats.verified ? '✅' : '❌'}</div>
             <p className="text-white/70 text-xs">Verified</p>
           </div>
+        </div>
+
+        {/* Photo Gallery */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-semibold text-lg">My Photos</h3>
+            <Button
+              onClick={handlePhotoUpload}
+              disabled={uploadingPhoto}
+              className="bg-green-500 text-white px-4 py-2"
+              type="button"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {uploadingPhoto ? 'Uploading...' : 'Add Photos'}
+            </Button>
+          </div>
+
+          {userPhotos.length === 0 ? (
+            <div className="text-center py-8">
+              <Camera className="w-12 h-12 text-white/50 mx-auto mb-3" />
+              <p className="text-white/70 mb-4">No photos yet. Add some to complete your profile!</p>
+              <Button
+                onClick={handlePhotoUpload}
+                className="bg-blue-500 text-white"
+                type="button"
+              >
+                Upload First Photo
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {userPhotos.map((photo) => (
+                <div key={photo.id} className="relative group">
+                  <img
+                    src={photo.url}
+                    alt="Profile"
+                    className="w-full h-24 object-cover rounded-lg"
+                  />
+                  {photo.isPrimary && (
+                    <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
+                      Primary
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleDeletePhoto(photo.id)}
+                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    type="button"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-white/60 text-xs mt-3">💡 Add up to 6 photos to show your best self!</p>
         </div>
 
         {/* Profile Info */}

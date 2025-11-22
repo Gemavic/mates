@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Upload, CheckCircle, AlertCircle, Shield, User, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
 
 interface VerificationStep {
   id: string;
@@ -16,10 +18,43 @@ interface VerificationProps {
 }
 
 export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
+  const { user, profile, loadUserProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [verificationRequest, setVerificationRequest] = useState<any>(null);
+
+  // Load existing verification request
+  useEffect(() => {
+    if (user) {
+      loadVerificationRequest();
+      setFullName(profile?.full_name || '');
+    }
+  }, [user, profile]);
+
+  const loadVerificationRequest = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('verification_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setVerificationRequest(data);
+
+      if (data?.phone_number) {
+        setPhoneNumber(data.phone_number);
+      }
+    } catch (error) {
+      console.error('Failed to load verification request:', error);
+    }
+  };
 
   const verificationSteps: VerificationStep[] = [
     {
@@ -52,17 +87,60 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
     }
   ];
 
-  const handlePhotoUpload = () => {
+  const handlePhotoUpload = async (type: 'selfie' | 'government_id' | 'address_proof') => {
+    if (!user) {
+      alert('Please sign in to upload verification documents');
+      return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        // Simulate upload process
-        setTimeout(() => {
-          alert('Photo uploaded successfully! Verification in progress...');
-        }, 1000);
+      if (!file) return;
+
+      setUploading(true);
+
+      try {
+        // Convert to data URL
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const dataUrl = e.target?.result as string;
+
+          // Create or update verification request
+          const updateData: any = {
+            full_name: fullName || profile?.full_name || 'User',
+            phone_number: phoneNumber || null,
+            verification_status: 'incomplete'
+          };
+
+          if (type === 'selfie') updateData.selfie_url = dataUrl;
+          if (type === 'government_id') updateData.government_id_url = dataUrl;
+          if (type === 'address_proof') updateData.address_proof_url = dataUrl;
+
+          const { data, error } = await supabaseClient
+            .from('verification_requests')
+            .upsert({
+              user_id: user.id,
+              ...updateData,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          setVerificationRequest(data);
+
+          alert('✅ Document uploaded successfully!');
+        };
+        reader.readAsDataURL(file);
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        alert('Failed to upload: ' + (error?.message || 'Unknown error'));
+      } finally {
+        setUploading(false);
       }
     };
     input.click();
@@ -155,10 +233,17 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                     <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-4">Take a selfie holding your ID</p>
-                    <Button onClick={handlePhotoUpload} className="bg-blue-500 text-white hover:bg-blue-600">
+                    <Button
+                      onClick={() => handlePhotoUpload('selfie')}
+                      disabled={uploading}
+                      className="bg-blue-500 text-white hover:bg-blue-600"
+                    >
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload Photo
+                      {uploading ? 'Uploading...' : 'Upload Photo'}
                     </Button>
+                    {verificationRequest?.selfie_url && (
+                      <p className="text-green-600 text-sm mt-2">✓ Photo uploaded</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -221,10 +306,17 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                     <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-4">Upload government-issued ID</p>
-                    <Button onClick={handlePhotoUpload} className="bg-blue-500 text-white hover:bg-blue-600">
+                    <Button
+                      onClick={() => handlePhotoUpload('government_id')}
+                      disabled={uploading}
+                      className="bg-blue-500 text-white hover:bg-blue-600"
+                    >
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload ID
+                      {uploading ? 'Uploading...' : 'Upload ID'}
                     </Button>
+                    {verificationRequest?.government_id_url && (
+                      <p className="text-green-600 text-sm mt-2">✓ ID uploaded</p>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 text-center">
                     Optional: Increases your profile credibility
