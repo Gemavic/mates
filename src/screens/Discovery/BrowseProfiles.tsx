@@ -384,7 +384,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       );
 
       const primaryPhotos = await Promise.all(
-        dbProfiles.map(async (profile) => {
+        dbProfiles.map(async (profile, index) => {
           try {
             const { data } = await supabaseClient
               .from('user_photos')
@@ -392,24 +392,43 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
               .eq('user_id', profile.user_id)
               .eq('is_primary', true)
               .maybeSingle();
-            return data?.photo_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800';
+
+            // If user has uploaded a photo, use it
+            if (data?.photo_url) {
+              return data.photo_url;
+            }
+
+            // Otherwise, use a unique fallback from mock profiles (cycle through them)
+            const mockIndex = index % mockProfiles.length;
+            return mockProfiles[mockIndex].imageUrl;
           } catch {
-            return 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800';
+            // Use a unique fallback from mock profiles
+            const mockIndex = index % mockProfiles.length;
+            return mockProfiles[mockIndex].imageUrl;
           }
         })
       );
 
-      const formattedProfiles: Profile[] = dbProfiles.map((profile, index) => ({
-        id: profile.user_id,
-        name: profile.first_name || profile.full_name || 'User',
-        age: profile.age || 25,
-        photoCount: photoCounts[index],
-        imageUrl: primaryPhotos[index],
-        isOnline: profile.is_online || false,
-        location: profile.location,
-        bio: profile.bio,
-        interests: profile.interests
-      }));
+      const formattedProfiles: Profile[] = dbProfiles.map((profile, index) => {
+        // Get name from profile or fallback to mock data
+        let displayName = profile.first_name || profile.full_name;
+        if (!displayName || displayName === 'User') {
+          const mockIndex = index % mockProfiles.length;
+          displayName = mockProfiles[mockIndex].name;
+        }
+
+        return {
+          id: profile.user_id,
+          name: displayName,
+          age: profile.age || 25,
+          photoCount: photoCounts[index],
+          imageUrl: primaryPhotos[index],
+          isOnline: profile.is_online || false,
+          location: profile.location || mockProfiles[index % mockProfiles.length].location,
+          bio: profile.bio || mockProfiles[index % mockProfiles.length].bio,
+          interests: profile.interests || mockProfiles[index % mockProfiles.length].interests
+        };
+      });
 
       const uniqueProfiles = Array.from(
         new Map(formattedProfiles.map(p => [p.id, p])).values()
