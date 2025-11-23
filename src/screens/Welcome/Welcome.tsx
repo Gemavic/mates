@@ -1,13 +1,33 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, Users, MessageCircle, Sparkles, Shield, Star, TrendingUp, CircleCheck as CheckCircle } from 'lucide-react';
+import { Heart, Users, MessageCircle, Sparkles, Shield, Star, TrendingUp, CircleCheck as CheckCircle, LogOut } from 'lucide-react';
 import { NewsletterSignup } from '@/components/NewsletterSignup';
+import { useAuth } from '@/hooks/useAuth';
 
 interface WelcomeProps {
   onNavigate?: (screen: string) => void;
 }
 
 export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
+  const { user, signOut, getFirstName } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMessage.textContent = '✅ Logged out successfully!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 2000);
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Failed to logout. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 flex flex-col relative overflow-hidden">
@@ -201,21 +221,56 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
 
         {/* CTA Buttons */}
         <div className="px-3 sm:px-4 md:px-6 pb-8 sm:pb-12 relative z-10 space-y-3">
-          <Button
-            onClick={() => onNavigate('signup')}
-            className="w-full bg-white text-pink-600 hover:bg-white/90 font-bold text-lg py-6 rounded-2xl shadow-2xl transition-all duration-200 hover:scale-105"
-            size="lg"
-          >
-            <Heart className="w-5 h-5 mr-2" fill="currentColor" />
-            Start Your Love Story
-          </Button>
+          {user ? (
+            // Logged in - Show welcome message and action buttons
+            <>
+              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-5 mb-4 text-center border border-white/30">
+                <p className="text-white text-lg mb-2">
+                  Welcome back, <span className="font-bold">{getFirstName()}</span>! 👋
+                </p>
+                <p className="text-white/80 text-sm">
+                  Ready to find your perfect match?
+                </p>
+              </div>
 
-          <button
-            onClick={() => onNavigate('signin')}
-            className="w-full text-white hover:text-white/90 font-medium text-base py-3 transition-colors underline underline-offset-4"
-          >
-            Already have an account? Sign In
-          </button>
+              <Button
+                onClick={() => onNavigate('discovery')}
+                className="w-full bg-white text-pink-600 hover:bg-white/90 font-bold text-lg py-6 rounded-2xl shadow-2xl transition-all duration-200 hover:scale-105"
+                size="lg"
+              >
+                <Heart className="w-5 h-5 mr-2" fill="currentColor" />
+                Start Browsing Profiles
+              </Button>
+
+              <Button
+                onClick={handleLogout}
+                className="w-full bg-red-500/90 text-white hover:bg-red-600 font-semibold text-base py-4 rounded-2xl shadow-lg transition-all duration-200 hover:scale-105"
+                size="lg"
+              >
+                <LogOut className="w-5 h-5 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            // Not logged in - Show signup/signin buttons
+            <>
+              <Button
+                onClick={() => onNavigate('signup')}
+                className="w-full bg-white text-pink-600 hover:bg-white/90 font-bold text-lg py-6 rounded-2xl shadow-2xl transition-all duration-200 hover:scale-105"
+                size="lg"
+              >
+                <Heart className="w-5 h-5 mr-2" fill="currentColor" />
+                Start Your Love Story
+              </Button>
+
+              <button
+                onClick={() => onNavigate('signin')}
+                className="w-full text-white hover:text-white/90 font-medium text-base py-3 transition-colors underline underline-offset-4"
+              >
+                Already have an account? Sign In
+              </button>
+            </>
+          )}
         </div>
 
         {/* Newsletter Signup - Prominent Placement */}

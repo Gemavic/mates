@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu as MenuIcon, X, User, LogIn, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, MessageCircle, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, TriangleAlert as AlertTriangle, BookOpen, Sparkles } from 'lucide-react';
+import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, MessageCircle, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, TriangleAlert as AlertTriangle, BookOpen, Sparkles } from 'lucide-react';
 import { MessageChatBox } from './MessageChatBox';
 import { cn } from '@/lib/utils';
 import { creditManager } from '@/lib/creditSystem';
@@ -12,7 +12,28 @@ interface MenuProps {
 
 export const Menu: React.FC<MenuProps> = ({ onNavigate, currentScreen }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, signOut, getFirstName } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setIsOpen(false);
+      onNavigate('welcome');
+
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMessage.textContent = '✅ Logged out successfully!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 2000);
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Failed to logout. Please try again.');
+    }
+  };
 
   const menuSections = [
     {
@@ -41,12 +62,16 @@ export const Menu: React.FC<MenuProps> = ({ onNavigate, currentScreen }) => {
       ]
     },
     {
-      title: 'Account',
-      items: [
+      title: user ? `Account - ${getFirstName()}` : 'Account',
+      items: user ? [
+        // Logged in users see these options
         { id: 'profile', icon: User, label: 'My Profile', description: 'Edit your profile' },
+        { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences & privacy' },
+        { id: 'logout', icon: LogOut, label: 'Logout', description: 'Sign out of your account' },
+      ] : [
+        // Not logged in users see these options
         { id: 'signin', icon: LogIn, label: 'Sign In', description: 'Access your account' },
         { id: 'signup', icon: UserPlus, label: 'Sign Up', description: 'Join Dates today' },
-        { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences & privacy' },
       ]
     },
     {
@@ -90,6 +115,12 @@ export const Menu: React.FC<MenuProps> = ({ onNavigate, currentScreen }) => {
   };
 
   const handleNavigation = (screenId: string) => {
+    // Handle logout specially
+    if (screenId === 'logout') {
+      handleLogout();
+      return;
+    }
+
     // Immediate feedback - close menu and navigate
     setIsOpen(false);
     onNavigate(screenId);
