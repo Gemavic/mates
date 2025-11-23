@@ -31,8 +31,8 @@ import { StaffLogin } from '@/screens/StaffPanel/StaffLogin';
 import { MenuShowcase } from '@/screens/MenuShowcase/MenuShowcase';
 import { VideoChat } from '@/screens/VideoChat/VideoChat';
 import { AudioChat } from '@/screens/AudioChat/AudioChat';
-import { CoupleTherapy } from '@/screens/CoupleTherapy/CoupleTherapy';
-import { Counselling } from '@/screens/Counselling/Counselling';
+import { RelationshipServices } from '@/screens/RelationshipServices/RelationshipServices';
+import { FinancialEducation } from '@/screens/FinancialEducation/FinancialEducation';
 import { MatchSuitor } from '@/screens/MatchSuitor/MatchSuitor';
 import { Verification } from '@/screens/Verification/Verification';
 import { PaymentSetup } from '@/screens/PaymentSetup/PaymentSetup';
@@ -333,11 +333,11 @@ const App: React.FC = () => {
       case 'audio-chat':
         return <AudioChat onNavigate={handleNavigate} />;
       
-      case 'couple-therapy':
-        return <CoupleTherapy onNavigate={handleNavigate} />;
-      
-      case 'counselling':
-        return <Counselling onNavigate={handleNavigate} />;
+      case 'relationship-services':
+        return <RelationshipServices onNavigate={handleNavigate} />;
+
+      case 'financial-education':
+        return <FinancialEducation onNavigate={handleNavigate} />;
       
       case 'match-suitor':
         return <MatchSuitor onNavigate={handleNavigate} />;

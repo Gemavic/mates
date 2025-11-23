@@ -1,9 +1,9 @@
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { 
-  Home, Heart, Star, User, Settings, LogIn, UserPlus, CreditCard, 
+import {
+  Home, Heart, Star, User, Settings, LogIn, UserPlus, CreditCard,
   Video, Phone, Gift, Crown, Users, MessageCircle, HelpCircle,
-  ChevronRight, Menu as MenuIcon, Shield, AlertTriangle, Newspaper, Mail
+  ChevronRight, Menu as MenuIcon, Shield, AlertTriangle, Newspaper, Mail, DollarSign
 } from 'lucide-react';
 
 interface MenuShowcaseProps {
@@ -52,8 +52,8 @@ export const MenuShowcase: React.FC<MenuShowcaseProps> = ({ onNavigate }) => {
       title: 'Support & Wellness',
       color: 'from-purple-500 to-indigo-500',
       items: [
-        { id: 'couple-therapy', icon: Users, label: 'Couple Therapy', description: 'Professional guidance' },
-        { id: 'counselling', icon: MessageCircle, label: 'Counselling', description: 'Personal support' },
+        { id: 'relationship-services', icon: Users, label: 'Relationship Services', description: 'Counselling & therapy' },
+        { id: 'financial-education', icon: DollarSign, label: 'Financial Education', description: 'Money management' },
         { id: 'help', icon: HelpCircle, label: 'Help & Support', description: 'Get assistance' },
       ]
     },

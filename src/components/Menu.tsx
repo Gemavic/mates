@@ -85,8 +85,8 @@ export const Menu: React.FC<MenuProps> = ({ onNavigate, currentScreen }) => {
     {
       title: 'Support',
       items: [
-        { id: 'couple-therapy', icon: Users, label: 'Relationship Help', description: 'Professional therapy' },
-        { id: 'counselling', icon: MessageCircle, label: 'Counselling', description: 'Personal guidance' },
+        { id: 'relationship-services', icon: Users, label: 'Relationship Services', description: 'Counselling & therapy' },
+        { id: 'financial-education', icon: CreditCard, label: 'Financial Education', description: 'Money management advice' },
         { id: 'feedback', icon: MessageCircle, label: 'Contact Us', description: 'Questions & feedback' },
       ]
     },
