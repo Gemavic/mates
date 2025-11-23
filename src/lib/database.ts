@@ -47,12 +47,37 @@ export class ProfileManager {
   }
 
   static async updateProfile(userId: string, updates: Partial<UserProfile>) {
+    // First check if profile exists
+    const { data: existingProfile } = await supabaseClient
+      .from('user_profiles')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!existingProfile) {
+      // Profile doesn't exist, create it
+      const { data, error } = await supabaseClient
+        .from('user_profiles')
+        .insert({
+          user_id: userId,
+          ...updates,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
+    // Profile exists, update it
     const { data, error } = await supabaseClient
       .from('user_profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('user_id', userId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;

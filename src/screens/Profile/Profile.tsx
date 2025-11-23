@@ -74,18 +74,35 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      alert('Please sign in to update your profile');
+      return;
+    }
+
+    // Validation
+    if (!profileData.name || profileData.name.trim() === '') {
+      alert('Please enter your name');
+      return;
+    }
 
     try {
-      await ProfileManager.updateProfile(user.id, {
-        full_name: profileData.name,
+      console.log('Updating profile for user:', user.id);
+
+      const updateData = {
+        full_name: profileData.name.trim(),
+        first_name: profileData.name.trim().split(' ')[0],
         age: parseInt(profileData.age) || null,
-        location: profileData.location,
-        occupation: profileData.occupation,
-        education: profileData.education,
-        bio: profileData.bio,
-        interests: profileData.interests
-      });
+        location: profileData.location || null,
+        occupation: profileData.occupation || null,
+        education: profileData.education || null,
+        bio: profileData.bio || null,
+        interests: profileData.interests || null
+      };
+
+      console.log('Update data:', updateData);
+
+      const result = await ProfileManager.updateProfile(user.id, updateData);
+      console.log('Update result:', result);
 
       await loadUserProfile();
       setIsEditing(false);
@@ -94,9 +111,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       successMessage.textContent = '✅ Profile updated successfully!';
       document.body.appendChild(successMessage);
-      setTimeout(() => document.body.removeChild(successMessage), 3000);
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 3000);
     } catch (error: any) {
-      alert('Failed to update profile: ' + (error?.message || 'Unknown error'));
+      console.error('Profile update error:', error);
+      const errorMessage = error?.message || 'Unknown error';
+      alert('Failed to update profile: ' + errorMessage + '\n\nPlease try again or contact support.');
     }
   };
 
