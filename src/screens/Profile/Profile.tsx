@@ -75,13 +75,29 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
   const handleSaveProfile = async () => {
     if (!user) {
-      alert('Please sign in to update your profile');
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = '⚠️ Please sign in to update your profile';
+      document.body.appendChild(errorMessage);
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 3000);
       return;
     }
 
     // Validation
     if (!profileData.name || profileData.name.trim() === '') {
-      alert('Please enter your name');
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = '⚠️ Please enter your name';
+      document.body.appendChild(errorMessage);
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 3000);
       return;
     }
 
@@ -118,14 +134,29 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       }, 3000);
     } catch (error: any) {
       console.error('Profile update error:', error);
-      const errorMessage = error?.message || 'Unknown error';
-      alert('Failed to update profile: ' + errorMessage + '\n\nPlease try again or contact support.');
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMsg.textContent = '❌ Failed to update profile. Please try again.';
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        if (document.body.contains(errorMsg)) {
+          document.body.removeChild(errorMsg);
+        }
+      }, 3000);
     }
   };
 
   const handlePhotoUpload = async () => {
     if (!user) {
-      alert('Please sign in to upload photos');
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = '⚠️ Please sign in to upload photos';
+      document.body.appendChild(errorMessage);
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 3000);
       return;
     }
 
@@ -177,7 +208,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         }, 3000);
       } catch (error: any) {
         console.error('Upload error:', error);
-        alert('Failed to upload photos: ' + (error?.message || 'Unknown error'));
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        errorMsg.textContent = '❌ Failed to upload photos';
+        document.body.appendChild(errorMsg);
+        setTimeout(() => {
+          if (document.body.contains(errorMsg)) {
+            document.body.removeChild(errorMsg);
+          }
+        }, 3000);
       } finally {
         setUploadingPhoto(false);
       }
@@ -209,7 +248,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         }
       }, 2000);
     } catch (error: any) {
-      alert('Failed to delete photo: ' + (error?.message || 'Unknown error'));
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMsg.textContent = '❌ Failed to delete photo';
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        if (document.body.contains(errorMsg)) {
+          document.body.removeChild(errorMsg);
+        }
+      }, 3000);
     }
   };
 
@@ -295,24 +342,105 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         <div className="text-center mb-8">
           <div className="relative inline-block">
             <img
-              src="https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400"
+              src={
+                userPhotos.find(p => p.isPrimary)?.url ||
+                'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400'
+              }
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-white/30"
             />
             <button
-              onClick={() => {
+              onClick={async () => {
+                if (!user) {
+                  const errorMessage = document.createElement('div');
+                  errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                  errorMessage.textContent = '⚠️ Please sign in to upload photos';
+                  document.body.appendChild(errorMessage);
+                  setTimeout(() => {
+                    if (document.body.contains(errorMessage)) {
+                      document.body.removeChild(errorMessage);
+                    }
+                  }, 3000);
+                  return;
+                }
+
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
-                input.onchange = () => {
-                  alert('📷 Profile photo updated!');
+                input.onchange = async (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+
+                  setUploadingPhoto(true);
+
+                  try {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                      const dataUrl = e.target?.result as string;
+
+                      // Set as primary photo or add to gallery
+                      const { error } = await supabaseClient
+                        .from('user_photos')
+                        .insert({
+                          user_id: user.id,
+                          photo_url: dataUrl,
+                          is_primary: true,
+                          upload_order: 1
+                        })
+                        .select()
+                        .single();
+
+                      if (error) {
+                        // If primary already exists, update it
+                        const { error: updateError } = await supabaseClient
+                          .from('user_photos')
+                          .update({ photo_url: dataUrl, is_primary: true })
+                          .eq('user_id', user.id)
+                          .eq('is_primary', true);
+
+                        if (updateError) throw updateError;
+                      }
+
+                      await loadUserPhotos();
+
+                      const successMessage = document.createElement('div');
+                      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                      successMessage.textContent = '✅ Profile photo updated!';
+                      document.body.appendChild(successMessage);
+                      setTimeout(() => {
+                        if (document.body.contains(successMessage)) {
+                          document.body.removeChild(successMessage);
+                        }
+                      }, 3000);
+
+                      setUploadingPhoto(false);
+                    };
+                    reader.readAsDataURL(file);
+                  } catch (error: any) {
+                    console.error('Upload error:', error);
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    errorMessage.textContent = '❌ Failed to upload photo';
+                    document.body.appendChild(errorMessage);
+                    setTimeout(() => {
+                      if (document.body.contains(errorMessage)) {
+                        document.body.removeChild(errorMessage);
+                      }
+                    }, 3000);
+                    setUploadingPhoto(false);
+                  }
                 };
                 input.click();
               }}
-              className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
+              className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
               type="button"
+              disabled={uploadingPhoto}
             >
-              <Camera className="w-4 h-4 text-white" />
+              {uploadingPhoto ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4 text-white" />
+              )}
             </button>
           </div>
           <h2 className="text-2xl font-bold text-white mt-4">{profileData.name}</h2>
