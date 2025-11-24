@@ -188,6 +188,41 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           </div>
         </div>
 
+        {/* Professional Services */}
+        <div className="px-2 sm:px-4 md:px-6 py-4 relative z-10">
+          <h3 className="text-white font-bold text-xl sm:text-2xl mb-4 text-center">
+            Professional Support Services
+          </h3>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => onNavigate('relationship-services')}
+              className="w-full flex items-start space-x-4 bg-white/15 backdrop-blur-sm rounded-xl p-4 shadow-lg hover:bg-white/25 transition-all duration-200 text-left"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <Heart className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-white font-bold text-base mb-1">Relationship Services</h4>
+                <p className="text-white/80 text-sm">Professional counselling, couple therapy & personal growth support</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => onNavigate('financial-education')}
+              className="w-full flex items-start space-x-4 bg-white/15 backdrop-blur-sm rounded-xl p-4 shadow-lg hover:bg-white/25 transition-all duration-200 text-left"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-white font-bold text-base mb-1">Financial Education</h4>
+                <p className="text-white/80 text-sm">Expert financial advice, investment guidance & wealth management</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Social Proof */}
         <div className="px-2 sm:px-4 md:px-6 py-4 relative z-10">
           <div className="bg-gradient-to-r from-purple-500/30 to-pink-500/30 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
