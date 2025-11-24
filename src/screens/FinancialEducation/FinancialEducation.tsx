@@ -19,7 +19,7 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
       specialization: 'Investment Strategy & Wealth Management',
       experience: '18 years',
       rating: 4.9,
-      image: 'https://images.pexels.com/photos/3760607/pexels-photo-3760607.jpeg?auto=compress&cs=tinysrgb&w=400',
+      image: 'https://images.pexels.com/photos/3778966/pexels-photo-3778966.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$150/session',
       availability: 'Available today',
       expertise: ['Investment Planning', 'Portfolio Management', 'Retirement Strategy', 'Risk Management'],
@@ -320,6 +320,7 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
           onBookingConfirm={handleBookingConfirm}
           onClose={() => setShowBookingCalendar(false)}
           selectedTherapist={selectedAdvisor}
+          professionalType="Financial Advisor"
         />
       )}
     </Layout>

@@ -17,6 +17,7 @@ interface BookingCalendarProps {
   onBookingConfirm: (therapistId: string, date: string, time: string) => void;
   onClose: () => void;
   selectedTherapist: string | null;
+  professionalType?: string;
 }
 
 interface TimeSlot {
@@ -29,7 +30,8 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   therapists,
   onBookingConfirm,
   onClose,
-  selectedTherapist
+  selectedTherapist,
+  professionalType = 'Therapist'
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -164,10 +166,10 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         </div>
 
         <div className="p-6">
-          {/* Therapist Selection */}
+          {/* Professional Selection */}
           {viewMode === 'therapist' && (
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Select Your Therapist</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Select Your {professionalType}</h4>
               {therapists.map((therapist) => (
                 <button
                   key={therapist.id}
