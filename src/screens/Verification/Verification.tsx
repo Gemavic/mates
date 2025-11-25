@@ -194,6 +194,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
           });
 
           const smsResult = await smsResponse.json();
+          console.log('SMS Response:', smsResult);
 
           if (smsResult.success) {
             alert(`✅ Verification code sent to ${phoneNumber}\n\nPlease check your phone for the SMS message.`);
@@ -201,7 +202,13 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
             // Twilio not configured - show code in alert for testing
             alert(`✅ Verification code: ${otp}\n\n⚠️ SMS service is in test mode.\nYour code is shown here for testing.\n\nTo enable real SMS, configure Twilio credentials.`);
           } else {
-            throw new Error(smsResult.error || 'Failed to send SMS');
+            // Show detailed error message
+            const errorMsg = smsResult.error || 'Failed to send SMS';
+            const details = smsResult.details ? `\n\n${smsResult.details}` : '';
+            console.error('Twilio error:', smsResult);
+
+            // Still show the code to user even if SMS fails
+            alert(`⚠️ SMS delivery failed\n\nYour verification code: ${otp}\n\nError: ${errorMsg}${details}\n\nYou can still use the code above to verify.`);
           }
         } catch (smsError: any) {
           console.error('SMS sending failed:', smsError);
