@@ -26,6 +26,9 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [verificationRequest, setVerificationRequest] = useState<any>(null);
+  const [sentOTP, setSentOTP] = useState<string>('');
+  const [isResendDisabled, setIsResendDisabled] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
 
   // Load existing verification request
   useEffect(() => {
@@ -146,21 +149,115 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
     input.click();
   };
 
-  const handleSendCode = () => {
-    if (phoneNumber.length >= 10) {
-      setShowCodeInput(true);
-      alert(`Verification code sent to ${phoneNumber}`);
-    } else {
+  const handleSendCode = async () => {
+    if (phoneNumber.length < 10) {
       alert('Please enter a valid phone number');
+      return;
+    }
+
+    try {
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOTP(otp);
+
+      // Save OTP and phone to database
+      if (user) {
+        const { error } = await supabaseClient
+          .from('verification_requests')
+          .upsert({
+            user_id: user.id,
+            phone_number: phoneNumber,
+            otp_code: otp,
+            otp_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+            full_name: fullName || profile?.full_name || 'User',
+            verification_status: 'incomplete',
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+
+        if (error) throw error;
+      }
+
+      // Show success message
+      alert(`✅ Verification code sent to ${phoneNumber}\n\nFor testing purposes, your code is: ${otp}\n\nNote: In production, this will be sent via SMS.`);
+      setShowCodeInput(true);
+
+      // Start resend timer (60 seconds)
+      setIsResendDisabled(true);
+      setResendTimer(60);
+      const interval = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setIsResendDisabled(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      console.log(`📱 OTP sent: ${otp} to ${phoneNumber}`);
+    } catch (error: any) {
+      console.error('Failed to send OTP:', error);
+      alert('Failed to send verification code. Please try again.');
     }
   };
 
-  const handleVerifyCode = () => {
-    if (verificationCode === '123456') {
-      alert('Phone number verified successfully!');
-      setShowCodeInput(false);
-    } else {
-      alert('Invalid verification code. Please try again.');
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 6) {
+      alert('Please enter a 6-digit code');
+      return;
+    }
+
+    try {
+      // Verify OTP from database
+      if (user) {
+        const { data, error } = await supabaseClient
+          .from('verification_requests')
+          .select('otp_code, otp_expires_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data || !data.otp_code) {
+          alert('No verification code found. Please request a new code.');
+          return;
+        }
+
+        // Check if OTP expired
+        const expiresAt = new Date(data.otp_expires_at);
+        if (expiresAt < new Date()) {
+          alert('Verification code expired. Please request a new code.');
+          setShowCodeInput(false);
+          return;
+        }
+
+        // Verify OTP
+        if (verificationCode === data.otp_code) {
+          // Update verification status
+          await supabaseClient
+            .from('verification_requests')
+            .update({
+              phone_verified: true,
+              otp_code: null, // Clear OTP after successful verification
+              otp_expires_at: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id);
+
+          alert('✅ Phone number verified successfully!');
+          setShowCodeInput(false);
+          setVerificationCode('');
+
+          // Move to next step
+          setCurrentStep(Math.min(verificationSteps.length - 1, currentStep + 1));
+        } else {
+          alert('❌ Invalid verification code. Please try again.');
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to verify OTP:', error);
+      alert('Failed to verify code. Please try again.');
     }
   };
 
@@ -281,7 +378,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                         maxLength={6}
                         className="w-full text-center text-lg tracking-widest"
                       />
-                      <Button 
+                      <Button
                         onClick={handleVerifyCode}
                         className="w-full bg-green-500 text-white hover:bg-green-600"
                         disabled={verificationCode.length !== 6}
@@ -289,6 +386,24 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Verify Code
                       </Button>
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={handleSendCode}
+                          disabled={isResendDisabled}
+                          className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        >
+                          {isResendDisabled ? `Resend in ${resendTimer}s` : 'Resend Code'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowCodeInput(false);
+                            setVerificationCode('');
+                          }}
+                          className="text-sm text-gray-600 hover:text-gray-800"
+                        >
+                          Change Number
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
