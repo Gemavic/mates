@@ -175,10 +175,41 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
           }, { onConflict: 'user_id' });
 
         if (error) throw error;
+
+        // Send SMS via Twilio Edge Function
+        try {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+          const smsResponse = await fetch(`${supabaseUrl}/functions/v1/send-sms-verification`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              phoneNumber: phoneNumber,
+              otp: otp
+            })
+          });
+
+          const smsResult = await smsResponse.json();
+
+          if (smsResult.success) {
+            alert(`✅ Verification code sent to ${phoneNumber}\n\nPlease check your phone for the SMS message.`);
+          } else if (smsResult.testMode) {
+            // Twilio not configured - show code in alert for testing
+            alert(`✅ Verification code: ${otp}\n\n⚠️ SMS service is in test mode.\nYour code is shown here for testing.\n\nTo enable real SMS, configure Twilio credentials.`);
+          } else {
+            throw new Error(smsResult.error || 'Failed to send SMS');
+          }
+        } catch (smsError: any) {
+          console.error('SMS sending failed:', smsError);
+          // Fallback to showing code in alert
+          alert(`✅ Verification code: ${otp}\n\n⚠️ SMS delivery failed.\nYour code is shown here.\n\nError: ${smsError.message}`);
+        }
       }
 
-      // Show success message
-      alert(`✅ Verification code sent to ${phoneNumber}\n\nFor testing purposes, your code is: ${otp}\n\nNote: In production, this will be sent via SMS.`);
       setShowCodeInput(true);
 
       // Start resend timer (60 seconds)
