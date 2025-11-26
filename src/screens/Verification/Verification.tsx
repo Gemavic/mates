@@ -29,6 +29,19 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   const [sentOTP, setSentOTP] = useState<string>('');
   const [isResendDisabled, setIsResendDisabled] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({
+    email: true // Email is always verified via Supabase auth
+  });
+
+  // Check if user is already verified - if so, skip to discovery
+  useEffect(() => {
+    if (user && profile) {
+      if (profile.is_verified === true) {
+        console.log('✅ User already verified, skipping verification');
+        onNavigate('discovery');
+      }
+    }
+  }, [user, profile]);
 
   // Load existing verification request
   useEffect(() => {
@@ -51,8 +64,24 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
       if (error && error.code !== 'PGRST116') throw error;
       setVerificationRequest(data);
 
-      if (data?.phone_number) {
-        setPhoneNumber(data.phone_number);
+      if (data) {
+        // Load completed steps from database
+        const newCompletedSteps: Record<string, boolean> = { email: true };
+
+        if (data.phone_verified) {
+          newCompletedSteps.phone = true;
+          setPhoneNumber(data.phone_number || '');
+        }
+
+        if (data.selfie_url) {
+          newCompletedSteps.photo = true;
+        }
+
+        if (data.government_id_url) {
+          newCompletedSteps.identity = true;
+        }
+
+        setCompletedSteps(newCompletedSteps);
       }
     } catch (error) {
       console.error('Failed to load verification request:', error);
@@ -64,14 +93,14 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
       id: 'photo',
       title: 'Photo Verification',
       description: 'Upload a clear photo of yourself holding your ID',
-      status: 'pending',
+      status: completedSteps.photo ? 'completed' : 'pending',
       required: true
     },
     {
       id: 'phone',
       title: 'Phone Verification',
       description: 'Verify your phone number with SMS code',
-      status: 'pending',
+      status: completedSteps.phone ? 'completed' : 'pending',
       required: true
     },
     {
@@ -85,7 +114,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
       id: 'identity',
       title: 'Identity Verification',
       description: 'Upload government-issued ID',
-      status: 'pending',
+      status: completedSteps.identity ? 'completed' : 'pending',
       required: false
     }
   ];
@@ -106,39 +135,61 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
       setUploading(true);
 
       try {
-        // Convert to data URL
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const dataUrl = e.target?.result as string;
+        // Upload to Supabase Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
 
-          // Create or update verification request
-          const updateData: any = {
-            full_name: fullName || profile?.full_name || 'User',
-            phone_number: phoneNumber || null,
-            verification_status: 'incomplete'
-          };
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from('verification-documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-          if (type === 'selfie') updateData.selfie_url = dataUrl;
-          if (type === 'government_id') updateData.government_id_url = dataUrl;
-          if (type === 'address_proof') updateData.address_proof_url = dataUrl;
+        if (uploadError) throw uploadError;
 
-          const { data, error } = await supabaseClient
-            .from('verification_requests')
-            .upsert({
-              user_id: user.id,
-              ...updateData,
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' })
-            .select()
-            .single();
+        // Get public URL
+        const { data: urlData } = supabaseClient.storage
+          .from('verification-documents')
+          .getPublicUrl(fileName);
 
-          if (error) throw error;
+        const photoUrl = urlData.publicUrl;
 
-          setVerificationRequest(data);
-
-          alert('✅ Document uploaded successfully!');
+        // Create or update verification request
+        const updateData: any = {
+          full_name: fullName || profile?.full_name || 'User',
+          phone_number: phoneNumber || null,
+          verification_status: 'incomplete'
         };
-        reader.readAsDataURL(file);
+
+        if (type === 'selfie') updateData.selfie_url = photoUrl;
+        if (type === 'government_id') updateData.government_id_url = photoUrl;
+        if (type === 'address_proof') updateData.address_proof_url = photoUrl;
+
+        const { data, error } = await supabaseClient
+          .from('verification_requests')
+          .upsert({
+            user_id: user.id,
+            ...updateData,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setVerificationRequest(data);
+
+        // Update completed steps
+        setCompletedSteps(prev => ({
+          ...prev,
+          [type === 'selfie' ? 'photo' : 'identity']: true
+        }));
+
+        alert('✅ Document uploaded successfully!');
+
+        // Check if verification is complete
+        await checkVerificationComplete();
       } catch (error: any) {
         console.error('Upload error:', error);
         alert('Failed to upload: ' + (error?.message || 'Unknown error'));
@@ -283,9 +334,15 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
             })
             .eq('user_id', user.id);
 
+          // Update completed steps
+          setCompletedSteps(prev => ({ ...prev, phone: true }));
+
           alert('✅ Phone number verified successfully!');
           setShowCodeInput(false);
           setVerificationCode('');
+
+          // Check if verification is complete
+          await checkVerificationComplete();
 
           // Move to next step
           setCurrentStep(Math.min(verificationSteps.length - 1, currentStep + 1));
@@ -299,6 +356,55 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
     }
   };
 
+  const checkVerificationComplete = async () => {
+    if (!user) return;
+
+    try {
+      // Get latest verification request
+      const { data } = await supabaseClient
+        .from('verification_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!data) return;
+
+      // Check if all required steps are complete
+      const hasPhoto = !!data.selfie_url;
+      const hasPhone = !!data.phone_verified;
+      const hasEmail = true; // Email is always verified via Supabase
+
+      const allRequiredComplete = hasPhoto && hasPhone && hasEmail;
+
+      if (allRequiredComplete) {
+        // Mark verification as complete
+        await supabaseClient
+          .from('verification_requests')
+          .update({
+            verification_status: 'submitted',
+            submitted_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        // Update user profile to mark as verified
+        await supabaseClient
+          .from('user_profiles')
+          .update({
+            is_verified: true,
+            verification_status: 'verified'
+          })
+          .eq('user_id', user.id);
+
+        // Reload profile
+        await loadUserProfile();
+
+        console.log('✅ Verification complete!');
+      }
+    } catch (error) {
+      console.error('Error checking verification completion:', error);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -307,6 +413,34 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         return <AlertCircle className="w-5 h-5 text-red-500" />;
       default:
         return <div className="w-5 h-5 border-2 border-gray-300 rounded-full" />;
+    }
+  };
+
+  const handleCompleteVerification = async () => {
+    // Check if all required steps are complete
+    const hasPhoto = completedSteps.photo;
+    const hasPhone = completedSteps.phone;
+    const hasEmail = completedSteps.email;
+
+    if (!hasPhoto || !hasPhone || !hasEmail) {
+      alert('❌ Please complete all required verification steps:\n\n' +
+            (!hasPhoto ? '• Photo Verification\n' : '') +
+            (!hasPhone ? '• Phone Verification\n' : '') +
+            (!hasEmail ? '• Email Verification\n' : ''));
+      return;
+    }
+
+    try {
+      // Mark as verified
+      await checkVerificationComplete();
+
+      alert('🎉 Verification complete! Welcome to Dates.');
+
+      // Navigate to discovery
+      onNavigate('discovery');
+    } catch (error) {
+      console.error('Error completing verification:', error);
+      alert('Failed to complete verification. Please try again.');
     }
   };
 
@@ -329,7 +463,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         {/* Progress Bar */}
         <div className="bg-white/90 backdrop-blur-sm px-4 py-3">
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentStep + 1) / verificationSteps.length) * 100}%` }}
             ></div>
@@ -337,7 +471,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         </div>
 
         {/* Verification Steps */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 pb-32">
           {verificationSteps.map((step, index) => (
             <div
               key={step.id}
@@ -370,15 +504,12 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                     <p className="text-gray-600 mb-4">Take a selfie holding your ID</p>
                     <Button
                       onClick={() => handlePhotoUpload('selfie')}
-                      disabled={uploading}
+                      disabled={uploading || completedSteps.photo}
                       className="bg-blue-500 text-white hover:bg-blue-600"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Uploading...' : 'Upload Photo'}
+                      {uploading ? 'Uploading...' : completedSteps.photo ? 'Photo Uploaded ✓' : 'Upload Photo'}
                     </Button>
-                    {verificationRequest?.selfie_url && (
-                      <p className="text-green-600 text-sm mt-2">✓ Photo uploaded</p>
-                    )}
                   </div>
                 </div>
               )}
@@ -393,14 +524,15 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className="w-full"
+                        disabled={completedSteps.phone}
                       />
-                      <Button 
+                      <Button
                         onClick={handleSendCode}
                         className="w-full bg-blue-500 text-white hover:bg-blue-600"
-                        disabled={phoneNumber.length < 10}
+                        disabled={phoneNumber.length < 10 || completedSteps.phone}
                       >
                         <Phone className="w-4 h-4 mr-2" />
-                        Send Verification Code
+                        {completedSteps.phone ? 'Phone Verified ✓' : 'Send Verification Code'}
                       </Button>
                     </div>
                   ) : (
@@ -461,15 +593,12 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
                     <p className="text-gray-600 mb-4">Upload government-issued ID</p>
                     <Button
                       onClick={() => handlePhotoUpload('government_id')}
-                      disabled={uploading}
+                      disabled={uploading || completedSteps.identity}
                       className="bg-blue-500 text-white hover:bg-blue-600"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Uploading...' : 'Upload ID'}
+                      {uploading ? 'Uploading...' : completedSteps.identity ? 'ID Uploaded ✓' : 'Upload ID'}
                     </Button>
-                    {verificationRequest?.government_id_url && (
-                      <p className="text-green-600 text-sm mt-2">✓ ID uploaded</p>
-                    )}
                   </div>
                   <p className="text-xs text-gray-500 text-center">
                     Optional: Increases your profile credibility
@@ -493,8 +622,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
             <Button
               onClick={() => {
                 if (currentStep === verificationSteps.length - 1) {
-                  console.log('Verification complete, navigating to discovery');
-                  onNavigate('discovery');
+                  handleCompleteVerification();
                 } else {
                   setCurrentStep(Math.min(verificationSteps.length - 1, currentStep + 1));
                 }
