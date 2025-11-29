@@ -339,6 +339,23 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       onNavigate={onNavigate}
     >
       <div className="px-4 py-6">
+        {/* Back to Discovery Button */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Back button clicked - navigating to discovery');
+            onNavigate('discovery');
+          }}
+          className="mb-4 flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-3 rounded-xl cursor-pointer touch-manipulation active:scale-95 transition-all"
+          type="button"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to Discovery</span>
+        </button>
+
         {/* Profile Header */}
         <div className="text-center mb-8">
           <div className="relative inline-block">
@@ -485,15 +502,16 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
           {userPhotos.length === 0 ? (
             <div className="text-center py-8">
-              <Camera className="w-12 h-12 text-white/50 mx-auto mb-3" />
+              <Upload className="w-12 h-12 text-white/50 mx-auto mb-3" />
               <p className="text-white/70 mb-4">No photos yet. Add some to complete your profile!</p>
               <Button
                 onClick={handlePhotoUpload}
-                className="bg-blue-500 text-white"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-6 text-base"
                 type="button"
               >
-                Upload First Photo
+                📷 Upload Photos from Gallery
               </Button>
+              <p className="text-white/60 text-xs mt-3">✨ Select multiple photos at once!</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
@@ -520,7 +538,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
               ))}
             </div>
           )}
-          <p className="text-white/60 text-xs mt-3">💡 Add up to 6 photos to show your best self!</p>
+          <Button
+            onClick={handlePhotoUpload}
+            className="w-full mt-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold"
+            type="button"
+            disabled={uploadingPhoto}
+          >
+            {uploadingPhoto ? '⏳ Uploading...' : '📷 Add More Photos from Gallery'}
+          </Button>
+          <p className="text-white/60 text-xs mt-2 text-center">💡 Select multiple photos at once! Add up to 6 photos.</p>
         </div>
 
         {/* Profile Info */}

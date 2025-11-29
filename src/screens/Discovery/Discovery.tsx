@@ -274,12 +274,17 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
               </button>
               <div className="flex-1"></div>
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-1 text-orange-500 font-medium cursor-pointer touch-manipulation active:scale-95 transition-transform py-2 px-3 rounded-lg hover:bg-orange-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Filter button clicked! Current state:', showFilters);
+                  setShowFilters(!showFilters);
+                }}
+                className="flex items-center space-x-1 text-orange-500 font-semibold cursor-pointer touch-manipulation active:scale-95 transition-all py-2 px-4 rounded-lg hover:bg-orange-50 border-2 border-orange-500"
                 type="button"
               >
+                <Sliders className="w-5 h-5" />
                 <span>Filters</span>
-                <Sliders className="w-4 h-4" />
               </button>
             </div>
 

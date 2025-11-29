@@ -17,9 +17,9 @@ export const Footer: React.FC<FooterProps> = ({
   const tabs = [
     { id: 'discovery', icon: Search, label: 'Search', onClick: () => onNavigate('discovery') },
     { id: 'chat', icon: MessageCircle, label: 'Chat', isChat: true, onClick: () => onNavigate('matches') },
+    { id: 'profile', icon: User, label: 'Profile', onClick: () => onNavigate('profile') },
     { id: 'credits', icon: CreditCard, label: 'Credits', onClick: () => onNavigate('credits') },
     { id: 'mail', icon: Mail, label: 'Mail', onClick: () => onNavigate('mail') },
-    { id: 'newsfeed', icon: Newspaper, label: 'News', onClick: () => onNavigate('newsfeed') },
     { id: 'feedback', icon: MessageSquare, label: 'Feedback', onClick: () => onNavigate('feedback') },
   ];
 
