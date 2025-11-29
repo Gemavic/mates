@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Heart, Mail, Lock, Shield, AlertTriangle } from 'lucide-react';
 import { SecurityManager } from '@/lib/security';
 import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
 
 interface SignInProps {
   onNavigate: (screen: string) => void;
@@ -55,8 +56,26 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
         return;
       }
 
-      // Success - navigate to discovery
-      onNavigate('discovery');
+      // Success - check if user needs verification
+      // Load user profile to check verification status
+      const { user: signedInUser } = data;
+      if (signedInUser) {
+        const { data: profileData } = await supabaseClient
+          .from('user_profiles')
+          .select('is_verified')
+          .eq('user_id', signedInUser.id)
+          .maybeSingle();
+
+        if (profileData?.is_verified) {
+          console.log('✅ User is verified, going to discovery');
+          onNavigate('discovery');
+        } else {
+          console.log('⚠️ User not verified, going to verification');
+          onNavigate('verification');
+        }
+      } else {
+        onNavigate('discovery');
+      }
     } catch (error: any) {
       console.error('Sign in exception:', error);
       setErrors([error?.message || 'An unexpected error occurred. Please try again.']);

@@ -103,9 +103,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       }
 
       // Attempt sign up
-      const { error, data } = await signUp(formData.email, formData.password, {
-        full_name: formData.name
-      });
+      const { error, data } = await signUp(formData.email, formData.password, formData.name);
 
       if (error) {
         console.error('Sign up error:', error);
