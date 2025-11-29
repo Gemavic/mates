@@ -81,14 +81,24 @@ export const useAuth = () => {
       return { data: null, error: { message: error.message } };
     }
 
+    // Profile is now created automatically by database trigger
+    // Wait a moment for trigger to complete
     if (data.user) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify profile was created
       try {
-        await createUserProfile(data.user.id, {
-          email,
-          full_name: fullName,
-        });
+        const profile = await ProfileManager.getProfile(data.user.id);
+        if (!profile) {
+          // Trigger didn't work, create manually as fallback
+          console.log('Creating profile manually as fallback');
+          await createUserProfile(data.user.id, {
+            email,
+            full_name: fullName,
+          });
+        }
       } catch (profileError) {
-        console.error('Failed to create profile:', profileError);
+        console.error('Profile check/creation error:', profileError);
       }
     }
 
