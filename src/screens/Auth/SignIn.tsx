@@ -47,7 +47,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
       }
 
       // Attempt sign in
-      const { error } = await signIn(formData.email, formData.password);
+      const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
         console.error('Sign in error:', error);
@@ -57,13 +57,11 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
       }
 
       // Success - check if user needs verification
-      // Load user profile to check verification status
-      const { user: signedInUser } = data;
-      if (signedInUser) {
+      if (data?.user) {
         const { data: profileData } = await supabaseClient
           .from('user_profiles')
           .select('is_verified')
-          .eq('user_id', signedInUser.id)
+          .eq('user_id', data.user.id)
           .maybeSingle();
 
         if (profileData?.is_verified) {
