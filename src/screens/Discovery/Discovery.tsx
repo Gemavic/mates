@@ -275,7 +275,8 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
               <div className="flex-1"></div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-1 text-orange-500"
+                className="flex items-center space-x-1 text-orange-500 font-medium cursor-pointer touch-manipulation active:scale-95 transition-transform py-2 px-3 rounded-lg hover:bg-orange-50"
+                type="button"
               >
                 <span>Filters</span>
                 <Sliders className="w-4 h-4" />

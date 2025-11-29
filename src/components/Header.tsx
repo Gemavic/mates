@@ -55,17 +55,21 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Left side buttons */}
       <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
         {showBack && (
-          <button 
+          <button
             onClick={onBack}
-            className="p-2 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110"
+            className="p-2 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110 cursor-pointer touch-manipulation active:scale-95"
+            type="button"
+            aria-label="Go back"
           >
             <ChevronLeftIcon className="w-6 h-6 text-white" />
           </button>
         )}
         {showProfile && (
-          <button 
+          <button
             onClick={onProfile}
-            className="p-2 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110"
+            className="p-2 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110 cursor-pointer touch-manipulation active:scale-95"
+            type="button"
+            aria-label="View profile"
           >
             <User className="w-6 h-6 text-white" />
           </button>
