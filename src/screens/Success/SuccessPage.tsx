@@ -2,34 +2,41 @@ import React, { useEffect } from 'react';
 import { CheckCircle, ArrowRight, Home, CreditCard, Gift } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
 import { Layout } from '@/components/Layout';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SuccessPageProps {
   onNavigate?: (screen: string) => void;
 }
 
 export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} }) => {
+  const { user } = useAuth();
 
   // Process successful purchase on page load
   useEffect(() => {
     const processPayment = async () => {
+      if (!user) {
+        console.warn('No user logged in, cannot process payment');
+        return;
+      }
+
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const credits = parseInt(urlParams.get('credits') || '0');
         const bonus = parseInt(urlParams.get('bonus') || '0');
         const productName = urlParams.get('product') || 'Credit Package';
-        
+
         // Check for pending purchase in session storage
         const pendingPurchase = sessionStorage.getItem('pendingPurchase');
         if (pendingPurchase) {
           try {
             const purchaseData = JSON.parse(pendingPurchase);
-            
+
             // Add to local credit system
-            creditManager.addCredits('current-user', purchaseData.credits + (purchaseData.bonus || 0), 
+            creditManager.addCredits(user.id, purchaseData.credits + (purchaseData.bonus || 0),
               purchaseData.demo ? 'Demo Purchase' : 'Credit Purchase', true);
-            
+
             sessionStorage.removeItem('pendingPurchase');
-            
+
             console.log('✅ Payment processed successfully:', {
               productName: purchaseData.productName || productName,
               credits: purchaseData.credits,
@@ -41,9 +48,9 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
           }
         } else if (credits > 0) {
           // Process from URL parameters
-          
+
           // Add to local credit system
-          creditManager.addCredits('current-user', credits + bonus, 'Payment Success', true);
+          creditManager.addCredits(user.id, credits + bonus, 'Payment Success', true);
           
           console.log('✅ Payment processed from URL parameters:', {
             credits,
@@ -55,9 +62,9 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
         console.error('Error processing payment:', error);
       }
     };
-    
+
     processPayment();
-  }, []);
+  }, [user]);
 
   const urlParams = new URLSearchParams(window.location.search);
   const credits = parseInt(urlParams.get('credits') || '0');

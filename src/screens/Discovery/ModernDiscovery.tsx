@@ -30,11 +30,11 @@ interface ModernDiscoveryProps {
 
 export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = () => {} }) => {
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
-  const [userBalance, setUserBalance] = useState(creditManager.getBalance('current-user'));
+  const { user } = useAuth();
+  const [userBalance, setUserBalance] = useState(creditManager.getBalance(user?.id || 'demo-user'));
   const [viewMode, setViewMode] = useState<'swipe' | 'grid'>('swipe');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
 
   // Load profiles from database
   React.useEffect(() => {
@@ -149,17 +149,17 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
   const handleLike = async (profileId: string) => {
     console.log('💖 Like action triggered for profile:', profileId);
-    
+
     // Send notification
     const profile = profiles.find(p => p.id === profileId);
-    if (profile) {
+    if (profile && user) {
       sendLikeNotification(profileId, {
         name: 'You',
         image: 'https://images.pexels.com/photos/1848565/pexels-photo-1848565.jpeg?auto=compress&cs=tinysrgb&w=400',
-        id: 'current-user'
+        id: user.id
       });
     }
-    
+
     nextProfile();
   };
 
@@ -169,8 +169,13 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   };
 
   const handleSuperLike = async (profileId: string) => {
-    const canAfford = creditManager.canAfford('current-user', 5);
-    if (!canAfford && !creditManager.isStaffMember('current-user')) {
+    if (!user) {
+      alert('Please sign in to send Super Likes');
+      return;
+    }
+
+    const canAfford = creditManager.canAfford(user.id, 5);
+    if (!canAfford && !creditManager.isStaffMember(user.id)) {
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       errorMessage.textContent = 'Need 5 credits for Super Like! Likes and Blinks are FREE.';
@@ -178,10 +183,10 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       setTimeout(() => document.body.removeChild(errorMessage), 3000);
       return;
     }
-    
-    if (!creditManager.isStaffMember('current-user')) {
-     creditManager.deductCredits('current-user', 5);
-      setUserBalance(creditManager.getBalance('current-user'));
+
+    if (!creditManager.isStaffMember(user.id)) {
+     creditManager.deductCredits(user.id, 5);
+      setUserBalance(creditManager.getBalance(user.id));
       
       // Show success message
       const successMessage = document.createElement('div');

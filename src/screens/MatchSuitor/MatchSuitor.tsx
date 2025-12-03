@@ -3,12 +3,14 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Crown, Star, Zap, Target, Users, Heart } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MatchSuitorProps {
   onNavigate: (screen: string) => void;
 }
 
 export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const premiumFeatures = [
     {
       icon: Target,
@@ -156,20 +158,24 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                 </div>
                 
                 <div className="flex space-x-2">
-                  <Button 
+                  <Button
                     className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm hover:scale-105 transition-all duration-300"
                     onClick={() => {
-                      if (creditManager.canAfford('current-user', 1)) {
-                        creditManager.spendCredits('current-user', 1, `Super liked ${match.name}`);
+                      if (!user) {
+                        alert('Please sign in to send Super Likes');
+                        return;
+                      }
+                      if (creditManager.canAfford(user.id, 1)) {
+                        creditManager.spendCredits(user.id, 1, `Super liked ${match.name}`);
                         alert(`⭐ Super liked ${match.name}!`);
                       } else {
                         alert('Need 1 credit to send a Super Like!');
                       }
                     }}
-                    disabled={!creditManager.canAfford('current-user', 1)}
+                    disabled={!user || !creditManager.canAfford(user.id, 1)}
                     type="button"
                   >
-                    {creditManager.canAfford('current-user', 1) ? 'Super Like (1 Credit)' : 'Need Credits'}
+                    {user && creditManager.canAfford(user.id, 1) ? 'Super Like (1 Credit)' : 'Need Credits'}
                   </Button>
                   <Button 
                     className="flex-1 bg-white/20 text-white text-sm hover:bg-white/30"

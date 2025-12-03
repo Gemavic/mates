@@ -6,6 +6,7 @@ import { sendProfileViewNotification } from '@/lib/emailNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Profile {
   id: string;
@@ -59,15 +60,18 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   // Send profile view notification when card is rendered
   React.useEffect(() => {
-    sendProfileViewNotification(profile.id, {
-      name: 'You',
-      image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-      id: 'current-user'
-    });
-  }, [profile.id]);
+    if (user) {
+      sendProfileViewNotification(profile.id, {
+        name: 'You',
+        image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+        id: user.id
+      });
+    }
+  }, [profile.id, user]);
 
   const handleImageClick = (direction: 'prev' | 'next') => {
     if (direction === 'next' && currentImageIndex < profile.images.length - 1) {

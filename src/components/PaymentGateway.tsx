@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  CreditCard, 
-  Bitcoin, 
-  Smartphone, 
-  Shield, 
-  Lock, 
+import {
+  CreditCard,
+  Bitcoin,
+  Smartphone,
+  Shield,
+  Lock,
   CheckCircle,
   AlertCircle,
   Loader2,
@@ -22,6 +22,7 @@ import {
 import { DATES_CRYPTO_WALLETS, cryptoPaymentManager, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
 import { securityManager, encryptSensitiveData } from '@/lib/encryption';
 import { creditManager } from '@/lib/creditSystem';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PaymentGatewayProps {
   amount: number;
@@ -49,6 +50,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
     cvv: '',
     name: ''
   });
+  const { user } = useAuth();
 
   const handleCardPayment = async () => {
     if (!cardData.number || !cardData.expiry || !cardData.cvv || !cardData.name) {
@@ -58,12 +60,17 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   };
 
   const handleCryptoPayment = () => {
+    if (!user) {
+      alert('Please sign in to make a payment');
+      return;
+    }
+
     setIsProcessing(true);
-    
+
     try {
       const cryptoAmount = calculateCryptoAmount(amount, selectedCrypto);
       const payment = cryptoPaymentManager.createPayment(
-        'current-user',
+        user.id,
         amount,
         selectedCrypto
       );

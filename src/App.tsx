@@ -40,6 +40,7 @@ import { Help } from '@/screens/Help/Help';
 import { CareBlog } from '@/screens/CareBlog/CareBlog';
 import { Quizzes } from '@/screens/Quizzes/Quizzes';
 import { MonitoringDashboard } from '@/components/MonitoringDashboard';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
 
@@ -366,23 +367,25 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-x-hidden">
-      {/* SEO Component */}
-      <SEO {...getSEOProps()} />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-x-hidden">
+        {/* SEO Component */}
+        <SEO {...getSEOProps()} />
 
-      {/* Menu Component - Always Available */}
-      <Menu onNavigate={handleNavigate} currentScreen={currentScreen} />
+        {/* Menu Component - Always Available */}
+        <Menu onNavigate={handleNavigate} currentScreen={currentScreen} />
 
-      {/* Current Screen Content */}
-      <div className="relative z-10 w-full min-h-screen">
-        <div className={cn(
-          "transition-all duration-300",
-          isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
-        )}>
-          {renderScreen()}
+        {/* Current Screen Content */}
+        <div className="relative z-10 w-full min-h-screen">
+          <div className={cn(
+            "transition-all duration-300",
+            isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
+          )}>
+            {renderScreen()}
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 

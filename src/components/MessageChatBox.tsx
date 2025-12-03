@@ -48,7 +48,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits('current-user'));
+  const [userBalance, setUserBalance] = useState(0);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { getFirstName, user } = useAuth();
@@ -152,7 +152,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
     },
     {
       id: 'msg-user-1',
-      senderId: 'current-user',
+      senderId: user?.id || 'demo-user',
       senderName: 'You',
       senderImage: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
       message: 'Winked',
@@ -186,7 +186,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
       if (!activeThreadData) return;
 
       // ENFORCE: Check credits BEFORE sending message
-      const result = creditManager.sendMessage('current-user', activeThread!, message.trim());
+      if (!user) {
+        alert('Please sign in to send messages');
+        return;
+      }
+
+      const result = creditManager.sendMessage(user.id, activeThread!, message.trim());
 
       if (!result.success) {
         alert(`Need ${formatCredits(result.cost)} to send this message!`);
@@ -194,12 +199,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
       }
 
       // Update balance after successful credit deduction
-      setUserBalance(creditManager.getTotalCredits('current-user'));
+      setUserBalance(creditManager.getTotalCredits(user.id));
 
       // Only NOW create and send the message (after credits are deducted)
       const newMessage: ChatMessage = {
         id: Date.now().toString(),
-        senderId: 'current-user',
+        senderId: user.id,
         senderName: 'You',
         senderImage: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
         message: message.trim(),
@@ -234,11 +239,13 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
 
       // Try to send email notification (non-blocking)
       try {
-        sendMessageNotification(activeThreadData.participantId, {
-          name: 'You',
-          image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-          id: 'current-user'
-        });
+        if (user) {
+          sendMessageNotification(activeThreadData.participantId, {
+            name: 'You',
+            image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+            id: user.id
+          });
+        }
       } catch (notificationError) {
         console.log('Notification skipped:', notificationError);
       }
@@ -267,25 +274,30 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
       }
 
       // ENFORCE: Check if gift is free (price = 0)
+      if (!user) {
+        alert('Please sign in to send gifts');
+        return;
+      }
+
       const isFreeGift = gift.price === 0;
-      const isStaff = creditManager.isStaffMember('current-user');
+      const isStaff = creditManager.isStaffMember(user.id);
 
       // ENFORCE: Check credits BEFORE sending gift (unless free or staff)
       if (!isFreeGift && !isStaff) {
-        if (!creditManager.canAfford('current-user', gift.price)) {
+        if (!creditManager.canAfford(user.id, gift.price)) {
           alert(`Need ${formatCredits(gift.price)} to send ${gift.name}!`);
           return;
         }
 
         // Deduct credits BEFORE sending
-        creditManager.deductCredits('current-user', gift.price);
-        setUserBalance(creditManager.getTotalCredits('current-user'));
+        creditManager.deductCredits(user.id, gift.price);
+        setUserBalance(creditManager.getTotalCredits(user.id));
       }
 
       // Only NOW create and send the gift (after credits are deducted or if free)
       const giftMessage: ChatMessage = {
         id: Date.now().toString(),
-        senderId: 'current-user',
+        senderId: user.id,
         senderName: 'You',
         senderImage: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
         message: `Sent ${gift.emoji} ${gift.name}`,
@@ -334,7 +346,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
       const activeThreadData = chatThreads.find(t => t.id === activeThread);
       if (!activeThreadData) return;
 
-      const isStaff = creditManager.isStaffMember('current-user');
+      const isStaff = creditManager.isStaffMember(user?.id || 'demo-user');
 
       // ENFORCE: Determine cost based on type
       let cost = 0;
@@ -348,7 +360,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
 
       // ENFORCE: Check credits BEFORE allowing upload (unless staff)
       if (!isStaff && cost > 0) {
-        if (!creditManager.canAfford('current-user', cost)) {
+        if (!creditManager.canAfford(user?.id || 'demo-user', cost)) {
           alert(`Need ${formatCredits(cost)} to send ${type}!`);
           return;
         }
@@ -370,8 +382,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
         if (file) {
           // ENFORCE: Deduct credits BEFORE processing upload (unless staff)
           if (!isStaff && cost > 0) {
-            creditManager.deductCredits('current-user', cost);
-            setUserBalance(creditManager.getTotalCredits('current-user'));
+            creditManager.deductCredits(user?.id || 'demo-user', cost);
+            setUserBalance(creditManager.getTotalCredits(user?.id || 'demo-user'));
           }
 
           const successMessage = document.createElement('div');
@@ -422,7 +434,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
           <span className="text-pink-700">Chat Balance:</span>
           <div className="flex items-center space-x-2">
             <span className="font-bold text-pink-900">{formatCredits(userBalance)}</span>
-            <span className="text-pink-600 font-bold">{creditManager.getKobos('current-user')} 💖</span>
+            <span className="text-pink-600 font-bold">{creditManager.getKobos(user?.id || 'demo-user')} 💖</span>
           </div>
         </div>
         <p className="text-xs text-pink-600 mt-1">2 credits or 1 kobo per minute</p>
@@ -488,7 +500,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
           <button
             onClick={() => handleFileUpload('video')}
             className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors touch-manipulation active:scale-95"
-            disabled={!creditManager.canAfford('current-user', 60) && !creditManager.isStaffMember('current-user')}
+            disabled={!creditManager.canAfford(user?.id || 'demo-user', 60) && !creditManager.isStaffMember(user?.id || 'demo-user')}
           >
             <Video className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="text-xs sm:text-sm">Video</span>
@@ -496,7 +508,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
           <button
             onClick={() => handleFileUpload('video')}
             className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors touch-manipulation active:scale-95"
-            disabled={!creditManager.canAfford('current-user', 50) && !creditManager.isStaffMember('current-user')}
+            disabled={!creditManager.canAfford(user?.id || 'demo-user', 50) && !creditManager.isStaffMember(user?.id || 'demo-user')}
           >
             <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="text-xs sm:text-sm">Audio</span>
@@ -575,11 +587,11 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
           </div>
 
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.senderId === 'current-user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] ${msg.senderId === 'current-user' ? 'order-2' : 'order-1'}`}>
+            <div key={msg.id} className={`flex ${msg.senderId === (user?.id || 'demo-user') ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] ${msg.senderId === (user?.id || 'demo-user') ? 'order-2' : 'order-1'}`}>
                 <div className="flex flex-col space-y-1">
                   <div className={`rounded-2xl p-4 shadow-md ${
-                    msg.senderId === 'current-user'
+                    msg.senderId === (user?.id || 'demo-user')
                       ? 'bg-gradient-to-br from-pink-200 to-pink-300 text-gray-800 border border-pink-400'
                       : 'bg-white text-gray-800 border border-pink-200'
                   }`}>
@@ -589,12 +601,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
                     <p className="text-center text-base font-medium mt-2">{msg.message}</p>
                   </div>
                   <div className={`flex items-center space-x-2 px-2 ${
-                    msg.senderId === 'current-user' ? 'justify-end' : 'justify-start'
+                    msg.senderId === (user?.id || 'demo-user') ? 'justify-end' : 'justify-start'
                   }`}>
                     <p className="text-sm text-gray-600">
                       {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                     </p>
-                    {msg.senderId === 'current-user' && (
+                    {msg.senderId === (user?.id || 'demo-user') && (
                       <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
                       </svg>
@@ -692,7 +704,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
 
             <Button
               onClick={handleSendMessage}
-              disabled={!message.trim() || (!creditManager.canAfford('current-user', 2) && creditManager.getKobos('current-user') === 0 && !creditManager.isStaffMember('current-user'))}
+              disabled={!message.trim() || (!creditManager.canAfford(user?.id || 'demo-user', 2) && creditManager.getKobos(user?.id || 'demo-user') === 0 && !creditManager.isStaffMember(user?.id || 'demo-user'))}
               className="bg-pink-500 text-white p-4 rounded-full hover:bg-pink-600 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation flex-shrink-0 cursor-pointer"
               type="button"
             >

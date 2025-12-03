@@ -44,8 +44,8 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [showPaymentGateway, setShowPaymentGateway] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  
-  const userData = creditManager.getUserData('current-user');
+
+  const userData = creditManager.getUserData(user?.id || 'demo-user');
   const creditPackages = creditManager.getCreditPackages();
   const pricing = creditManager.getPricingStructure();
   const spendingOptions = creditManager.getPricingStructure();
@@ -89,9 +89,9 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
   };
 
   React.useEffect(() => {
-    const report = generateSecurityReport('current-user');
+    const report = generateSecurityReport(user?.id || 'demo-user');
     setSecurityReport(report);
-  }, []);
+  }, [user]);
 
   const handlePurchase = async (product: any) => {
     console.log('Credit package purchase clicked:', product.name);

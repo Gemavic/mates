@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Gift, Heart, Star, Crown, Coffee, Flower2, TrendingUp, Clock, CreditCard } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GiftItem {
   id: string;
@@ -19,7 +20,8 @@ interface GiftShopProps {
 }
 
 export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
-  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits('current-user'));
+  const { user } = useAuth();
+  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
   const giftCatalog: GiftItem[] = [
@@ -73,19 +75,24 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
   const sortedGifts = filteredGifts.sort((a, b) => b.popularity - a.popularity);
 
   const sendGift = (giftId: string, giftName: string, price: number) => {
-    if (!creditManager.canAfford('current-user', price) && !creditManager.isStaffMember('current-user')) {
+    if (!user) {
+      alert('Please sign in to send gifts');
+      return;
+    }
+
+    if (!creditManager.canAfford(user.id, price) && !creditManager.isStaffMember(user.id)) {
       alert(`You need ${formatCredits(price)} to send this gift!`);
       return;
     }
 
-    if (creditManager.isStaffMember('current-user')) {
+    if (creditManager.isStaffMember(user.id)) {
       // Staff members can send gifts for free
-      setUserBalance(creditManager.getTotalCredits('current-user'));
+      setUserBalance(creditManager.getTotalCredits(user.id));
       alert(`🎁 Successfully sent ${giftName} (Staff - Free)!`);
     } else {
-      const success = creditManager.spendCredits('current-user', price, `Sent ${giftName} gift`);
+      const success = creditManager.spendCredits(user.id, price, `Sent ${giftName} gift`);
       if (success) {
-        setUserBalance(creditManager.getTotalCredits('current-user'));
+        setUserBalance(creditManager.getTotalCredits(user.id));
         alert(`🎁 Successfully sent ${giftName} for ${formatCredits(price)}!`);
       } else {
         alert('Failed to send gift. Please try again.');
@@ -191,15 +198,15 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
                 <div className="mt-auto">
                   <Button
                     onClick={() => sendGift(gift.id, gift.name, gift.price)}
-                    disabled={!creditManager.canAfford('current-user', gift.price) && !creditManager.isStaffMember('current-user')}
+                    disabled={!creditManager.canAfford(user?.id || 'demo-user', gift.price) && !creditManager.isStaffMember(user?.id || 'demo-user')}
                     className={`w-full text-xs py-2 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
-                      creditManager.canAfford('current-user', gift.price) || creditManager.isStaffMember('current-user')
+                      creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user')
                         ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:scale-105'
                         : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     }`}
                     type="button"
                   >
-                    {creditManager.canAfford('current-user', gift.price) || creditManager.isStaffMember('current-user') ? 'Send Gift' : 'Need Credits'}
+                    {creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user') ? 'Send Gift' : 'Need Credits'}
                   </Button>
                 </div>
               </div>

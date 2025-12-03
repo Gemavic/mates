@@ -5,6 +5,7 @@ import { creditManager } from '@/lib/creditSystem';
 import { sendProfileViewNotification } from '@/lib/emailNotifications';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProfileCardProps {
   profile: {
@@ -41,37 +42,52 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   const [showMessageBox, setShowMessageBox] = React.useState(false);
   const [message, setMessage] = React.useState('');
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
+  const { user } = useAuth();
 
   // Send profile view notification when card is rendered
   React.useEffect(() => {
-    sendProfileViewNotification(profile.id, {
-      name: 'You',
-      image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-      id: 'current-user'
-    });
-  }, [profile.id]);
+    if (user) {
+      sendProfileViewNotification(profile.id, {
+        name: 'You',
+        image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+        id: user.id
+      });
+    }
+  }, [profile.id, user]);
 
   const handleReport = () => {
+    if (!user) {
+      alert('Please sign in to report users');
+      return;
+    }
     if (onReport) {
       onReport(profile.id);
     }
-    SecurityManager.reportUser(profile.id, 'Inappropriate content', 'current-user');
+    SecurityManager.reportUser(profile.id, 'Inappropriate content', user.id);
     setShowMenu(false);
     alert('User reported. Thank you for keeping our community safe.');
   };
 
   const handleBlock = () => {
+    if (!user) {
+      alert('Please sign in to block users');
+      return;
+    }
     if (onBlock) {
       onBlock(profile.id);
     }
-    SecurityManager.blockUser(profile.id, 'current-user');
+    SecurityManager.blockUser(profile.id, user.id);
     setShowMenu(false);
     alert('User blocked successfully.');
   };
 
   const handleSuperLike = () => {
-    if (creditManager.canAfford('current-user', 5)) {
-     const success = creditManager.deductCredits('current-user', 5);
+    if (!user) {
+      alert('Please sign in to send Super Likes');
+      return;
+    }
+    if (creditManager.canAfford(user.id, 5)) {
+     const success = creditManager.deductCredits(user.id, 5);
       if (success) {
         onSuperLike(profile.id);
         

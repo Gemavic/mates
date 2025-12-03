@@ -333,6 +333,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
 
   useEffect(() => {
     loadProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
 
   const loadProfiles = async () => {

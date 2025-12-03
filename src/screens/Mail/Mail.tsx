@@ -69,8 +69,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits('current-user'));
   const { user } = useAuth();
+  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   
   // Loading state management
   React.useEffect(() => {
@@ -88,10 +88,10 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
   // Update balance periodically
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setUserBalance(creditManager.getTotalCredits('current-user'));
+      setUserBalance(creditManager.getTotalCredits(user?.id || 'demo-user'));
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   // Mock data for demonstration
   const [mailThreads] = useState<MailThread[]>([
@@ -178,17 +178,22 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         }
       }
       
-      const userCredits = creditManager.getUserData(user?.id || 'current-user');
-      if (userCredits.totalCredits < totalCost && !creditManager.isStaffMember(user?.id || 'current-user')) {
+      if (!user) {
+        alert('Please sign in to send messages');
+        return;
+      }
+
+      const userCredits = creditManager.getUserData(user.id);
+      if (userCredits.totalCredits < totalCost && !creditManager.isStaffMember(user.id)) {
         alert(`Insufficient credits! Need ${totalCost} credits to send this message with attachments.`);
         onNavigate('credits');
         return;
       }
-      
+
       // Deduct credits and send message
-      if (totalCost > 0 && !creditManager.isStaffMember(user?.id || 'current-user')) {
-        creditManager.deductCredits(user?.id || 'current-user', totalCost);
-        setUserBalance(creditManager.getTotalCredits('current-user'));
+      if (totalCost > 0 && !creditManager.isStaffMember(user.id)) {
+        creditManager.deductCredits(user.id, totalCost);
+        setUserBalance(creditManager.getTotalCredits(user.id));
       }
       
       // Add message to conversation (in real app, this would be API call)
@@ -219,6 +224,11 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
   };
 
   const handleFileUpload = (type: 'image' | 'camera' | 'file') => {
+    if (!user) {
+      alert('Please sign in to upload files');
+      return;
+    }
+
     try {
       const input = document.createElement('input');
       input.type = 'file';

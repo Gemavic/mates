@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, Phone, Camera, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { useAuth } from '@/hooks/useAuth';
 
 interface VideoChatProps {
   onNavigate: (screen: string) => void;
@@ -16,7 +17,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showVideoSettings, setShowVideoSettings] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits('current-user'));
+  const { user } = useAuth();
+  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
 
   const activeMatches = [
     {
@@ -40,8 +42,13 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   ];
 
   const startVideoCall = (matchName: string) => {
-    const canAfford = creditManager.canAfford('current-user', 60);
-    if (canAfford || creditManager.isStaffMember('current-user')) {
+    if (!user) {
+      alert('Please sign in to make video calls');
+      return;
+    }
+
+    const canAfford = creditManager.canAfford(user.id, 60);
+    if (canAfford || creditManager.isStaffMember(user.id)) {
       setIsInCall(true);
       setCallDuration(0);
       // Start timer for credit deduction
@@ -49,10 +56,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         setCallDuration(prev => {
           const newDuration = prev + 1;
           if (newDuration % 60 === 0) { // Every minute
-           const success = creditManager.deductCredits('current-user', 60);
+           const success = creditManager.deductCredits(user.id, 60);
             if (success) {
-              setUserBalance(creditManager.getTotalCredits('current-user'));
-            } else if (!creditManager.isStaffMember('current-user')) {
+              setUserBalance(creditManager.getTotalCredits(user.id));
+            } else if (!creditManager.isStaffMember(user.id)) {
               endCall();
               // Show error message
               const errorMessage = document.createElement('div');

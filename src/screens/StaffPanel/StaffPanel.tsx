@@ -182,7 +182,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
     { id: 'user1', name: 'John Doe', email: 'john@example.com', credits: 120 },
     { id: 'user2', name: 'Jane Smith', email: 'jane@example.com', credits: 85 },
     { id: 'user3', name: 'Mike Johnson', email: 'mike@example.com', credits: 200 },
-    { id: 'current-user', name: 'Demo User', email: 'demo@example.com', credits: creditManager.getTotalCredits('current-user') }
+    { id: 'demo-user', name: 'Demo User', email: 'demo@example.com', credits: creditManager.getTotalCredits('demo-user') }
   ];
 
   // Filter users based on search term

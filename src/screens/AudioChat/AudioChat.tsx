@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AudioChatProps {
   onNavigate: (screen: string) => void;
@@ -15,7 +16,8 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showAudioSettings, setShowAudioSettings] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits('current-user'));
+  const { user } = useAuth();
+  const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
 
   const activeMatches = [
     {
@@ -39,8 +41,13 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   ];
 
   const startAudioCall = (matchName: string) => {
-    const canAfford = creditManager.canAfford('current-user', 50);
-    if (canAfford || creditManager.isStaffMember('current-user')) {
+    if (!user) {
+      alert('Please sign in to make audio calls');
+      return;
+    }
+
+    const canAfford = creditManager.canAfford(user.id, 50);
+    if (canAfford || creditManager.isStaffMember(user.id)) {
       setIsInCall(true);
       setCallDuration(0);
       // Start timer for credit deduction
@@ -48,10 +55,10 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         setCallDuration(prev => {
           const newDuration = prev + 1;
           if (newDuration % 60 === 0) { // Every minute
-           const success = creditManager.deductCredits('current-user', 50);
+           const success = creditManager.deductCredits(user.id, 50);
             if (success) {
-              setUserBalance(creditManager.getTotalCredits('current-user'));
-            } else if (!creditManager.isStaffMember('current-user')) {
+              setUserBalance(creditManager.getTotalCredits(user.id));
+            } else if (!creditManager.isStaffMember(user.id)) {
               endCall();
               alert('Insufficient credits for audio call!');
             }

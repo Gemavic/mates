@@ -46,7 +46,7 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
 
   const { user, getFirstName, getFullName } = useAuth();
   const categories = getFeedbackCategories();
-  const userFeedback = getUserFeedbackHistory('current-user');
+  const userFeedback = getUserFeedbackHistory(user?.id || 'demo-user');
   const stats = getFeedbackStats();
   const trending = getTrendingFeedback();
 
@@ -56,14 +56,19 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
       return;
     }
 
+    if (!user) {
+      alert('Please sign in to submit feedback');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const tags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-      
+
       const feedbackId = submitFeedback(
-        'current-user',
-        user?.email || 'user@example.com',
+        user.id,
+        user.email || 'user@example.com',
         getFullName(),
         selectedCategory as any,
         formData.title,
