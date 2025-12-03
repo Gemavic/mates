@@ -60,37 +60,71 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
       icon: DollarSign,
       title: 'Budget Planning',
       description: 'Create sustainable spending plans',
-      color: 'from-green-500 to-emerald-500'
+      color: 'from-green-500 to-emerald-500',
+      action: () => {
+        setActiveTab('calculators');
+        setTimeout(() => {
+          const element = document.querySelector('[data-calculator="budget"]');
+          element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     },
     {
       icon: TrendingUp,
       title: 'Investment Advice',
       description: 'Smart investing strategies',
-      color: 'from-blue-500 to-cyan-500'
+      color: 'from-blue-500 to-cyan-500',
+      action: () => {
+        setActiveTab('calculators');
+        setTimeout(() => {
+          const element = document.querySelector('[data-calculator="investment"]');
+          element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     },
     {
       icon: PieChart,
       title: 'Wealth Management',
       description: 'Grow and protect your assets',
-      color: 'from-purple-500 to-violet-500'
+      color: 'from-purple-500 to-pink-500',
+      action: () => {
+        setActiveTab('tips');
+        setTimeout(() => {
+          setExpandedTip(5);
+        }, 100);
+      }
     },
     {
       icon: Target,
       title: 'Financial Goals',
       description: 'Plan for your future dreams',
-      color: 'from-orange-500 to-amber-500'
+      color: 'from-orange-500 to-amber-500',
+      action: () => {
+        setActiveTab('calculators');
+        setTimeout(() => {
+          const element = document.querySelector('[data-calculator="savings"]');
+          element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     },
     {
       icon: Briefcase,
       title: 'Retirement Planning',
       description: 'Secure your future retirement',
-      color: 'from-red-500 to-pink-500'
+      color: 'from-red-500 to-pink-500',
+      action: () => {
+        setActiveTab('tips');
+        setTimeout(() => {
+          setExpandedTip(1);
+        }, 100);
+      }
     },
     {
       icon: BookOpen,
       title: 'Financial Literacy',
       description: 'Learn money management skills',
-      color: 'from-teal-500 to-cyan-500'
+      color: 'from-teal-500 to-cyan-500',
+      action: () => setActiveTab('tips')
     }
   ];
 
@@ -305,6 +339,28 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
           <p className="text-white/80 text-sm">Plan, calculate, and learn your way to financial freedom</p>
         </div>
 
+        <div className="mb-6">
+          <h3 className="text-white font-semibold text-base mb-3">Quick Access</h3>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {services.slice(0, 4).map((service, index) => {
+              const Icon = service.icon;
+              return (
+                <button
+                  key={index}
+                  onClick={service.action}
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center hover:bg-white/20 hover:scale-105 transition-all duration-300 cursor-pointer active:scale-95"
+                >
+                  <div className={`w-10 h-10 mx-auto mb-2 bg-gradient-to-r ${service.color} rounded-full flex items-center justify-center`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h4 className="text-white font-medium text-xs mb-1">{service.title}</h4>
+                  <p className="text-white/70 text-xs">{service.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex gap-2 mb-6 bg-white/10 backdrop-blur-sm rounded-full p-1">
           <button
             onClick={() => setActiveTab('calculators')}
@@ -343,7 +399,7 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
 
         {activeTab === 'calculators' && (
           <div className="space-y-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5" data-calculator="investment">
               <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mr-3">
                   <TrendingUp className="w-5 h-5 text-white" />
@@ -417,7 +473,7 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5" data-calculator="savings">
               <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mr-3">
                   <Target className="w-5 h-5 text-white" />
@@ -485,7 +541,7 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5" data-calculator="budget">
               <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
                   <PieChart className="w-5 h-5 text-white" />
@@ -623,16 +679,17 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
                 {services.map((service, index) => {
                   const Icon = service.icon;
                   return (
-                    <div
+                    <button
                       key={index}
-                      className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center"
+                      onClick={service.action}
+                      className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center hover:bg-white/20 hover:scale-105 transition-all duration-300 cursor-pointer active:scale-95"
                     >
                       <div className={`w-10 h-10 mx-auto mb-2 bg-gradient-to-r ${service.color} rounded-full flex items-center justify-center`}>
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <h4 className="text-white font-medium text-xs mb-1">{service.title}</h4>
                       <p className="text-white/70 text-xs">{service.description}</p>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
