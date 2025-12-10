@@ -58,25 +58,24 @@ export type Database = {
     Tables: {
       user_profiles: {
         Row: {
-          id: string;
           user_id: string;
           email: string | null;
-          full_name: string;
+          full_name: string | null;
           first_name: string | null;
           age: number | null;
           location: string | null;
           occupation: string | null;
           education: string | null;
-          bio: string;
-          interests: string[];
-          looking_for: string;
-          distance_preference: number;
-          age_range_min: number;
-          age_range_max: number;
+          bio: string | null;
+          interests: any;
+          looking_for: string | null;
+          distance_preference: number | null;
+          age_range_min: number | null;
+          age_range_max: number | null;
           is_verified: boolean;
-          verification_status: string;
+          verification_status: string | null;
           is_online: boolean;
-          last_active: string;
+          last_active: string | null;
           show_online_status: boolean;
           profile_visibility: string;
           created_at: string;
