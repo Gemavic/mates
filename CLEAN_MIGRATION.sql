@@ -71,19 +71,19 @@ CREATE POLICY "own_profile_update" ON user_profiles FOR UPDATE USING (user_id = 
 CREATE POLICY "own_credits_view" ON user_credits FOR SELECT USING (user_id = auth.uid());
 
 CREATE OR REPLACE FUNCTION create_user_profile_on_signup()
-RETURNS TRIGGER AS \$\$
+RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO user_profiles (user_id, email)
   VALUES (NEW.id, NEW.email)
   ON CONFLICT DO NOTHING;
-  
+
   INSERT INTO user_credits (user_id, complimentary_credits)
   VALUES (NEW.id, 50)
   ON CONFLICT DO NOTHING;
-  
+
   RETURN NEW;
 END;
-\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER create_user_profile_on_signup
   AFTER INSERT ON auth.users
