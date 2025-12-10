@@ -10,14 +10,17 @@ Your website is pointing to a Supabase database that doesn't have the required t
 
 **Use this if:** You want to keep using `zdkxonufiuagkrhprnbd.supabase.co`
 
-1. **Go to Supabase SQL Editor:**
-   - https://supabase.com/dashboard/project/zdkxonufiuagkrhprnbd/sql
+1. **First, check what you already have:**
+   - Go to: https://supabase.com/dashboard/project/zdkxonufiuagkrhprnbd/sql
+   - Copy content from: `CHECK_EXISTING_SCHEMA.sql`
+   - Paste and click "Run"
+   - This shows what tables/types already exist
 
 2. **Click "New Query"**
 
 3. **Copy ALL content from:**
-   - File: `MASTER_MIGRATION_COMBINED.sql` (in your project root)
-   - It's 3,604 lines combining all 29 migrations
+   - File: `SAFE_MIGRATION_MASTER.sql` (in your project root)
+   - This safely handles existing objects (drops and recreates types, uses IF NOT EXISTS)
 
 4. **Paste into SQL Editor**
 
@@ -73,7 +76,7 @@ DIRECT_URL="your-new-direct-connection-string"
 
 4. **Apply migrations to new database:**
    - Open SQL Editor for your new project
-   - Run `MASTER_MIGRATION_COMBINED.sql`
+   - Run `SAFE_MIGRATION_MASTER.sql`
 
 5. **Disable email confirmation** (same as PATH A step 8)
 
@@ -102,9 +105,9 @@ DIRECT_URL="your-new-direct-connection-string"
 - ✅ You want to choose a different region
 - ✅ Current project has other stuff you don't want to touch
 
-## What's in MASTER_MIGRATION_COMBINED.sql?
+## What's in SAFE_MIGRATION_MASTER.sql?
 
-This file contains ALL your database setup:
+This file contains ALL your database setup and safely handles existing objects:
 
 **Tables Created (25+):**
 - User profiles and photos
@@ -245,10 +248,11 @@ If you're stuck:
 **For PATH A (use current database):**
 ```
 1. Open: https://supabase.com/dashboard/project/zdkxonufiuagkrhprnbd/sql
-2. Copy content from: MASTER_MIGRATION_COMBINED.sql
-3. Paste and Run
-4. Disable email confirmation
-5. Test website
+2. (Optional) Run CHECK_EXISTING_SCHEMA.sql to see what exists
+3. Copy content from: SAFE_MIGRATION_MASTER.sql
+4. Paste and Run
+5. Disable email confirmation
+6. Test website
 ```
 
 **For PATH B (switch database):**
@@ -256,7 +260,7 @@ If you're stuck:
 1. Choose which Supabase project
 2. Get all credentials
 3. Update .env file
-4. Run MASTER_MIGRATION_COMBINED.sql on new project
+4. Run SAFE_MIGRATION_MASTER.sql on new project
 5. Disable email confirmation
 6. Update Vercel environment variables
 7. Redeploy
