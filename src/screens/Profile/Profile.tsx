@@ -330,7 +330,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
   return (
     <Layout
-      title="My Profile"
+      title={`${getFirstName()}'s Profile`}
       showBack={true}
       onBack={() => onNavigate('discovery')}
       showClose={false}

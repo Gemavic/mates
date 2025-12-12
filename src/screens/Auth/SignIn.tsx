@@ -16,12 +16,49 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
   const { signIn } = useAuth();
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!resetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+      setErrors(['Please enter a valid email address']);
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors([]);
+
+    try {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        setErrors([error.message]);
+      } else {
+        setResetSent(true);
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setResetSent(false);
+          setResetEmail('');
+        }, 5000);
+      }
+    } catch (error: any) {
+      setErrors([error?.message || 'Failed to send reset email']);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +199,61 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+
+              {/* Forgot Password Link */}
+              <div className="mt-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(!showForgotPassword)}
+                  className="text-white/90 text-sm hover:text-white hover:underline transition-all"
+                >
+                  Forgot Password?
+                </button>
+              </div>
             </div>
+
+            {/* Forgot Password Form */}
+            {showForgotPassword && (
+              <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                <h3 className="text-white font-semibold mb-3">Reset Password</h3>
+                {resetSent ? (
+                  <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
+                    <p className="text-green-200 text-sm">
+                      Password reset link sent! Check your email inbox.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-3">
+                    <div>
+                      <Input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        className="bg-white/90 h-11"
+                        required
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        type="button"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="flex-1 h-10 bg-gray-500 text-white rounded-xl hover:bg-gray-600"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="flex-1 h-10 bg-pink-500 text-white rounded-xl hover:bg-pink-600"
+                      >
+                        {isLoading ? 'Sending...' : 'Send Reset Link'}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
 
             <Button
               type="submit"
