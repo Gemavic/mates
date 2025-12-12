@@ -103,10 +103,15 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       }
 
       // Attempt sign up
+      console.log('Attempting signup with:', { email: formData.email, name: formData.name });
       const { error, data } = await signUp(formData.email, formData.password, formData.name);
 
       if (error) {
-        console.error('Sign up error:', error);
+        console.error('Sign up error details:', {
+          message: error.message,
+          error: error,
+          data: data
+        });
         toast({
           title: 'Error',
           description: error.message || 'Failed to create account. Please try again.',
@@ -115,6 +120,8 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         setIsLoading(false);
         return;
       }
+
+      console.log('Signup successful, user data:', data);
 
       // Initialize user credits
       if (data?.user?.id) {

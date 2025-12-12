@@ -67,6 +67,8 @@ export const useAuth = () => {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    console.log('useAuth.signUp called with:', { email, fullName });
+
     const { data, error } = await supabaseClient.auth.signUp({
       email,
       password,
@@ -77,28 +79,49 @@ export const useAuth = () => {
       },
     });
 
+    console.log('Supabase auth.signUp response:', { data, error });
+
     if (error) {
+      console.error('Auth signup error:', error);
       return { data: null, error: { message: error.message } };
     }
 
     // Profile is now created automatically by database trigger
     // Wait a moment for trigger to complete
     if (data.user) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('User created, waiting for trigger to complete...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Verify profile was created
       try {
+        console.log('Checking if profile was created by trigger...');
         const profile = await ProfileManager.getProfile(data.user.id);
+
         if (!profile) {
           // Trigger didn't work, create manually as fallback
-          console.log('Creating profile manually as fallback');
-          await createUserProfile(data.user.id, {
-            email,
-            full_name: fullName,
-          });
+          console.log('Profile not found, creating manually as fallback');
+          try {
+            await createUserProfile(data.user.id, {
+              email,
+              full_name: fullName,
+            });
+            console.log('Profile created manually successfully');
+          } catch (createError: any) {
+            console.error('Failed to create profile manually:', createError);
+            return {
+              data: null,
+              error: { message: `Database error saving new user: ${createError.message}` }
+            };
+          }
+        } else {
+          console.log('Profile found, trigger worked correctly');
         }
-      } catch (profileError) {
+      } catch (profileError: any) {
         console.error('Profile check/creation error:', profileError);
+        return {
+          data: null,
+          error: { message: `Database error saving new user: ${profileError.message}` }
+        };
       }
     }
 
