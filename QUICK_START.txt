@@ -1,0 +1,63 @@
+================================================================================
+  SUPABASE SIGNUP FIX MIGRATION - QUICK START
+================================================================================
+
+PROBLEM: RLS policies blocking user profile creation during signup
+
+SOLUTION: Apply the migration to fix trigger permissions
+
+================================================================================
+  APPLY MIGRATION NOW (3 Simple Steps)
+================================================================================
+
+Step 1: Open Supabase SQL Editor
+        https://supabase.com/dashboard/project/zdkxonufiuagkrhprnbd/sql
+
+Step 2: Copy this file's contents:
+        /tmp/cc-agent/60502529/project/fix_rls_trigger_signup.sql
+
+Step 3: Paste into SQL Editor and click "Run"
+
+================================================================================
+  WHAT IT DOES
+================================================================================
+
+✓ Drops old trigger and function
+✓ Sets default values on user_profiles columns  
+✓ Creates service_role bypass RLS policies
+✓ Creates new SECURITY DEFINER trigger function
+✓ Recreates trigger with proper error handling
+
+================================================================================
+  VERIFICATION (After applying)
+================================================================================
+
+1. Test user signup through your app
+2. Check that user profiles are created automatically
+3. Verify users get 10 initial credits
+
+Or run these SQL queries:
+
+  SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
+  SELECT proname, prosecdef FROM pg_proc WHERE proname = 'handle_new_user';
+
+================================================================================
+  FILES CREATED
+================================================================================
+
+fix_rls_trigger_signup.sql          - The migration SQL (327 lines)
+APPLY_SIGNUP_FIX_MIGRATION.md       - Detailed documentation
+MIGRATION_SUMMARY.md                - Summary of changes
+QUICK_START.txt                     - This file
+
+================================================================================
+  NEED HELP?
+================================================================================
+
+See: APPLY_SIGNUP_FIX_MIGRATION.md for:
+  - Detailed instructions
+  - Alternative application methods
+  - Troubleshooting guide
+  - Rollback instructions
+
+================================================================================
