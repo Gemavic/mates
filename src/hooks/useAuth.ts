@@ -87,42 +87,25 @@ export const useAuth = () => {
     }
 
     // Profile is now created automatically by database trigger
-    // Wait a moment for trigger to complete
+    // Allow signup to succeed even if profile creation has delays
     if (data.user) {
-      console.log('User created, waiting for trigger to complete...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('User created successfully');
 
-      // Verify profile was created
-      try {
-        console.log('Checking if profile was created by trigger...');
-        const profile = await ProfileManager.getProfile(data.user.id);
-
-        if (!profile) {
-          // Trigger didn't work, create manually as fallback
-          console.log('Profile not found, creating manually as fallback');
-          try {
+      // Try to create profile in background (non-blocking)
+      setTimeout(async () => {
+        try {
+          const profile = await ProfileManager.getProfile(data.user.id);
+          if (!profile) {
+            console.log('Creating profile as fallback...');
             await createUserProfile(data.user.id, {
               email,
               full_name: fullName,
             });
-            console.log('Profile created manually successfully');
-          } catch (createError: any) {
-            console.error('Failed to create profile manually:', createError);
-            return {
-              data: null,
-              error: { message: `Database error saving new user: ${createError.message}` }
-            };
           }
-        } else {
-          console.log('Profile found, trigger worked correctly');
+        } catch (err) {
+          console.warn('Background profile creation failed:', err);
         }
-      } catch (profileError: any) {
-        console.error('Profile check/creation error:', profileError);
-        return {
-          data: null,
-          error: { message: `Database error saving new user: ${profileError.message}` }
-        };
-      }
+      }, 100);
     }
 
     return { data, error };
