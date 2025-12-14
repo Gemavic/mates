@@ -5,12 +5,25 @@ import { cn } from '@/lib/utils';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 
+interface SelectedChatUser {
+  id: string;
+  name: string;
+  image: string;
+}
+
 interface MenuProps {
   onNavigate: (screen: any) => void;
   currentScreen: string;
+  selectedChatUser?: SelectedChatUser | null;
+  onSelectChatUser?: (user: SelectedChatUser | null) => void;
 }
 
-export const Menu: React.FC<MenuProps> = ({ onNavigate, currentScreen }) => {
+export const Menu: React.FC<MenuProps> = ({
+  onNavigate,
+  currentScreen,
+  selectedChatUser,
+  onSelectChatUser
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, getFirstName } = useAuth();
 
@@ -149,7 +162,11 @@ export const Menu: React.FC<MenuProps> = ({ onNavigate, currentScreen }) => {
 
       {/* Message Chat Box */}
       <div className="fixed top-4 sm:top-6 right-2 sm:right-4 z-50 safe-area-inset-top">
-        <MessageChatBox />
+        <MessageChatBox
+          selectedUserId={selectedChatUser?.id}
+          selectedUserName={selectedChatUser?.name}
+          selectedUserImage={selectedChatUser?.image}
+        />
       </div>
       {/* Menu Overlay */}
       {isOpen && (

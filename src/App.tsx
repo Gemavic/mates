@@ -44,10 +44,17 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
 
+interface SelectedChatUser {
+  id: string;
+  name: string;
+  image: string;
+}
+
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [staffAuth, setStaffAuth] = useState<any>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
   const { user, loading } = useAuth();
 
   // Check for existing staff authentication - simplified
@@ -264,7 +271,7 @@ const App: React.FC = () => {
         return <BrowseProfiles onNavigate={handleNavigate} />;
 
       case 'matches':
-        return <Matches onNavigate={handleNavigate} />;
+        return <Matches onNavigate={handleNavigate} onSelectChatUser={setSelectedChatUser} />;
       
       case 'likes':
         return <Likes onNavigate={handleNavigate} />;
@@ -373,7 +380,12 @@ const App: React.FC = () => {
         <SEO {...getSEOProps()} />
 
         {/* Menu Component - Always Available */}
-        <Menu onNavigate={handleNavigate} currentScreen={currentScreen} />
+        <Menu
+          onNavigate={handleNavigate}
+          currentScreen={currentScreen}
+          selectedChatUser={selectedChatUser}
+          onSelectChatUser={setSelectedChatUser}
+        />
 
         {/* Current Screen Content */}
         <div className="relative z-10 w-full min-h-screen">
