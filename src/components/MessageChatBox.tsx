@@ -17,6 +17,9 @@ interface GiftItem {
 
 interface MessageChatBoxProps {
   className?: string;
+  selectedUserId?: string;
+  selectedUserName?: string;
+  selectedUserImage?: string;
 }
 
 interface ChatMessage {
@@ -42,7 +45,12 @@ interface ChatThread {
   isTyping: boolean;
 }
 
-export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }) => {
+export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
+  className = "",
+  selectedUserId,
+  selectedUserName,
+  selectedUserImage
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeThread, setActiveThread] = useState<string | null>(null);
   const [message, setMessage] = useState('');
@@ -50,8 +58,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
   const [isTyping, setIsTyping] = useState(false);
   const [userBalance, setUserBalance] = useState(0);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
+  const [userProfileImage, setUserProfileImage] = useState('https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { getFirstName, user } = useAuth();
+  const { getFirstName, user, profile } = useAuth();
 
   // Load user credits from database
   useEffect(() => {
@@ -64,6 +73,22 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
         .catch(err => console.error('Failed to load credits:', err));
     }
   }, [user]);
+
+  // Update user profile image from profile data
+  useEffect(() => {
+    if (profile?.photo_url) {
+      setUserProfileImage(profile.photo_url);
+    }
+  }, [profile]);
+
+  // Update chat threads when selected user changes
+  useEffect(() => {
+    setChatThreads(getInitialThreads());
+    setMessages(getInitialMessages());
+    if (selectedUserId) {
+      setActiveThread(`thread-${selectedUserId}`);
+    }
+  }, [selectedUserId, selectedUserName, selectedUserImage]);
 
   // Quick gift items for chat
   const quickGifts: GiftItem[] = [
@@ -81,8 +106,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
     { id: 'birthday_cake', name: 'Cake', emoji: '🎂', price: 10, category: 'fun' }
   ];
 
-  // Sample chat threads matching La-Date style
-  const [chatThreads, setChatThreads] = useState<ChatThread[]>([
+  const defaultThreads: ChatThread[] = [
     {
       id: 'thread-gabriela',
       participantId: 'gabriela-id',
@@ -137,29 +161,63 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
       isOnline: true,
       isTyping: false
     }
-  ]);
+  ];
 
-  // Sample messages for active thread
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-gabriela-1',
-      senderId: 'gabriela-id',
-      senderName: 'Gabriela',
-      senderImage: 'https://images.pexels.com/photos/1441151/pexels-photo-1441151.jpeg?auto=compress&cs=tinysrgb&w=400',
-      message: 'Hey! How are you doing today? Hope you\'re having a great day! 😊',
-      timestamp: new Date(Date.now() - 2 * 60 * 1000),
-      type: 'text'
-    },
-    {
-      id: 'msg-user-1',
-      senderId: user?.id || 'demo-user',
-      senderName: 'You',
-      senderImage: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-      message: 'Winked',
-      timestamp: new Date(Date.now() - 1 * 60 * 1000),
-      type: 'text'
+  const getInitialThreads = (): ChatThread[] => {
+    if (selectedUserId && selectedUserName && selectedUserImage) {
+      return [
+        {
+          id: `thread-${selectedUserId}`,
+          participantId: selectedUserId,
+          participantName: selectedUserName,
+          participantImage: selectedUserImage,
+          lastMessage: {
+            id: `msg-${selectedUserId}`,
+            senderId: selectedUserId,
+            senderName: selectedUserName,
+            senderImage: selectedUserImage,
+            message: `Hey! Nice to meet you 😊`,
+            timestamp: new Date(),
+            type: 'text'
+          },
+          unreadCount: 0,
+          isOnline: true,
+          isTyping: false
+        }
+      ];
     }
-  ]);
+    return defaultThreads;
+  };
+
+  const [chatThreads, setChatThreads] = useState<ChatThread[]>(getInitialThreads());
+
+  const getInitialMessages = (): ChatMessage[] => {
+    if (selectedUserId && selectedUserName && selectedUserImage) {
+      return [];
+    }
+    return [
+      {
+        id: 'msg-gabriela-1',
+        senderId: 'gabriela-id',
+        senderName: 'Gabriela',
+        senderImage: 'https://images.pexels.com/photos/1441151/pexels-photo-1441151.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Hey! How are you doing today? Hope you\'re having a great day! 😊',
+        timestamp: new Date(Date.now() - 2 * 60 * 1000),
+        type: 'text'
+      },
+      {
+        id: 'msg-user-1',
+        senderId: user?.id || 'demo-user',
+        senderName: 'You',
+        senderImage: userProfileImage,
+        message: 'Winked',
+        timestamp: new Date(Date.now() - 1 * 60 * 1000),
+        type: 'text'
+      }
+    ];
+  };
+
+  const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages());
 
   const emojis = [
     '😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '✨', 
@@ -206,7 +264,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
         id: Date.now().toString(),
         senderId: user.id,
         senderName: 'You',
-        senderImage: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+        senderImage: userProfileImage,
         message: message.trim(),
         timestamp: new Date(),
         type: 'text'
@@ -242,7 +300,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
         if (user) {
           sendMessageNotification(activeThreadData.participantId, {
             name: 'You',
-            image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+            image: userProfileImage,
             id: user.id
           });
         }
@@ -299,7 +357,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({ className = "" }
         id: Date.now().toString(),
         senderId: user.id,
         senderName: 'You',
-        senderImage: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+        senderImage: userProfileImage,
         message: `Sent ${gift.emoji} ${gift.name}`,
         timestamp: new Date(),
         type: 'text'

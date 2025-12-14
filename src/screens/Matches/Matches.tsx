@@ -4,13 +4,19 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
 import { MessageCircle, Heart, Mail as MailIcon, User, Users, Newspaper, MessageSquare, CreditCard } from 'lucide-react';
 import { sendMessageNotification } from '@/lib/emailNotifications';
-import { MessageChatBox } from '@/components/MessageChatBox';
+
+interface SelectedChatUser {
+  id: string;
+  name: string;
+  image: string;
+}
 
 interface MatchesProps {
   onNavigate: (screen: string) => void;
+  onSelectChatUser?: (user: SelectedChatUser | null) => void;
 }
 
-export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
+export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   
   React.useEffect(() => {
@@ -106,8 +112,14 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 key={match.id}
                 onClick={(e) => {
                   e.preventDefault();
-                  // Open chat with this match
-                  onNavigate('matches');
+                  // Select this user for chat
+                  if (onSelectChatUser) {
+                    onSelectChatUser({
+                      id: match.id,
+                      name: match.name,
+                      image: match.image
+                    });
+                  }
                 }}
                 className="py-3 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 transition-all duration-300 touch-manipulation active:scale-[0.98] rounded-lg hover:shadow-md"
                 role="button"
@@ -222,7 +234,17 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               if (tab.isChat) {
                 return (
                   <div key={tab.id} className="flex flex-col items-center py-1 sm:py-2 px-1 sm:px-2 md:px-3 min-w-0">
-                    <MessageChatBox />
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer touch-manipulation active:scale-95"
+                      type="button"
+                      aria-label="Open chat"
+                    >
+                      <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+                    </button>
                     <span className="text-xs font-medium text-gray-600 mt-0.5 sm:mt-1 truncate hidden sm:block">{tab.label}</span>
                   </div>
                 );
