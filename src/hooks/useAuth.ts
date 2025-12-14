@@ -1,32 +1,38 @@
 import { useState, useEffect } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { createUserProfile, getUserProfile, ProfileManager } from '@/lib/database';
+import { anonymousAuth } from '@/lib/anonymousAuth';
 import type { User } from '@supabase/supabase-js';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         setUser(session?.user ?? null);
+        setIsAnonymous(session?.user?.is_anonymous || false);
       } catch (error) {
         console.warn('Failed to initialize auth:', error);
       } finally {
         setLoading(false);
       }
     };
-      
+
     initializeAuth();
 
     // Listen for auth changes
     const authClient = supabaseClient;
     const subscription = authClient.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
+      (async () => {
+        setUser(session?.user ?? null);
+        setIsAnonymous(session?.user?.is_anonymous || false);
+        setLoading(false);
+      })();
     });
 
     return () => subscription.data.subscription.unsubscribe();
@@ -142,13 +148,45 @@ export const useAuth = () => {
     localStorage.setItem('hasLoggedInBefore', 'true');
   };
 
+  const signInAnonymously = async () => {
+    const { data, error } = await anonymousAuth.signInAnonymously();
+
+    if (error) {
+      return { data: null, error: { message: error.message } };
+    }
+
+    return { data, error: null };
+  };
+
+  const upgradeToEmailPassword = async (email: string, password: string) => {
+    const result = await anonymousAuth.upgradeToEmailPassword(email, password);
+
+    if (result.success) {
+      return { data: result, error: null };
+    }
+
+    return { data: null, error: { message: result.error || 'Upgrade failed' } };
+  };
+
+  const getAnonymousUserData = async () => {
+    if (!user || !isAnonymous) {
+      return null;
+    }
+
+    return await anonymousAuth.getAnonymousUserDataSummary(user.id);
+  };
+
   return {
     user,
     profile,
     loading,
+    isAnonymous,
     signIn,
     signUp,
     signOut,
+    signInAnonymously,
+    upgradeToEmailPassword,
+    getAnonymousUserData,
     getFirstName,
     getFullName,
     isReturningUser,
