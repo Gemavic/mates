@@ -82,6 +82,7 @@ export const useAuth = () => {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: undefined,
       },
     });
 

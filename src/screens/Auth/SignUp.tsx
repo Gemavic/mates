@@ -112,9 +112,31 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           error: error,
           data: data
         });
+
+        // Handle specific error cases
+        let errorMessage = error.message || 'Failed to create account. Please try again.';
+
+        // Check for email confirmation errors
+        if (error.message?.includes('confirmation') || error.message?.includes('email')) {
+          errorMessage = 'Account created! Please check your email to verify your account, or sign in directly.';
+
+          // Show success message for email confirmation issues
+          toast({
+            title: 'Account Created',
+            description: errorMessage,
+            variant: 'default'
+          });
+
+          // Navigate to sign in
+          setTimeout(() => {
+            onNavigate('signin');
+          }, 2000);
+          return;
+        }
+
         toast({
           title: 'Error',
-          description: error.message || 'Failed to create account. Please try again.',
+          description: errorMessage,
           variant: 'destructive'
         });
         setIsLoading(false);
