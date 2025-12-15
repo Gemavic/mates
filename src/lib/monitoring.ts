@@ -137,7 +137,7 @@ class MonitoringService {
       const startTime = performance.now();
       const { error } = await supabase
         .from('user_profiles')
-        .select('id')
+        .select('user_id')
         .limit(1)
         .maybeSingle();
 
@@ -192,6 +192,7 @@ class MonitoringService {
 
   private async checkAPI(): Promise<{ status: 'ok' | 'error'; message?: string }> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl) {
       return {
@@ -200,9 +201,20 @@ class MonitoringService {
       };
     }
 
+    if (!supabaseAnonKey) {
+      return {
+        status: 'error',
+        message: 'Supabase anon key not configured',
+      };
+    }
+
     try {
       const response = await fetch(`${supabaseUrl}/rest/v1/`, {
         method: 'HEAD',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
       });
 
       if (!response.ok) {
