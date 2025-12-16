@@ -327,6 +327,65 @@ export class MessagingManager {
     return data;
   }
 
+  // Simple message sending that auto-creates thread if needed
+  static async sendMessage(senderId: string, recipientId: string, message: string) {
+    try {
+      // Ensure participants are in correct order for constraint
+      const [participant1, participant2] = [senderId, recipientId].sort();
+
+      // Find or create mail thread
+      let { data: thread, error: threadError } = await supabaseClient
+        .from('mail_threads')
+        .select('id')
+        .eq('participant1_id', participant1)
+        .eq('participant2_id', participant2)
+        .maybeSingle();
+
+      if (threadError) throw threadError;
+
+      if (!thread) {
+        // Create new thread
+        const { data: newThread, error: createError } = await supabaseClient
+          .from('mail_threads')
+          .insert({
+            participant1_id: participant1,
+            participant2_id: participant2
+          })
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        thread = newThread;
+      }
+
+      // Send message
+      const { data: messageData, error: messageError } = await supabaseClient
+        .from('mail_messages')
+        .insert({
+          thread_id: thread.id,
+          sender_id: senderId,
+          subject: 'Chat Message',
+          message_text: message,
+          credits_spent: 2
+        })
+        .select()
+        .single();
+
+      if (messageError) throw messageError;
+
+      // Update thread timestamp
+      await supabaseClient
+        .from('mail_threads')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', thread.id);
+
+      return { data: messageData, error: null };
+    } catch (error) {
+      console.error('Send message error:', error);
+      return { data: null, error };
+    }
+  }
+
   static async getMailThreads(userId: string) {
     const { data, error } = await supabaseClient
       .from('mail_threads')

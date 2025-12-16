@@ -236,7 +236,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     try {
       if (!message.trim()) return;
 
@@ -259,9 +259,21 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       // Update balance after successful credit deduction
       setUserBalance(creditManager.getTotalCredits(user.id));
 
-      // Only NOW create and send the message (after credits are deducted)
+      // CRITICAL FIX: Save message to database
+      const { data: savedMessage, error: messageError } = await MessagingManager.sendMessage(
+        user.id,
+        activeThreadData.participantId,
+        message.trim()
+      );
+
+      if (messageError) {
+        console.error('Database save error:', messageError);
+        throw new Error('Failed to save message to database');
+      }
+
+      // Create message object for UI
       const newMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: savedMessage?.id || Date.now().toString(),
         senderId: user.id,
         senderName: 'You',
         senderImage: userProfileImage,
@@ -311,6 +323,11 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     } catch (error) {
       console.error('Message send error:', error);
       alert('Failed to send message. Please try again.');
+      // Refund credits on error
+      if (user) {
+        creditManager.addCredits(user.id, 2);
+        setUserBalance(creditManager.getTotalCredits(user.id));
+      }
     }
   };
 

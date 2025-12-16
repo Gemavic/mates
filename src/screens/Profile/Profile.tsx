@@ -361,6 +361,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
           <div className="relative inline-block">
             <img
               src={
+                profile?.photo_url ||
                 userPhotos.find(p => p.isPrimary)?.url ||
                 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400'
               }
@@ -396,30 +397,51 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                     reader.onload = async (e) => {
                       const dataUrl = e.target?.result as string;
 
-                      // Set as primary photo or add to gallery
-                      const { error } = await supabaseClient
-                        .from('user_photos')
-                        .insert({
-                          user_id: user.id,
-                          photo_url: dataUrl,
-                          is_primary: true,
-                          upload_order: 1
-                        })
-                        .select()
-                        .single();
+                      // CRITICAL: Update user_profiles.photo_url first for immediate visibility
+                      const { error: profileError } = await supabaseClient
+                        .from('user_profiles')
+                        .update({ photo_url: dataUrl })
+                        .eq('user_id', user.id);
 
-                      if (error) {
-                        // If primary already exists, update it
+                      if (profileError) {
+                        console.error('Failed to update profile photo:', profileError);
+                        throw profileError;
+                      }
+
+                      // Then update or insert into user_photos
+                      const { data: existingPrimary, error: checkError } = await supabaseClient
+                        .from('user_photos')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .eq('is_primary', true)
+                        .maybeSingle();
+
+                      if (checkError) throw checkError;
+
+                      if (existingPrimary) {
+                        // Update existing primary photo
                         const { error: updateError } = await supabaseClient
                           .from('user_photos')
-                          .update({ photo_url: dataUrl, is_primary: true })
-                          .eq('user_id', user.id)
-                          .eq('is_primary', true);
+                          .update({ photo_url: dataUrl })
+                          .eq('id', existingPrimary.id);
 
                         if (updateError) throw updateError;
+                      } else {
+                        // Insert new primary photo
+                        const { error: insertError } = await supabaseClient
+                          .from('user_photos')
+                          .insert({
+                            user_id: user.id,
+                            photo_url: dataUrl,
+                            is_primary: true,
+                            upload_order: 1
+                          });
+
+                        if (insertError) throw insertError;
                       }
 
                       await loadUserPhotos();
+                      await loadUserProfile();
 
                       const successMessage = document.createElement('div');
                       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';

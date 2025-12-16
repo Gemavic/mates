@@ -260,7 +260,7 @@ const mockProfiles: Profile[] = [
   },
 ];
 
-function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike: (profileId: string) => void; onNavigate: (screen: string) => void }) {
+function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike: (profileId: string) => void; onNavigate: (screen: string, params?: any) => void }) {
   const [isLiked, setIsLiked] = useState(false);
 
   const handleLikeClick = () => {
@@ -311,7 +311,7 @@ function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike
 
       <div className="p-2.5">
         <button
-          onClick={() => onNavigate('profile')}
+          onClick={() => onNavigate('view-profile', { userId: profile.id })}
           className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all duration-300 hover:shadow-md hover:from-orange-600 hover:to-orange-700 active:scale-98"
         >
           View Profile
@@ -322,7 +322,7 @@ function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike
 }
 
 interface BrowseProfilesProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, params?: any) => void;
 }
 
 function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
@@ -387,6 +387,12 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       const primaryPhotos = await Promise.all(
         dbProfiles.map(async (profile, index) => {
           try {
+            // CRITICAL FIX: Check profile.photo_url first (from user_profiles table)
+            if (profile.photo_url) {
+              return profile.photo_url;
+            }
+
+            // Then check user_photos table for primary photo
             const { data } = await supabaseClient
               .from('user_photos')
               .select('photo_url')
