@@ -6,7 +6,7 @@ import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 
 interface MatchSuitorProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, params?: { userId?: string }) => void;
 }
 
 export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
@@ -177,9 +177,9 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                   >
                     {user && creditManager.canAfford(user.id, 1) ? 'Super Like (1 Credit)' : 'Need Credits'}
                   </Button>
-                  <Button 
+                  <Button
                     className="flex-1 bg-white/20 text-white text-sm hover:bg-white/30"
-                    onClick={() => onNavigate('profile')}
+                    onClick={() => onNavigate('view-profile', { userId: match.id })}
                     type="button"
                   >
                     View Profile

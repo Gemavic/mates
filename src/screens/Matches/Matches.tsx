@@ -12,7 +12,7 @@ interface SelectedChatUser {
 }
 
 interface MatchesProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, params?: { userId?: string }) => void;
   onSelectChatUser?: (user: SelectedChatUser | null) => void;
 }
 
@@ -110,32 +110,42 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
             {matches.map((match) => (
               <div
                 key={match.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Select this user for chat
-                  if (onSelectChatUser) {
-                    onSelectChatUser({
-                      id: match.id,
-                      name: match.name,
-                      image: match.image
-                    });
-                  }
-                }}
                 className="py-3 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 transition-all duration-300 touch-manipulation active:scale-[0.98] rounded-lg hover:shadow-md"
                 role="button"
                 tabIndex={0}
               >
                 <div className="flex items-start space-x-2 sm:space-x-3">
-                  <div className="relative">
+                  <div
+                    className="relative cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Navigate to user profile
+                      onNavigate('view-profile', { userId: match.id });
+                    }}
+                  >
                     <img
                       src={match.image}
                       alt={match.name}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0 hover:ring-2 hover:ring-pink-500 transition-all"
                     />
                     <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
+
+                  <div
+                    className="flex-1 min-w-0"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      // Select this user for chat
+                      if (onSelectChatUser) {
+                        onSelectChatUser({
+                          id: match.id,
+                          name: match.name,
+                          image: match.image
+                        });
+                      }
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-0.5 sm:mb-1">
                       <div className="flex items-center space-x-2">
                         <h4 className={`font-medium text-sm sm:text-base truncate ${match.unread ? 'text-gray-900' : 'text-gray-700'}`}>
