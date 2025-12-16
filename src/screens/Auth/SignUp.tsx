@@ -145,7 +145,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
       console.log('Signup successful, user data:', data);
 
-      // Initialize user credits
+      // Initialize user credits in localStorage (database trigger also creates them)
       if (data?.user?.id) {
         creditManager.initializeUser(data.user.id);
 
@@ -155,16 +155,17 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         }
       }
 
-      // Success - show message and navigate
+      // Success - show message and navigate to profile completion
       toast({
-        title: 'Success',
-        description: 'Account created successfully! Please sign in.',
+        title: 'Welcome to Dates!',
+        description: 'Your account has been created successfully!',
         variant: 'default'
       });
 
+      // Navigate to onboarding to complete profile
       setTimeout(() => {
-        onNavigate('signin');
-      }, 100);
+        onNavigate('onboarding');
+      }, 1000);
     } finally {
       setTimeout(() => {
         setIsLoading(false);

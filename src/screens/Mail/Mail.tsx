@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
 import { cn } from '@/lib/utils';
+import { MessagingManager } from '@/lib/database';
 
 interface MailProps {
   onNavigate: (screen: string) => void;
@@ -151,12 +152,12 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
     }
   ]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!messageText.trim() && attachedFiles.length === 0) return;
-    
+
     try {
       // Calculate total cost
       let totalCost = 0;
@@ -195,13 +196,35 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         creditManager.deductCredits(user.id, totalCost);
         setUserBalance(creditManager.getTotalCredits(user.id));
       }
-      
-      // Add message to conversation (in real app, this would be API call)
-      console.log('Message sent:', messageText, 'Attachments:', attachedFiles);
+
+      // CRITICAL FIX: Save message to database
+      const currentThread = mailThreads.find(t => t.id === selectedThread);
+      if (!currentThread) {
+        throw new Error('No thread selected');
+      }
+
+      const { data: savedMessage, error: messageError } = await MessagingManager.sendMessage(
+        user.id,
+        currentThread.participantId,
+        messageText.trim() || 'Sent attachments'
+      );
+
+      if (messageError) {
+        console.error('Database save error:', messageError);
+        // Refund credits on error
+        if (totalCost > 0 && !creditManager.isStaffMember(user.id)) {
+          creditManager.addCredits(user.id, totalCost);
+          setUserBalance(creditManager.getTotalCredits(user.id));
+        }
+        throw new Error('Failed to save message to database');
+      }
+
+      console.log('Message saved to database:', savedMessage);
+
       setMessageText('');
       setAttachedFiles([]);
       setShowAttachmentMenu(false);
-      
+
       // Show success feedback
       const toast = document.createElement('div');
       toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg z-50';

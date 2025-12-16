@@ -275,7 +275,7 @@ const App: React.FC = () => {
         return <SignUp onNavigate={handleNavigate} />;
       
       case 'discovery':
-        return <BrowseProfiles onNavigate={handleNavigate} />;
+        return <ModernDiscovery onNavigate={handleNavigate} />;
 
       case 'matches':
         return <Matches onNavigate={handleNavigate} onSelectChatUser={setSelectedChatUser} />;
