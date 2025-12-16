@@ -5,7 +5,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { Heart, Star, X } from 'lucide-react';
 
 interface LikesProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, params?: { userId?: string }) => void;
 }
 
 export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
@@ -80,7 +80,8 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
             {whoLikesYou.map((profile) => (
               <div
                 key={profile.id}
-                className="relative bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden aspect-square"
+                onClick={() => !profile.blurred && onNavigate('view-profile', { userId: profile.id })}
+                className={`relative bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden aspect-square ${!profile.blurred ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
               >
                 <img
                   src={profile.image}
@@ -115,7 +116,8 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
             {likedProfiles.map((profile) => (
               <div
                 key={profile.id}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-4"
+                onClick={() => onNavigate('view-profile', { userId: profile.id })}
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 cursor-pointer hover:bg-white/20 transition-all"
               >
                 <div className="flex items-center space-x-3">
                   <div className="relative">
@@ -134,7 +136,7 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex-1">
                     <h3 className="text-white font-medium">
                       {profile.name}, {profile.age}
@@ -143,8 +145,13 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
                       {profile.type === 'super-like' ? 'Super liked' : 'Liked'} • Waiting for response
                     </p>
                   </div>
-                  
-                  <button className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors">
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                  >
                     <X className="w-4 h-4 text-white/80" />
                   </button>
                 </div>
