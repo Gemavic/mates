@@ -99,7 +99,7 @@ export const Menu: React.FC<MenuProps> = ({
       title: 'Support',
       items: [
         { id: 'relationship-services', icon: Users, label: 'Relationship Services', description: 'Counselling & therapy' },
-        { id: 'financial-education', icon: CreditCard, label: 'Financial Education', description: 'Money management advice' },
+        { id: 'financial-education', icon: CreditCard, label: 'Love & Money', description: 'Financial compatibility advice' },
         { id: 'feedback', icon: MessageCircle, label: 'Contact Us', description: 'Questions & feedback' },
       ]
     },
@@ -108,7 +108,6 @@ export const Menu: React.FC<MenuProps> = ({
       items: [
         { id: 'terms', icon: Shield, label: 'Terms', description: 'Terms of service' },
         { id: 'privacy', icon: Shield, label: 'Privacy', description: 'Your data privacy' },
-        { id: 'verification', icon: Shield, label: 'Get Verified', description: 'Verify your identity' },
       ]
     }
   ];
