@@ -83,12 +83,14 @@ export class ProfileManager {
     return data;
   }
 
-  static async getDiscoveryProfiles(currentUserId: string, limit = 10) {
+  static async getDiscoveryProfiles(currentUserId: string, limit = 50) {
+    // CRITICAL FIX: Show ALL users, not just those with visibility='public'
+    // Many users may have NULL visibility or the field may not be set
     const { data, error } = await supabaseClient
       .from('user_profiles')
       .select('*')
       .neq('user_id', currentUserId)
-      .eq('profile_visibility', 'public')
+      .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;

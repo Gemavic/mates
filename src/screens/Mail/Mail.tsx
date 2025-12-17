@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
 import { cn } from '@/lib/utils';
 import { MessagingManager } from '@/lib/database';
+import { supabaseClient } from '@/lib/supabase';
 
 interface MailProps {
   onNavigate: (screen: string) => void;
@@ -44,6 +45,7 @@ interface AttachedFile {
 
 interface MailThread {
   id: string;
+  participantId: string;
   participantName: string;
   participantAge: number;
   lastMessage: string;
@@ -94,63 +96,122 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Mock data for demonstration
-  const [mailThreads] = useState<MailThread[]>([
-    {
-      id: '1',
-      participantName: 'Sarah Johnson',
-      participantAge: 28,
-      lastMessage: 'Hey! I loved your profile. Would love to chat more!',
-      timestamp: '2 hours ago',
-      unreadCount: 2,
-      hasPhotos: true,
-      isVerified: true
-    },
-    {
-      id: '2',
-      participantName: 'Emily Chen',
-      participantAge: 25,
-      lastMessage: 'Thanks for the virtual gift! 🌹',
-      timestamp: '1 day ago',
-      unreadCount: 0,
-      hasPhotos: false,
-      isVerified: true
-    },
-    {
-      id: '3',
-      participantName: 'Jessica Miller',
-      participantAge: 30,
-      lastMessage: 'I\'d love to meet up for coffee sometime',
-      timestamp: '3 days ago',
-      unreadCount: 1,
-      hasPhotos: true,
-      isVerified: false
-    }
-  ]);
+  // CRITICAL FIX: Load real threads from database
+  const [mailThreads, setMailThreads] = useState<MailThread[]>([]);
 
-  const [currentMessages] = useState<Message[]>([
-    {
-      id: '1',
-      senderId: 'other',
-      message: 'Hey! I loved your profile. Would love to chat more!',
-      timestamp: '2 hours ago',
-      hasPhotos: false
-    },
-    {
-      id: '2',
-      senderId: 'me',
-      message: 'Thanks! I really enjoyed reading your bio too. What do you like to do for fun?',
-      timestamp: '1 hour ago',
-      hasPhotos: false
-    },
-    {
-      id: '3',
-      senderId: 'other',
-      message: 'I love hiking and trying new restaurants! What about you?',
-      timestamp: '30 minutes ago',
-      hasPhotos: true
+  // Load mail threads on mount
+  useEffect(() => {
+    if (user) {
+      loadMailThreads();
     }
-  ]);
+  }, [user]);
+
+  const loadMailThreads = async () => {
+    if (!user) return;
+
+    try {
+      const threads = await MessagingManager.getMailThreads(user.id);
+
+      // Transform to MailThread format
+      const formattedThreads: MailThread[] = await Promise.all(
+        threads.map(async (thread: any) => {
+          // Determine who the other participant is
+          const otherUserId = thread.participant1_id === user.id
+            ? thread.participant2_id
+            : thread.participant1_id;
+
+          // Get other user's profile
+          const { data: otherProfile } = await supabaseClient
+            .from('user_profiles')
+            .select('full_name, first_name, age, is_verified')
+            .eq('user_id', otherUserId)
+            .maybeSingle();
+
+          // Get latest message
+          const { data: latestMessage } = await supabaseClient
+            .from('mail_messages')
+            .select('message_text, created_at, is_read, sender_id')
+            .eq('thread_id', thread.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          // Count unread messages
+          const { count: unreadCount } = await supabaseClient
+            .from('mail_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('thread_id', thread.id)
+            .eq('is_read', false)
+            .neq('sender_id', user.id);
+
+          return {
+            id: thread.id,
+            participantId: otherUserId,
+            participantName: otherProfile?.first_name || otherProfile?.full_name || 'User',
+            participantAge: otherProfile?.age || 25,
+            lastMessage: latestMessage?.message_text || 'Start a conversation',
+            timestamp: latestMessage?.created_at || thread.created_at,
+            unreadCount: unreadCount || 0,
+            hasPhotos: false,
+            isVerified: otherProfile?.is_verified || false
+          };
+        })
+      );
+
+      setMailThreads(formattedThreads);
+    } catch (error) {
+      console.error('Failed to load mail threads:', error);
+      // Show empty state if no threads
+      setMailThreads([]);
+    }
+  };
+
+  // CRITICAL FIX: Load real messages from database
+  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
+
+  // Load messages when thread is selected
+  useEffect(() => {
+    if (selectedThread && user) {
+      loadThreadMessages(selectedThread);
+    }
+  }, [selectedThread, user]);
+
+  const loadThreadMessages = async (threadId: string) => {
+    if (!user) return;
+
+    try {
+      const { data: messages, error } = await supabaseClient
+        .from('mail_messages')
+        .select('*')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const formattedMessages: Message[] = messages.map(msg => ({
+        id: msg.id,
+        senderId: msg.sender_id === user.id ? 'me' : 'other',
+        message: msg.message_text,
+        timestamp: new Date(msg.created_at).toLocaleString(),
+        hasPhotos: false
+      }));
+
+      setCurrentMessages(formattedMessages);
+
+      // Mark messages as read
+      await supabaseClient
+        .from('mail_messages')
+        .update({ is_read: true })
+        .eq('thread_id', threadId)
+        .neq('sender_id', user.id);
+
+      // Reload threads to update unread count
+      await loadMailThreads();
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      setCurrentMessages([]);
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

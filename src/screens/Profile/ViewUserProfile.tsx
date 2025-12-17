@@ -15,7 +15,7 @@ import {
   Circle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase';
 
 interface ViewUserProfileProps {
   onNavigate: (screen: string, params?: any) => void;
@@ -61,7 +61,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
       setLoading(true);
       setError(null);
 
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabaseClient
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
@@ -76,7 +76,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
 
       setProfile(profileData);
 
-      const { data: photosData, error: photosError } = await supabase
+      const { data: photosData, error: photosError } = await supabaseClient
         .from('user_photos')
         .select('id, photo_url, display_order')
         .eq('user_id', userId)
@@ -97,7 +97,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('user_likes')
         .select('id')
         .eq('liker_id', user.id)
