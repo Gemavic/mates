@@ -108,63 +108,32 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
             Where genuine connections happen through AI-powered matching
           </p>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 sm:p-4">
-              <p className="text-2xl sm:text-3xl font-bold text-white">2.3M+</p>
-              <p className="text-white/80 text-xs sm:text-sm">Users</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 sm:p-4">
-              <p className="text-2xl sm:text-3xl font-bold text-white">150K+</p>
-              <p className="text-white/80 text-xs sm:text-sm">Matches</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 sm:p-4">
-              <p className="text-2xl sm:text-3xl font-bold text-white">98%</p>
-              <p className="text-white/80 text-xs sm:text-sm">Success</p>
-            </div>
+          {/* Launch Info - Honest messaging */}
+          <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 sm:p-5 mt-6 sm:mt-8 border border-white/30">
+            <p className="text-white font-semibold text-lg sm:text-xl mb-2">Join Our Launch</p>
+            <p className="text-white/90 text-sm sm:text-base">Be part of a new community focused on genuine connections</p>
           </div>
         </div>
 
-        {/* Featured Success Story - Lead with Engaging Content */}
+        {/* Our Mission - Authentic messaging */}
         <div className="px-2 sm:px-4 md:px-6 py-4 relative z-10">
           <div className="bg-white/15 backdrop-blur-md rounded-2xl p-5 sm:p-6 shadow-2xl border border-white/20">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white font-bold text-lg sm:text-xl flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
-                Featured Success Story
+                <Heart className="w-5 h-5 text-pink-300 fill-pink-300" />
+                Our Mission
               </h3>
-              <span className="text-xs text-white/70 bg-white/20 px-3 py-1 rounded-full">New</span>
             </div>
 
-            <div className="flex items-start space-x-4 mb-4">
-              <img
-                src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=120"
-                alt="Sarah & Mike"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white/30"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-white font-bold text-base sm:text-lg">Sarah & Mike</p>
-                  <CheckCircle className="w-5 h-5 text-blue-300 fill-blue-300" />
-                </div>
-                <p className="text-white/80 text-sm mb-2">Married 8 months ago</p>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <p className="text-white text-sm sm:text-base italic leading-relaxed mb-4">
-              "We matched on day one and knew instantly we were meant to be. The personality compatibility was spot-on! Now we're married and couldn't be happier. Thank you Dates! 💕"
+            <p className="text-white text-sm sm:text-base leading-relaxed mb-4">
+              We believe in creating genuine connections through thoughtful matching and meaningful conversations. Our platform is designed to help you find someone special who shares your values and interests.
             </p>
 
             <button
               onClick={() => onNavigate('care-blog')}
               className="w-full text-center text-white/90 hover:text-white text-sm font-medium underline underline-offset-4 transition-colors"
             >
-              Read more success stories →
+              Learn more about our approach →
             </button>
           </div>
         </div>
@@ -243,34 +212,16 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           </div>
         </div>
 
-        {/* Social Proof */}
+        {/* Join Community */}
         <div className="px-2 sm:px-4 md:px-6 py-4 relative z-10">
           <div className="bg-gradient-to-r from-purple-500/30 to-pink-500/30 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
             <div className="flex items-center justify-center gap-3 mb-3">
               <Users className="w-6 h-6 text-white" />
-              <h4 className="text-white font-bold text-lg">Join 2.3M+ Singles</h4>
+              <h4 className="text-white font-bold text-lg">Join Our Community</h4>
             </div>
-            <p className="text-white/90 text-center text-sm mb-4">
-              New members find matches within their first week on average
+            <p className="text-white/90 text-center text-sm">
+              Start your journey to finding meaningful connections today
             </p>
-            <div className="flex -space-x-3 justify-center mb-4">
-              {[
-                'https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&w=80',
-                'https://images.pexels.com/photos/1239288/pexels-photo-1239288.jpeg?auto=compress&cs=tinysrgb&w=80',
-                'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=80',
-                'https://images.pexels.com/photos/1172207/pexels-photo-1172207.jpeg?auto=compress&cs=tinysrgb&w=80'
-              ].map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={`User ${i + 1}`}
-                  className="w-12 h-12 rounded-full border-3 border-white object-cover"
-                />
-              ))}
-              <div className="w-12 h-12 rounded-full border-3 border-white bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">+2.3M</span>
-              </div>
-            </div>
           </div>
         </div>
 

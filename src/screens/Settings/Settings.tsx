@@ -23,6 +23,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         { icon: Users, label: 'Discovery Settings', action: () => {} },
         { icon: MapPin, label: 'Location', action: () => {} },
         { icon: Heart, label: 'Dating Preferences', action: () => {} },
+        { icon: Shield, label: 'ID Verification', action: () => onNavigate('verification') },
         { icon: CreditCard, label: 'Credits & Billing', action: () => onNavigate('credits') },
       ]
     },

@@ -32,34 +32,34 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
     {
       id: '1',
       name: 'Dr. Matthew Dare',
-      specialization: 'Investment Strategy & Wealth Management',
+      specialization: 'Couples Financial Counseling & Money Communication',
       experience: '18 years',
       rating: 4.9,
       image: 'https://images.pexels.com/photos/3778966/pexels-photo-3778966.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$150/session',
       availability: 'Available today',
-      expertise: ['Investment Planning', 'Portfolio Management', 'Retirement Strategy', 'Risk Management'],
-      credentials: 'CFP, CFA'
+      expertise: ['Financial Compatibility', 'Joint Budget Planning', 'Debt Management for Couples', 'Money Conversations'],
+      credentials: 'CFP, Marriage & Family Therapist'
     },
     {
       id: '2',
       name: 'Mina Armis',
-      specialization: 'Personal Finance & Budgeting Expert',
+      specialization: 'Relationship Finance & Budget Planning Expert',
       experience: '12 years',
       rating: 4.9,
       image: 'https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$125/session',
       availability: 'Available tomorrow',
-      expertise: ['Budget Planning', 'Debt Management', 'Savings Strategy', 'Financial Goals'],
-      credentials: 'CFP, MBA Finance'
+      expertise: ['Shared Expenses', 'Financial Trust Building', 'Prenuptial Planning', 'Money Arguments Resolution'],
+      credentials: 'CFP, Certified Financial Counselor'
     }
   ];
 
   const services = [
     {
       icon: DollarSign,
-      title: 'Budget Planning',
-      description: 'Create sustainable spending plans',
+      title: 'Shared Budgets',
+      description: 'How to manage money together',
       color: 'from-green-500 to-emerald-500',
       action: () => {
         setActiveTab('calculators');
@@ -71,33 +71,32 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
     },
     {
       icon: TrendingUp,
-      title: 'Investment Advice',
-      description: 'Smart investing strategies',
+      title: 'Financial Compatibility',
+      description: 'Understanding money values together',
       color: 'from-blue-500 to-cyan-500',
       action: () => {
-        setActiveTab('calculators');
+        setActiveTab('tips');
         setTimeout(() => {
-          const element = document.querySelector('[data-calculator="investment"]');
-          element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setExpandedTip(0);
         }, 100);
       }
     },
     {
       icon: PieChart,
-      title: 'Wealth Management',
-      description: 'Grow and protect your assets',
+      title: 'Splitting Expenses',
+      description: 'Fair ways to share costs',
       color: 'from-purple-500 to-pink-500',
       action: () => {
         setActiveTab('tips');
         setTimeout(() => {
-          setExpandedTip(5);
+          setExpandedTip(2);
         }, 100);
       }
     },
     {
       icon: Target,
-      title: 'Financial Goals',
-      description: 'Plan for your future dreams',
+      title: 'Couple Goals',
+      description: 'Planning your future together',
       color: 'from-orange-500 to-amber-500',
       action: () => {
         setActiveTab('calculators');
@@ -109,20 +108,20 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
     },
     {
       icon: Briefcase,
-      title: 'Retirement Planning',
-      description: 'Secure your future retirement',
+      title: 'Debt in Relationships',
+      description: 'Managing loans and debt together',
       color: 'from-red-500 to-pink-500',
       action: () => {
         setActiveTab('tips');
         setTimeout(() => {
-          setExpandedTip(1);
+          setExpandedTip(3);
         }, 100);
       }
     },
     {
       icon: BookOpen,
-      title: 'Financial Literacy',
-      description: 'Learn money management skills',
+      title: 'Money Conversations',
+      description: 'How to talk about finances',
       color: 'from-teal-500 to-cyan-500',
       action: () => setActiveTab('tips')
     }
@@ -130,26 +129,26 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
 
   const topics = [
     {
-      title: 'Starting Your Financial Journey',
-      description: 'Learn the basics of personal finance and budgeting',
+      title: 'Money Talks for New Couples',
+      description: 'Starting financial conversations in your relationship',
       duration: '4-6 sessions',
       level: 'Beginner'
     },
     {
-      title: 'Investment Fundamentals',
-      description: 'Understanding stocks, bonds, and mutual funds',
+      title: 'Managing Money Together',
+      description: 'Joint accounts, shared budgets, and splitting expenses',
       duration: '6-8 sessions',
       level: 'Intermediate'
     },
     {
-      title: 'Advanced Portfolio Management',
-      description: 'Sophisticated investment strategies and risk management',
-      duration: '8-10 sessions',
-      level: 'Advanced'
+      title: 'Navigating Debt as a Couple',
+      description: 'Student loans, credit cards, and building together',
+      duration: '5-7 sessions',
+      level: 'All Levels'
     },
     {
-      title: 'Retirement & Estate Planning',
-      description: 'Securing your financial future and legacy',
+      title: 'Planning Your Future Together',
+      description: 'Saving for marriage, home, and major life goals',
       duration: '6-8 sessions',
       level: 'All Levels'
     }
@@ -157,80 +156,80 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
 
   const budgetTips = [
     {
-      title: '50/30/20 Rule',
+      title: 'Have The Money Talk Early',
       icon: PieChart,
-      summary: 'Allocate 50% to needs, 30% to wants, 20% to savings',
+      summary: 'Discuss financial values and goals before combining finances',
       details: [
-        '50% for essential needs (housing, food, utilities, transportation)',
-        '30% for discretionary wants (entertainment, dining out, hobbies)',
-        '20% for savings and debt repayment (emergency fund, retirement, loans)',
-        'Adjust percentages based on your income level and financial goals',
-        'Track expenses monthly to ensure you stay within each category'
+        'Share your financial history, debt, and credit scores openly',
+        'Discuss spending habits and money values honestly',
+        'Talk about financial goals for the relationship',
+        'Address any money concerns or anxieties',
+        'Revisit these conversations regularly as relationship grows'
       ],
       color: 'from-blue-500 to-cyan-500'
     },
     {
-      title: 'Emergency Fund Priority',
+      title: 'Choose Your Money System',
       icon: Target,
-      summary: 'Save 3-6 months of expenses before investing',
+      summary: 'Decide how to manage money together as a couple',
       details: [
-        'Start with $1,000 as initial emergency fund goal',
-        'Build up to cover 3 months of essential expenses',
-        'Aim for 6 months if income is variable or job security is uncertain',
-        'Keep emergency funds in high-yield savings account',
-        'Only use for true emergencies (job loss, medical, urgent repairs)'
+        'Option 1: Fully combined finances (all money shared)',
+        'Option 2: Partially combined (joint account for shared expenses)',
+        'Option 3: Completely separate (split bills proportionally)',
+        'There is no "right" way - choose what works for both of you',
+        'Communicate openly about which system feels fair'
       ],
       color: 'from-orange-500 to-red-500'
     },
     {
-      title: 'Automate Your Savings',
-      icon: TrendingUp,
-      summary: 'Set up automatic transfers to savings accounts',
+      title: 'Split Expenses Fairly',
+      icon: DollarSign,
+      summary: 'Find equitable ways to share costs based on income',
       details: [
-        'Schedule transfers right after payday to pay yourself first',
-        'Start with 10-15% of income, increase gradually',
-        'Use separate savings accounts for different goals',
-        'Automate retirement contributions (401k, IRA)',
-        'Review and adjust automation quarterly'
+        '50/50 split works when incomes are similar',
+        'Proportional split (by income percentage) when earnings differ',
+        'One partner covers housing, other covers groceries/utilities',
+        'Discuss and agree on "shared" vs "personal" expenses',
+        'Revisit agreement when income or circumstances change'
       ],
       color: 'from-green-500 to-emerald-500'
     },
     {
-      title: 'Track Every Expense',
+      title: 'Managing Debt Together',
       icon: Wallet,
-      summary: 'Monitor spending to identify savings opportunities',
+      summary: 'Navigate student loans and credit cards as a team',
       details: [
-        'Use budgeting apps or spreadsheets to log expenses daily',
-        'Categorize spending to see where money goes',
-        'Review spending weekly to stay accountable',
-        'Identify unnecessary subscriptions and recurring charges',
-        'Look for patterns and areas to cut back'
+        'Be honest about existing debt before moving in or marriage',
+        'Decide if you\'ll tackle debt together or keep it separate',
+        'Create a plan for paying off high-interest debt first',
+        'Avoid taking on joint debt until you\'re committed long-term',
+        'Support each other without judgment about past financial choices'
       ],
       color: 'from-purple-500 to-pink-500'
     },
     {
-      title: 'Debt Avalanche Method',
+      title: 'Handling Money Arguments',
       icon: Target,
-      summary: 'Pay off high-interest debt first to save money',
+      summary: 'Resolve financial conflicts without damaging the relationship',
       details: [
-        'List all debts with interest rates from highest to lowest',
-        'Make minimum payments on all debts',
-        'Put extra money toward highest interest debt',
-        'Once paid off, move to next highest rate',
-        'Saves more money long-term compared to snowball method'
+        'Money disagreements are normal - address them calmly',
+        'Listen to understand, not to win the argument',
+        'Avoid accusations like "you always" or "you never"',
+        'Focus on finding compromise, not being "right"',
+        'Consider couples financial counseling if conflicts persist'
       ],
       color: 'from-red-500 to-orange-500'
     },
     {
-      title: 'Invest Early & Consistently',
+      title: 'Plan Big Purchases Together',
       icon: TrendingUp,
-      summary: 'Start investing now to benefit from compound growth',
+      summary: 'Make major financial decisions as a team',
       details: [
-        'Time in market beats timing the market',
-        'Even small amounts grow significantly over decades',
-        'Use dollar-cost averaging (invest same amount regularly)',
-        'Take advantage of employer 401k match (free money)',
-        'Consider low-cost index funds for beginners'
+        'Set a dollar threshold for purchases that require discussion',
+        'Give each partner some "fun money" with no questions asked',
+        'Save together for shared goals (wedding, house, vacation)',
+        'Respect each other\'s financial priorities and spending',
+        'Celebrate financial milestones together as a couple'
       ],
       color: 'from-indigo-500 to-blue-500'
     }
@@ -326,7 +325,7 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
 
   return (
     <Layout
-      title="Financial Literacy Corner"
+      title="Love & Money - Relationship Finance"
       onBack={() => onNavigate('welcome')}
       showClose={false}
     >
@@ -335,8 +334,8 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
           <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
             <DollarSign className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Financial Literacy Corner</h2>
-          <p className="text-white/80 text-sm">Plan, calculate, and learn your way to financial freedom</p>
+          <h2 className="text-xl font-bold text-white mb-2">Love & Money</h2>
+          <p className="text-white/80 text-sm">Navigate finances together and build a strong financial foundation as a couple</p>
         </div>
 
         <div className="mb-6">
