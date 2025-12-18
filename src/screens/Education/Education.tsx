@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { DollarSign, TrendingUp, PieChart, Target, Calendar, Star, BookOpen, Briefcase, Calculator, Wallet, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { BookingCalendar } from '@/components/BookingCalendar';
 
-interface FinancialEducationProps {
+interface EducationProps {
   onNavigate: (screen: string) => void;
 }
 
-export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNavigate }) => {
+export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
   const [selectedAdvisor, setSelectedAdvisor] = useState<string | null>(null);
   const [showBookingCalendar, setShowBookingCalendar] = useState(false);
   const [activeTab, setActiveTab] = useState<'advisors' | 'calculators' | 'tips'>('calculators');
@@ -325,17 +325,17 @@ export const FinancialEducation: React.FC<FinancialEducationProps> = ({ onNaviga
 
   return (
     <Layout
-      title="Love & Money - Relationship Finance"
+      title="Education - Relationship Learning"
       onBack={() => onNavigate('welcome')}
       showClose={false}
     >
       <div className="px-4 py-6">
         <div className="text-center mb-6">
           <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-            <DollarSign className="w-8 h-8 text-white" />
+            <BookOpen className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Love & Money</h2>
-          <p className="text-white/80 text-sm">Navigate finances together and build a strong financial foundation as a couple</p>
+          <h2 className="text-xl font-bold text-white mb-2">Education Center</h2>
+          <p className="text-white/80 text-sm">Learn, grow, and build a strong foundation for your relationship</p>
         </div>
 
         <div className="mb-6">
