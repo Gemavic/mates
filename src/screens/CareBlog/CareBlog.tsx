@@ -570,32 +570,32 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
           <p className="text-white/70 text-sm">- Tony Robbins</p>
         </div>
         
-        {/* Financial Literacy Resources */}
+        {/* Education Resources */}
         <div className="mt-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-6 text-white">
           <h3 className="font-bold text-lg mb-3 flex items-center">
-            <PiggyBank className="w-6 h-6 mr-2" />
-            Financial Literacy Corner
+            <BookOpen className="w-6 h-6 mr-2" />
+            Education Corner
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/20 rounded-xl p-3 text-center">
-              <Calculator className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm font-medium">Budget Calculator</p>
-              <p className="text-xs opacity-80">Plan your finances</p>
+              <Heart className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">Communication</p>
+              <p className="text-xs opacity-80">Build stronger bonds</p>
+            </div>
+            <div className="bg-white/20 rounded-xl p-3 text-center">
+              <Users className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">Conflict Resolution</p>
+              <p className="text-xs opacity-80">Navigate disagreements</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <TrendingUp className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm font-medium">Investment Basics</p>
-              <p className="text-xs opacity-80">Grow your money</p>
+              <p className="text-sm font-medium">Personal Growth</p>
+              <p className="text-xs opacity-80">Grow together</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
-              <DollarSign className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm font-medium">Debt Management</p>
-              <p className="text-xs opacity-80">Pay off debt smartly</p>
-            </div>
-            <div className="bg-white/20 rounded-xl p-3 text-center">
-              <PiggyBank className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm font-medium">Savings Tips</p>
-              <p className="text-xs opacity-80">Build your nest egg</p>
+              <Sparkles className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">Relationship Tips</p>
+              <p className="text-xs opacity-80">Keep love alive</p>
             </div>
           </div>
         </div>
