@@ -53,7 +53,7 @@ export const MenuShowcase: React.FC<MenuShowcaseProps> = ({ onNavigate }) => {
       color: 'from-purple-500 to-indigo-500',
       items: [
         { id: 'relationship-services', icon: Users, label: 'Relationship Services', description: 'Counselling & therapy' },
-        { id: 'financial-education', icon: DollarSign, label: 'Financial Education', description: 'Money management' },
+        { id: 'education', icon: DollarSign, label: 'Education', description: 'Relationship learning' },
         { id: 'help', icon: HelpCircle, label: 'Help & Support', description: 'Get assistance' },
       ]
     },

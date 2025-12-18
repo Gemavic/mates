@@ -32,7 +32,7 @@ interface BlogPost {
   content: string;
   author: string;
   authorImage: string;
-  category: 'dating-tips' | 'success-stories' | 'relationship-advice' | 'self-improvement' | 'community' | 'financial-education';
+  category: 'dating-tips' | 'success-stories' | 'relationship-advice' | 'self-improvement' | 'community' | 'education';
   publishedAt: Date;
   readTime: number;
   likes: number;
@@ -65,7 +65,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       content: 'Money conversations can be challenging for couples, but they\'re essential for a healthy relationship...',
       author: 'Sarah Johnson, CFP',
       authorImage: 'https://images.pexels.com/photos/1130623/pexels-photo-1130623.jpeg?auto=compress&cs=tinysrgb&w=100',
-      category: 'financial-education',
+      category: 'education',
       publishedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
       readTime: 8,
       likes: 189,
@@ -81,7 +81,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       content: 'Dating doesn\'t have to be expensive to be meaningful. Here are budget-friendly ways to connect...',
       author: 'Michael Chen, Financial Advisor',
       authorImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=100',
-      category: 'financial-education',
+      category: 'education',
       publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
       readTime: 6,
       likes: 245,
@@ -96,7 +96,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       content: 'Being financially independent makes you more attractive and confident in relationships...',
       author: 'Dr. Lisa Wong, Economist',
       authorImage: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100',
-      category: 'financial-education',
+      category: 'education',
       publishedAt: new Date(Date.now() - 16 * 60 * 60 * 1000),
       readTime: 10,
       likes: 156,
@@ -111,7 +111,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       content: 'Financial stress can strain relationships. Here\'s how to build financial security...',
       author: 'Jennifer Davis, CPA',
       authorImage: 'https://images.pexels.com/photos/3763789/pexels-photo-3763789.jpeg?auto=compress&cs=tinysrgb&w=100',
-      category: 'financial-education',
+      category: 'education',
       publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
       readTime: 7,
       likes: 198,
@@ -126,7 +126,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       content: 'A good credit score opens doors to better loan rates, housing options, and financial opportunities...',
       author: 'Robert Kim, Credit Specialist',
       authorImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=100',
-      category: 'financial-education',
+      category: 'education',
       publishedAt: new Date(Date.now() - 32 * 60 * 60 * 1000),
       readTime: 5,
       likes: 134,
@@ -199,7 +199,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
 
   const categories = [
     { id: 'all', name: 'All Posts', icon: BookOpen, color: 'from-purple-500 to-pink-500' },
-    { id: 'financial-education', name: 'Financial Education', icon: DollarSign, color: 'from-green-500 to-emerald-500' },
+    { id: 'education', name: 'Education', icon: DollarSign, color: 'from-green-500 to-emerald-500' },
     { id: 'dating-tips', name: 'Dating Tips', icon: Heart, color: 'from-pink-500 to-rose-500' },
     { id: 'success-stories', name: 'Success Stories', icon: User, color: 'from-green-500 to-teal-500' },
     { id: 'relationship-advice', name: 'Advice', icon: MessageCircle, color: 'from-blue-500 to-cyan-500' },
@@ -429,7 +429,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
             className="w-full bg-white/20 text-white border border-white/30 rounded-lg px-3 py-2"
           >
             <option value="dating-tips" className="text-gray-900">Dating Tips</option>
-            <option value="financial-education" className="text-gray-900">Financial Education</option>
+            <option value="education" className="text-gray-900">Education</option>
             <option value="success-stories" className="text-gray-900">Success Stories</option>
             <option value="relationship-advice" className="text-gray-900">Relationship Advice</option>
             <option value="self-improvement" className="text-gray-900">Self-Improvement</option>

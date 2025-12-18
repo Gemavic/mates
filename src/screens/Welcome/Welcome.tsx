@@ -198,15 +198,15 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
             </button>
 
             <button
-              onClick={() => onNavigate('financial-education')}
+              onClick={() => onNavigate('education')}
               className="w-full flex items-start space-x-4 bg-white/15 backdrop-blur-sm rounded-xl p-4 shadow-lg hover:bg-white/25 transition-all duration-200 text-left"
             >
               <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <h4 className="text-white font-bold text-base mb-1">Financial Education</h4>
-                <p className="text-white/80 text-sm">Expert financial advice, investment guidance & wealth management</p>
+                <h4 className="text-white font-bold text-base mb-1">Education</h4>
+                <p className="text-white/80 text-sm">Relationship learning, resources & guidance for couples</p>
               </div>
             </button>
           </div>

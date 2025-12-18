@@ -99,7 +99,7 @@ export const Menu: React.FC<MenuProps> = ({
       title: 'Support',
       items: [
         { id: 'relationship-services', icon: Users, label: 'Relationship Services', description: 'Counselling & therapy' },
-        { id: 'financial-education', icon: CreditCard, label: 'Love & Money', description: 'Financial compatibility advice' },
+        { id: 'education', icon: BookOpen, label: 'Education', description: 'Relationship learning & resources' },
         { id: 'feedback', icon: MessageCircle, label: 'Contact Us', description: 'Questions & feedback' },
       ]
     },
