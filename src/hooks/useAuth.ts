@@ -16,9 +16,15 @@ export const useAuth = () => {
       try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
 
-        if (error) {
-          console.warn('Session recovery failed, clearing invalid session:', error.message);
+        // Only clear session if it's a refresh token error
+        if (error && error.message && error.message.includes('refresh_token_not_found')) {
+          console.warn('Session has stale refresh token, clearing:', error.message);
           await supabaseClient.auth.signOut();
+          setUser(null);
+          setIsAnonymous(false);
+        } else if (error) {
+          // For other errors, just log but don't clear session
+          console.warn('Session error (not clearing):', error.message);
           setUser(null);
           setIsAnonymous(false);
         } else {
@@ -26,12 +32,7 @@ export const useAuth = () => {
           setIsAnonymous(session?.user?.is_anonymous || false);
         }
       } catch (error) {
-        console.warn('Failed to initialize auth, clearing session:', error);
-        try {
-          await supabaseClient.auth.signOut();
-        } catch (signOutError) {
-          console.warn('Failed to clear session:', signOutError);
-        }
+        console.warn('Failed to initialize auth:', error);
         setUser(null);
         setIsAnonymous(false);
       } finally {
@@ -87,16 +88,34 @@ export const useAuth = () => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      return { data: null, error: { message: error.message } };
+      if (error) {
+        console.error('Sign in error:', error);
+        let errorMessage = error.message;
+
+        // Provide clearer error messages
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please confirm your email address before signing in.';
+        } else if (error.message.includes('User not found')) {
+          errorMessage = 'No account found with this email address.';
+        }
+
+        return { data: null, error: { message: errorMessage } };
+      }
+
+      console.log('Sign in successful:', data.user?.email);
+      return { data, error: null };
+    } catch (err: any) {
+      console.error('Sign in exception:', err);
+      return { data: null, error: { message: err?.message || 'Failed to sign in. Please try again.' } };
     }
-
-    return { data, error };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {

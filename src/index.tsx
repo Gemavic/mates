@@ -10,21 +10,28 @@ import "./tailwind.css";
 // Initialize configuration on app start
 initializeConfig();
 
-// Clear any stale auth sessions on app start
+// Clear only invalid refresh tokens on app start
 const clearStaleSession = async () => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) {
-      console.warn('Clearing stale session on startup:', error.message);
+
+    // Only clear if there's a specific refresh token error
+    if (error && error.message && error.message.includes('refresh_token_not_found')) {
+      console.warn('Clearing stale refresh token on startup');
       await supabase.auth.signOut();
-      localStorage.clear();
+
+      // Only remove auth-related keys, not everything
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('supabase') || key.includes('auth-token'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
     }
   } catch (error) {
-    console.warn('Error checking session on startup, clearing storage:', error);
-    try {
-      await supabase.auth.signOut();
-      localStorage.clear();
-    } catch {}
+    console.warn('Error checking session on startup:', error);
   }
 };
 
