@@ -41,12 +41,44 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storageKey: 'dates-auth-token',
+    storage: {
+      getItem: (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      setItem: (key, value) => {
+        try {
+          localStorage.setItem(key, value);
+        } catch {
+          console.warn('Failed to store auth token');
+        }
+      },
+      removeItem: (key) => {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          console.warn('Failed to remove auth token');
+        }
+      }
+    }
   },
   global: {
     headers: {
       'X-Client-Info': 'dates-care-app'
     }
+  }
+});
+
+// Add global error handler for auth issues
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'TOKEN_REFRESHED' && !session) {
+    console.warn('Token refresh failed, clearing session');
+    supabase.auth.signOut().catch(console.warn);
   }
 });
 

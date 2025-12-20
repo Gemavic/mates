@@ -23,6 +23,22 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    if (error.message && (
+      error.message.includes('Invalid Refresh Token') ||
+      error.message.includes('refresh_token_not_found') ||
+      error.message.includes('Refresh Token Not Found')
+    )) {
+      console.warn('Detected stale auth token error, clearing localStorage');
+      try {
+        localStorage.clear();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } catch (clearError) {
+        console.error('Failed to clear localStorage:', clearError);
+      }
+    }
   }
 
   render() {

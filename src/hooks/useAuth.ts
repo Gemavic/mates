@@ -14,11 +14,26 @@ export const useAuth = () => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        setUser(session?.user ?? null);
-        setIsAnonymous(session?.user?.is_anonymous || false);
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+        if (error) {
+          console.warn('Session recovery failed, clearing invalid session:', error.message);
+          await supabaseClient.auth.signOut();
+          setUser(null);
+          setIsAnonymous(false);
+        } else {
+          setUser(session?.user ?? null);
+          setIsAnonymous(session?.user?.is_anonymous || false);
+        }
       } catch (error) {
-        console.warn('Failed to initialize auth:', error);
+        console.warn('Failed to initialize auth, clearing session:', error);
+        try {
+          await supabaseClient.auth.signOut();
+        } catch (signOutError) {
+          console.warn('Failed to clear session:', signOutError);
+        }
+        setUser(null);
+        setIsAnonymous(false);
       } finally {
         setLoading(false);
       }
@@ -30,8 +45,16 @@ export const useAuth = () => {
     const authClient = supabaseClient;
     const subscription = authClient.auth.onAuthStateChange((event, session) => {
       (async () => {
-        setUser(session?.user ?? null);
-        setIsAnonymous(session?.user?.is_anonymous || false);
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          setUser(session?.user ?? null);
+          setIsAnonymous(session?.user?.is_anonymous || false);
+        } else if (event === 'SIGNED_IN') {
+          setUser(session?.user ?? null);
+          setIsAnonymous(session?.user?.is_anonymous || false);
+        } else {
+          setUser(session?.user ?? null);
+          setIsAnonymous(session?.user?.is_anonymous || false);
+        }
         setLoading(false);
       })();
     });
