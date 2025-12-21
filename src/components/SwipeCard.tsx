@@ -37,7 +37,7 @@ interface SwipeCardProps {
   onReport?: (id: string) => void;
   onBlock?: (id: string) => void;
   className?: string;
-  onNavigate?: (screen: string) => void;
+  onNavigate?: (screen: string, params?: any) => void;
 }
 
 export const SwipeCard: React.FC<SwipeCardProps> = ({
@@ -49,7 +49,8 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   onBlink,
   onReport,
   onBlock,
-  className = ""
+  className = "",
+  onNavigate
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
@@ -313,8 +314,16 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         
         {/* Profile Info Overlay */}
-        <div className="absolute bottom-2 sm:bottom-3 lg:bottom-4 left-2 sm:left-3 lg:left-4 right-2 sm:right-3 lg:right-4 text-white">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg truncate">
+        <div
+          className="absolute bottom-2 sm:bottom-3 lg:bottom-4 left-2 sm:left-3 lg:left-4 right-2 sm:right-3 lg:right-4 text-white cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onNavigate) {
+              onNavigate('view-profile', { userId: profile.id });
+            }
+          }}
+        >
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg truncate hover:underline">
             {profile.name}, {profile.age}
           </h2>
           <div className="flex items-center mb-1">
