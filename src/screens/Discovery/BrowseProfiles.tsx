@@ -28,249 +28,12 @@ interface Profile {
   interests?: string[];
 }
 
-const mockProfiles: Profile[] = [
-  {
-    id: '1',
-    name: 'Angela Maria',
-    age: 33,
-    photoCount: 22,
-    imageUrl: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'New York, NY',
-    bio: 'Love exploring new places and meeting interesting people',
-    interests: ['Travel', 'Photography', 'Music']
-  },
-  {
-    id: '2',
-    name: 'Christable',
-    age: 26,
-    photoCount: 21,
-    imageUrl: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Los Angeles, CA',
-    bio: 'Creative soul with a passion for art and design',
-    interests: ['Art', 'Coffee', 'Hiking']
-  },
-  {
-    id: '3',
-    name: 'Steve',
-    age: 37,
-    photoCount: 22,
-    imageUrl: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Chicago, IL',
-    bio: 'Tech enthusiast and fitness lover',
-    interests: ['Technology', 'Fitness', 'Food']
-  },
-  {
-    id: '4',
-    name: 'Betzabeth',
-    age: 32,
-    photoCount: 26,
-    imageUrl: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Miami, FL',
-    bio: 'Beach lover and yoga enthusiast',
-    interests: ['Yoga', 'Beach', 'Travel']
-  },
-  {
-    id: '5',
-    name: 'Sarah',
-    age: 34,
-    photoCount: 23,
-    imageUrl: 'https://images.pexels.com/photos/1468379/pexels-photo-1468379.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Seattle, WA',
-    bio: 'Coffee addict and book lover',
-    interests: ['Reading', 'Coffee', 'Movies']
-  },
-  {
-    id: '6',
-    name: 'Joy',
-    age: 30,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1858175/pexels-photo-1858175.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Boston, MA',
-    bio: 'Foodie and adventure seeker',
-    interests: ['Food', 'Travel', 'Photography']
-  },
-  {
-    id: '7',
-    name: 'Olivia',
-    age: 29,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Portland, OR',
-    bio: 'Capturing moments and creating memories',
-    interests: ['Photography', 'Nature', 'Coffee']
-  },
-  {
-    id: '8',
-    name: 'James',
-    age: 31,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Denver, CO',
-    bio: 'Building startups and chasing dreams',
-    interests: ['Business', 'Skiing', 'Travel']
-  },
-  {
-    id: '9',
-    name: 'Sophia',
-    age: 27,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Nashville, TN',
-    bio: 'Music is my soul',
-    interests: ['Music', 'Singing', 'Writing']
-  },
-  {
-    id: '10',
-    name: 'Daniel',
-    age: 36,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'San Diego, CA',
-    bio: 'Living the beach life',
-    interests: ['Surfing', 'Beach', 'Travel']
-  },
-  {
-    id: '11',
-    name: 'Isabella',
-    age: 25,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Phoenix, AZ',
-    bio: 'Creating wearable art',
-    interests: ['Fashion', 'Design', 'Art']
-  },
-  {
-    id: '12',
-    name: 'Ryan',
-    age: 33,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1172207/pexels-photo-1172207.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Philadelphia, PA',
-    bio: 'Cooking is love made visible',
-    interests: ['Cooking', 'Food', 'Wine']
-  },
-  {
-    id: '13',
-    name: 'Mia',
-    age: 28,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1154638/pexels-photo-1154638.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Las Vegas, NV',
-    bio: 'Dance is my freedom',
-    interests: ['Dance', 'Music', 'Fitness']
-  },
-  {
-    id: '14',
-    name: 'Ethan',
-    age: 32,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1587009/pexels-photo-1587009.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Minneapolis, MN',
-    bio: 'Designing spaces that inspire',
-    interests: ['Architecture', 'Design', 'Art']
-  },
-  {
-    id: '15',
-    name: 'Ava',
-    age: 26,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1308885/pexels-photo-1308885.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Charlotte, NC',
-    bio: 'Caring for others is my calling',
-    interests: ['Healthcare', 'Fitness', 'Reading']
-  },
-  {
-    id: '16',
-    name: 'Noah',
-    age: 34,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Detroit, MI',
-    bio: 'Guitar is my voice',
-    interests: ['Music', 'Guitar', 'Concerts']
-  },
-  {
-    id: '17',
-    name: 'Emily',
-    age: 29,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1372134/pexels-photo-1372134.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Atlanta, GA',
-    bio: 'Telling stories that matter',
-    interests: ['Writing', 'Journalism', 'Travel']
-  },
-  {
-    id: '18',
-    name: 'Mason',
-    age: 30,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1484810/pexels-photo-1484810.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Salt Lake City, UT',
-    bio: 'Mountains are my home',
-    interests: ['Skiing', 'Mountains', 'Travel']
-  },
-  {
-    id: '19',
-    name: 'Charlotte',
-    age: 27,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'New Orleans, LA',
-    bio: 'Creating art that speaks to the soul',
-    interests: ['Art', 'Painting', 'Music']
-  },
-  {
-    id: '20',
-    name: 'Liam',
-    age: 35,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Tampa, FL',
-    bio: 'Fitness is a lifestyle',
-    interests: ['Fitness', 'Health', 'Sports']
-  },
-  {
-    id: '21',
-    name: 'Amelia',
-    age: 31,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1520760/pexels-photo-1520760.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'Raleigh, NC',
-    bio: 'Animals are my world',
-    interests: ['Animals', 'Pets', 'Nature']
-  },
-  {
-    id: '22',
-    name: 'Emma',
-    age: 28,
-    photoCount: 25,
-    imageUrl: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=800',
-    isOnline: true,
-    location: 'San Francisco, CA',
-    bio: 'Tech innovator and problem solver',
-    interests: ['Technology', 'Innovation', 'Startups']
-  },
+const placeholderImages = [
+  'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=800',
+  'https://images.pexels.com/photos/1468379/pexels-photo-1468379.jpeg?auto=compress&cs=tinysrgb&w=800'
 ];
 
 function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike: (profileId: string) => void; onNavigate: (screen: string, params?: any) => void }) {
@@ -371,7 +134,6 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
 
   useEffect(() => {
     loadProfiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
 
   const loadProfiles = async () => {
@@ -394,7 +156,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
 
       if (error) {
         console.error('Database error:', error);
-        setProfiles(mockProfiles);
+        setProfiles([]);
         setLoading(false);
         return;
       }
@@ -402,8 +164,8 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       console.log('Found profiles:', dbProfiles?.length || 0);
 
       if (!dbProfiles || dbProfiles.length === 0) {
-        console.warn('No profiles found in database, using mock data');
-        setProfiles(mockProfiles);
+        console.warn('No profiles found in database');
+        setProfiles([]);
         setLoading(false);
         return;
       }
@@ -415,9 +177,9 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
               .from('user_photos')
               .select('*', { count: 'exact', head: true })
               .eq('user_id', profile.user_id);
-            return count || 25;
+            return count || 0;
           } catch {
-            return 25;
+            return 0;
           }
         })
       );
@@ -425,12 +187,6 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       const primaryPhotos = await Promise.all(
         dbProfiles.map(async (profile, index) => {
           try {
-            // CRITICAL FIX: Check profile.photo_url first (from user_profiles table)
-            if (profile.photo_url) {
-              return profile.photo_url;
-            }
-
-            // Then check user_photos table for primary photo
             const { data } = await supabaseClient
               .from('user_photos')
               .select('photo_url')
@@ -438,29 +194,19 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
               .eq('is_primary', true)
               .maybeSingle();
 
-            // If user has uploaded a photo, use it
             if (data?.photo_url) {
               return data.photo_url;
             }
 
-            // Otherwise, use a unique fallback from mock profiles (cycle through them)
-            const mockIndex = index % mockProfiles.length;
-            return mockProfiles[mockIndex].imageUrl;
+            return placeholderImages[index % placeholderImages.length];
           } catch {
-            // Use a unique fallback from mock profiles
-            const mockIndex = index % mockProfiles.length;
-            return mockProfiles[mockIndex].imageUrl;
+            return placeholderImages[index % placeholderImages.length];
           }
         })
       );
 
       const formattedProfiles: Profile[] = dbProfiles.map((profile, index) => {
-        // Get name from profile or fallback to mock data
-        let displayName = profile.first_name || profile.full_name;
-        if (!displayName || displayName === 'User') {
-          const mockIndex = index % mockProfiles.length;
-          displayName = mockProfiles[mockIndex].name;
-        }
+        const displayName = profile.first_name || profile.full_name || 'New User';
 
         return {
           id: profile.user_id,
@@ -469,9 +215,9 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
           photoCount: photoCounts[index],
           imageUrl: primaryPhotos[index],
           isOnline: profile.is_online || false,
-          location: profile.location || mockProfiles[index % mockProfiles.length].location,
-          bio: profile.bio || mockProfiles[index % mockProfiles.length].bio,
-          interests: parseArrayField(profile.interests, mockProfiles[index % mockProfiles.length].interests || [])
+          location: profile.location || 'Location not set',
+          bio: profile.bio || 'No bio yet',
+          interests: parseArrayField(profile.interests, [])
         };
       });
 
@@ -485,15 +231,11 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
         filteredProfiles = onlineProfiles.length > 0 ? onlineProfiles : uniqueProfiles;
       }
 
-      if (filteredProfiles.length === 0) {
-        filteredProfiles = mockProfiles;
-      }
-
       console.log('Setting profiles:', filteredProfiles.length);
       setProfiles(filteredProfiles);
     } catch (error) {
       console.error('Error loading profiles:', error);
-      setProfiles(mockProfiles);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
@@ -589,12 +331,14 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6">
         {profiles.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No profiles found. Check back later!</p>
+            <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg font-medium">No profiles found yet</p>
+            <p className="text-gray-500 text-sm mt-2">Be the first to complete your profile!</p>
           </div>
         ) : (
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              {profiles.slice(0, 22).map((profile) => (
+              {profiles.map((profile) => (
                 <ProfileCard key={profile.id} profile={profile} onLike={handleLike} onNavigate={onNavigate} />
               ))}
             </div>
