@@ -37,7 +37,31 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load profiles from database
+  React.useEffect(() => {
+    if (user?.id) {
+      supabaseClient
+        .from('user_profiles')
+        .update({ is_online: true, last_active: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .then(() => {});
+
+      const interval = setInterval(() => {
+        supabaseClient
+          .from('user_profiles')
+          .update({ last_active: new Date().toISOString() })
+          .eq('user_id', user.id);
+      }, 60000);
+
+      return () => {
+        clearInterval(interval);
+        supabaseClient
+          .from('user_profiles')
+          .update({ is_online: false })
+          .eq('user_id', user.id);
+      };
+    }
+  }, [user?.id]);
+
   React.useEffect(() => {
     loadProfiles();
   }, []);
@@ -110,7 +134,8 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
             premium: false
           };
         });
-        setProfiles(formattedProfiles);
+        const finalProfiles = formattedProfiles.length > 0 ? formattedProfiles : mockProfiles;
+        setProfiles(finalProfiles);
       } else {
         setProfiles(mockProfiles);
       }

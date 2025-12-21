@@ -339,10 +339,35 @@ interface BrowseProfilesProps {
 }
 
 function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
-  const [activeTab, setActiveTab] = useState<'all' | 'online' | 'following'>('online');
+  const [activeTab, setActiveTab] = useState<'all' | 'online' | 'following'>('all');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.id) {
+      supabaseClient
+        .from('user_profiles')
+        .update({ is_online: true, last_active: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .then(() => console.log('User marked online'));
+
+      const interval = setInterval(() => {
+        supabaseClient
+          .from('user_profiles')
+          .update({ last_active: new Date().toISOString() })
+          .eq('user_id', user.id);
+      }, 60000);
+
+      return () => {
+        clearInterval(interval);
+        supabaseClient
+          .from('user_profiles')
+          .update({ is_online: false })
+          .eq('user_id', user.id);
+      };
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     loadProfiles();
@@ -456,7 +481,12 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
 
       let filteredProfiles = uniqueProfiles;
       if (activeTab === 'online') {
-        filteredProfiles = uniqueProfiles.filter(p => p.isOnline);
+        const onlineProfiles = uniqueProfiles.filter(p => p.isOnline);
+        filteredProfiles = onlineProfiles.length > 0 ? onlineProfiles : uniqueProfiles;
+      }
+
+      if (filteredProfiles.length === 0) {
+        filteredProfiles = mockProfiles;
       }
 
       console.log('Setting profiles:', filteredProfiles.length);
