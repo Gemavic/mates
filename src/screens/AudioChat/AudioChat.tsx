@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
+
+interface ActiveMatch {
+  id: string;
+  name: string;
+  image: string;
+  status: string;
+}
 
 interface AudioChatProps {
   onNavigate: (screen: string) => void;
@@ -18,27 +26,47 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [callDuration, setCallDuration] = useState(0);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
+  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
 
-  const activeMatches = [
-    {
-      id: '1',
-      name: 'Emma',
-      image: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400',
-      status: 'online'
-    },
-    {
-      id: '2',
-      name: 'Sarah',
-      image: 'https://images.pexels.com/photos/1839904/pexels-photo-1839904.jpeg?auto=compress&cs=tinysrgb&w=400',
-      status: 'online'
-    },
-    {
-      id: '3',
-      name: 'Jessica',
-      image: 'https://images.pexels.com/photos/1821095/pexels-photo-1821095.jpeg?auto=compress&cs=tinysrgb&w=400',
-      status: 'busy'
-    }
-  ];
+  useEffect(() => {
+    const loadMatches = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: profiles } = await supabaseClient
+          .from('user_profiles')
+          .select('user_id, first_name, full_name, is_online')
+          .neq('user_id', user.id)
+          .eq('profile_visibility', 'public')
+          .limit(5);
+
+        if (profiles && profiles.length > 0) {
+          const matches = await Promise.all(
+            profiles.map(async (profile: any) => {
+              const { data: photo } = await supabaseClient
+                .from('user_photos')
+                .select('photo_url')
+                .eq('user_id', profile.user_id)
+                .eq('is_primary', true)
+                .maybeSingle();
+
+              return {
+                id: profile.user_id,
+                name: profile.first_name || profile.full_name || 'User',
+                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                status: profile.is_online ? 'online' : 'offline'
+              };
+            })
+          );
+          setActiveMatches(matches);
+        }
+      } catch (error) {
+        console.error('Error loading matches:', error);
+      }
+    };
+
+    loadMatches();
+  }, [user?.id]);
 
   const startAudioCall = (matchName: string) => {
     if (!user) {

@@ -106,62 +106,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     { id: 'birthday_cake', name: 'Cake', emoji: '🎂', price: 10, category: 'fun' }
   ];
 
-  const defaultThreads: ChatThread[] = [
-    {
-      id: 'thread-gabriela',
-      participantId: 'gabriela-id',
-      participantName: 'Gabriela',
-      participantImage: 'https://images.pexels.com/photos/1441151/pexels-photo-1441151.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-gabriela',
-        senderId: 'gabriela-id',
-        senderName: 'Gabriela',
-        senderImage: 'https://images.pexels.com/photos/1441151/pexels-photo-1441151.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: `Hey! How's your day going? Would love to chat more 😊`,
-        timestamp: new Date(Date.now() - 2 * 60 * 1000),
-        type: 'text'
-      },
-      unreadCount: 1,
-      isOnline: true,
-      isTyping: false
-    },
-    {
-      id: 'thread-astrid',
-      participantId: 'astrid-id',
-      participantName: 'Astrid',
-      participantImage: 'https://images.pexels.com/photos/2100063/pexels-photo-2100063.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-astrid',
-        senderId: 'astrid-id',
-        senderName: 'Astrid',
-        senderImage: 'https://images.pexels.com/photos/2100063/pexels-photo-2100063.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Thanks for the great conversation yesterday! 🌟',
-        timestamp: new Date(Date.now() - 60 * 60 * 1000),
-        type: 'text'
-      },
-      unreadCount: 1,
-      isOnline: true,
-      isTyping: false
-    },
-    {
-      id: 'thread-jessica',
-      participantId: 'jessica-id',
-      participantName: 'Jessica',
-      participantImage: 'https://images.pexels.com/photos/3763714/pexels-photo-3763714.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-jessica',
-        senderId: 'jessica-id',
-        senderName: 'Jessica',
-        senderImage: 'https://images.pexels.com/photos/3763714/pexels-photo-3763714.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Looking forward to our coffee date this weekend! ☕',
-        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        type: 'text'
-      },
-      unreadCount: 1,
-      isOnline: true,
-      isTyping: false
-    }
-  ];
+  const defaultThreads: ChatThread[] = [];
 
   const getInitialThreads = (): ChatThread[] => {
     if (selectedUserId && selectedUserName && selectedUserImage) {
@@ -192,29 +137,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [chatThreads, setChatThreads] = useState<ChatThread[]>(getInitialThreads());
 
   const getInitialMessages = (): ChatMessage[] => {
-    if (selectedUserId && selectedUserName && selectedUserImage) {
-      return [];
-    }
-    return [
-      {
-        id: 'msg-gabriela-1',
-        senderId: 'gabriela-id',
-        senderName: 'Gabriela',
-        senderImage: 'https://images.pexels.com/photos/1441151/pexels-photo-1441151.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Hey! How are you doing today? Hope you\'re having a great day! 😊',
-        timestamp: new Date(Date.now() - 2 * 60 * 1000),
-        type: 'text'
-      },
-      {
-        id: 'msg-user-1',
-        senderId: user?.id || 'demo-user',
-        senderName: 'You',
-        senderImage: userProfileImage,
-        message: 'Winked',
-        timestamp: new Date(Date.now() - 1 * 60 * 1000),
-        type: 'text'
-      }
-    ];
+    return [];
   };
 
   const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages());
