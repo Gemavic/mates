@@ -17,6 +17,19 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 
+const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 interface ViewUserProfileProps {
   onNavigate: (screen: string, params?: any) => void;
   userId: string;
@@ -74,7 +87,10 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
         return;
       }
 
-      setProfile(profileData);
+      setProfile({
+        ...profileData,
+        interests: parseArrayField(profileData.interests, [])
+      });
 
       const { data: photosData, error: photosError } = await supabaseClient
         .from('user_photos')

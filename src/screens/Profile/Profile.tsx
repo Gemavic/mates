@@ -9,6 +9,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { ProfileManager } from '@/lib/database';
 
+const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 interface ProfileProps {
   onNavigate: (screen: string) => void;
 }
@@ -45,7 +58,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         occupation: profile.occupation || 'Professional',
         education: profile.education || 'University',
         bio: profile.bio || '',
-        interests: profile.interests || ['Travel', 'Music', 'Food', 'Movies']
+        interests: parseArrayField(profile.interests, ['Travel', 'Music', 'Food', 'Movies'])
       });
     }
   }, [profile]);

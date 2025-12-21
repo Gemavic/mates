@@ -41,6 +41,19 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     loadProfiles();
   }, []);
 
+  const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : defaultValue;
+      } catch {
+        return defaultValue;
+      }
+    }
+    return defaultValue;
+  };
+
   const loadProfiles = async () => {
     setLoading(true);
 
@@ -58,7 +71,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
             education: profile.education || 'University',
             images: ['https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800'],
             bio: profile.bio || 'Hello there!',
-            interests: profile.interests || ['Travel', 'Music'],
+            interests: parseArrayField(profile.interests, ['Travel', 'Music']),
             online: profile.is_online || false,
             verified: profile.is_verified || false,
             premium: false
