@@ -4,11 +4,25 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
 import { MessageCircle, Heart, Mail as MailIcon, User, Users, Newspaper, MessageSquare, CreditCard } from 'lucide-react';
 import { sendMessageNotification } from '@/lib/emailNotifications';
+import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
+import { MessagingManager } from '@/lib/database';
 
 interface SelectedChatUser {
   id: string;
   name: string;
   image: string;
+}
+
+interface Match {
+  id: string;
+  name: string;
+  age: number;
+  image: string;
+  lastMessage: string;
+  time: string;
+  unread: boolean;
+  isNew: boolean;
 }
 
 interface MatchesProps {
@@ -18,65 +32,68 @@ interface MatchesProps {
 
 export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }) => {
   const [isLoading, setIsLoading] = React.useState(true);
-  
+  const [matches, setMatches] = React.useState<Match[]>([]);
+  const { user } = useAuth();
+
   React.useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // Updated matches to reflect La-Date style messaging
-  const matches = [
-    {
-      id: '1',
-      name: 'Gabriela',
-      age: 23,
-      image: 'https://images.pexels.com/photos/1102341/pexels-photo-1102341.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: 'I believe in love that is nourished by everyday moments... 💕',
-      time: '12:37 pm',
-      unread: true,
-      isNew: true
-    },
-    {
-      id: '2',
-      name: 'Astrid',
-      age: 45,
-      image: 'https://images.pexels.com/photos/3763714/pexels-photo-3763714.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: 'The city\'s asleep. I\'m not. And you should know... 🌙',
-      time: '11:46 am',
-      unread: true,
-      isNew: true
-    },
-    {
-      id: '3',
-      name: 'Jessica',
-      age: 34,
-      image: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: 'I\'m glad to meet you. I am a woman discovering... ✨',
-      time: '11:11 am',
-      unread: true,
-      isNew: true
-    },
-    {
-      id: '4',
-      name: 'Aline Claudia',
-      age: 44,
-      image: 'https://images.pexels.com/photos/2709388/pexels-photo-2709388.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: '🍓🍓 Sometimes after a hard day alone...',
-      time: '10:59 am',
-      unread: true,
-      isNew: true
-    },
-    {
-      id: '5',
-      name: 'Yasmin',
-      age: 29,
-      image: 'https://images.pexels.com/photos/3228213/pexels-photo-3228213.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: 'Imagine how cosy it is to sit at home... 🏠',
-      time: '10:57 am',
-      unread: true,
-      isNew: true
-    }
-  ];
+    const loadConversations = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const threads = await MessagingManager.getMailThreads(user.id);
+
+        if (threads && threads.length > 0) {
+          const formattedMatches = await Promise.all(
+            threads.map(async (thread: any) => {
+              const otherUserId = thread.participant1_id === user.id
+                ? thread.participant2_id
+                : thread.participant1_id;
+
+              const { data: profile } = await supabaseClient
+                .from('user_profiles')
+                .select('full_name, first_name, age')
+                .eq('user_id', otherUserId)
+                .maybeSingle();
+
+              const { data: photo } = await supabaseClient
+                .from('user_photos')
+                .select('photo_url')
+                .eq('user_id', otherUserId)
+                .eq('is_primary', true)
+                .maybeSingle();
+
+              const latestMsg = thread.latest_message?.[0];
+              const msgTime = latestMsg?.created_at
+                ? new Date(latestMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '';
+
+              return {
+                id: otherUserId,
+                name: profile?.first_name || profile?.full_name || 'User',
+                age: profile?.age || 25,
+                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                lastMessage: latestMsg?.message_text || 'Start a conversation...',
+                time: msgTime,
+                unread: latestMsg && !latestMsg.is_read,
+                isNew: latestMsg && !latestMsg.is_read
+              };
+            })
+          );
+
+          setMatches(formattedMatches);
+        }
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConversations();
+  }, [user?.id]);
 
   const renderContent = () => {
     if (isLoading) {

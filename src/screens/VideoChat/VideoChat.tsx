@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, Phone, Camera, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
+
+interface ActiveMatch {
+  id: string;
+  name: string;
+  image: string;
+  status: string;
+}
 
 interface VideoChatProps {
   onNavigate: (screen: string) => void;
@@ -19,27 +27,47 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const [callDuration, setCallDuration] = useState(0);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
+  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
 
-  const activeMatches = [
-    {
-      id: '1',
-      name: 'Emma',
-      image: 'https://images.pexels.com/photos/2100063/pexels-photo-2100063.jpeg?auto=compress&cs=tinysrgb&w=400',
-      status: 'online'
-    },
-    {
-      id: '2',
-      name: 'Sarah',
-      image: 'https://images.pexels.com/photos/3763789/pexels-photo-3763789.jpeg?auto=compress&cs=tinysrgb&w=400',
-      status: 'online'
-    },
-    {
-      id: '3',
-      name: 'Jessica',
-      image: 'https://images.pexels.com/photos/2169434/pexels-photo-2169434.jpeg?auto=compress&cs=tinysrgb&w=400',
-      status: 'away'
-    }
-  ];
+  useEffect(() => {
+    const loadMatches = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: profiles } = await supabaseClient
+          .from('user_profiles')
+          .select('user_id, first_name, full_name, is_online')
+          .neq('user_id', user.id)
+          .eq('profile_visibility', 'public')
+          .limit(5);
+
+        if (profiles && profiles.length > 0) {
+          const matches = await Promise.all(
+            profiles.map(async (profile: any) => {
+              const { data: photo } = await supabaseClient
+                .from('user_photos')
+                .select('photo_url')
+                .eq('user_id', profile.user_id)
+                .eq('is_primary', true)
+                .maybeSingle();
+
+              return {
+                id: profile.user_id,
+                name: profile.first_name || profile.full_name || 'User',
+                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                status: profile.is_online ? 'online' : 'offline'
+              };
+            })
+          );
+          setActiveMatches(matches);
+        }
+      } catch (error) {
+        console.error('Error loading matches:', error);
+      }
+    };
+
+    loadMatches();
+  }, [user?.id]);
 
   const startVideoCall = (matchName: string) => {
     if (!user) {

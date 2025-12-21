@@ -38,32 +38,63 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
     }
   ];
 
-  const matchSuggestions = [
-    {
-      id: '1',
-      name: 'Emma',
-      age: 25,
-      compatibility: 95,
-      image: 'https://images.pexels.com/photos/1587009/pexels-photo-1587009.jpeg?auto=compress&cs=tinysrgb&w=400',
-      reasons: ['Shared interests in hiking', 'Similar career goals', 'Compatible personality']
-    },
-    {
-      id: '2',
-      name: 'Sarah',
-      age: 26,
-      compatibility: 92,
-      image: 'https://images.pexels.com/photos/1520760/pexels-photo-1520760.jpeg?auto=compress&cs=tinysrgb&w=400',
-      reasons: ['Love for travel', 'Creative mindset', 'Active lifestyle']
-    },
-    {
-      id: '3',
-      name: 'Jessica',
-      age: 24,
-      compatibility: 88,
-      image: 'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=400',
-      reasons: ['Foodie culture', 'Similar values', 'Great conversation skills']
-    }
-  ];
+  const [matchSuggestions, setMatchSuggestions] = React.useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadSuggestions = async () => {
+      if (!user?.id) {
+        setLoadingSuggestions(false);
+        return;
+      }
+
+      try {
+        const { data: profiles } = await import('@/lib/supabase').then(m =>
+          m.supabaseClient
+            .from('user_profiles')
+            .select('user_id, first_name, full_name, age, interests, bio')
+            .neq('user_id', user.id)
+            .eq('profile_visibility', 'public')
+            .limit(5)
+        );
+
+        if (profiles && profiles.length > 0) {
+          const { supabaseClient } = await import('@/lib/supabase');
+          const suggestions = await Promise.all(
+            profiles.map(async (profile: any) => {
+              const { data: photo } = await supabaseClient
+                .from('user_photos')
+                .select('photo_url')
+                .eq('user_id', profile.user_id)
+                .eq('is_primary', true)
+                .maybeSingle();
+
+              const interests = Array.isArray(profile.interests) ? profile.interests : [];
+              const reasons = interests.length > 0
+                ? interests.slice(0, 3).map((i: string) => `Shared interest: ${i}`)
+                : ['Compatible personality', 'Similar values'];
+
+              return {
+                id: profile.user_id,
+                name: profile.first_name || profile.full_name || 'User',
+                age: profile.age || 25,
+                compatibility: Math.floor(Math.random() * 15) + 80,
+                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                reasons
+              };
+            })
+          );
+          setMatchSuggestions(suggestions);
+        }
+      } catch (error) {
+        console.error('Error loading suggestions:', error);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    loadSuggestions();
+  }, [user?.id]);
 
   return (
     <Layout

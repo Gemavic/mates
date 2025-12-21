@@ -1,52 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { EmptyState } from '@/components/EmptyState';
 import { PageTransition } from '@/components/PageTransition';
 import { Heart, Star, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
+import { MatchManager } from '@/lib/database';
+
+interface LikedProfile {
+  id: string;
+  name: string;
+  age: number;
+  image: string;
+  type: string;
+}
+
+interface WhoLikesYou {
+  id: string;
+  name: string;
+  image: string;
+  blurred: boolean;
+}
 
 interface LikesProps {
   onNavigate: (screen: string, params?: { userId?: string }) => void;
 }
 
 export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
-  const likedProfiles = [
-    {
-      id: '1',
-      name: 'Emma',
-      age: 25,
-      image: 'https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&w=400',
-      type: 'like'
-    },
-    {
-      id: '2',
-      name: 'Sarah',
-      age: 26,
-      image: 'https://images.pexels.com/photos/1239288/pexels-photo-1239288.jpeg?auto=compress&cs=tinysrgb&w=400',
-      type: 'super-like'
-    },
-    {
-      id: '3',
-      name: 'Jessica',
-      age: 24,
-      image: 'https://images.pexels.com/photos/1172207/pexels-photo-1172207.jpeg?auto=compress&cs=tinysrgb&w=400',
-      type: 'like'
-    }
-  ];
+  const { user } = useAuth();
+  const [likedProfiles, setLikedProfiles] = useState<LikedProfile[]>([]);
+  const [whoLikesYou, setWhoLikesYou] = useState<WhoLikesYou[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const whoLikesYou = [
-    {
-      id: '4',
-      name: 'Mystery Person',
-      image: 'https://images.pexels.com/photos/1547971/pexels-photo-1547971.jpeg?auto=compress&cs=tinysrgb&w=400',
-      blurred: true
-    },
-    {
-      id: '5',
-      name: 'Mystery Person',
-      image: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=400',
-      blurred: true
-    }
-  ];
+  useEffect(() => {
+    const loadLikes = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: sentLikes } = await supabaseClient
+          .from('user_likes')
+          .select('target_user_id, like_type, created_at')
+          .eq('user_id', user.id)
+          .in('like_type', ['like', 'super_like'])
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (sentLikes && sentLikes.length > 0) {
+          const profiles = await Promise.all(
+            sentLikes.map(async (like: any) => {
+              const { data: profile } = await supabaseClient
+                .from('user_profiles')
+                .select('full_name, first_name, age')
+                .eq('user_id', like.target_user_id)
+                .maybeSingle();
+
+              const { data: photo } = await supabaseClient
+                .from('user_photos')
+                .select('photo_url')
+                .eq('user_id', like.target_user_id)
+                .eq('is_primary', true)
+                .maybeSingle();
+
+              return {
+                id: like.target_user_id,
+                name: profile?.first_name || profile?.full_name || 'User',
+                age: profile?.age || 25,
+                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                type: like.like_type === 'super_like' ? 'super-like' : 'like'
+              };
+            })
+          );
+          setLikedProfiles(profiles);
+        }
+
+        const receivedLikes = await MatchManager.getLikesReceived(user.id);
+        if (receivedLikes && receivedLikes.length > 0) {
+          const likersWithBlur = receivedLikes.slice(0, 5).map((like: any) => ({
+            id: like.user_id,
+            name: 'Someone likes you!',
+            image: like.user_profile?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+            blurred: true
+          }));
+          setWhoLikesYou(likersWithBlur);
+        }
+      } catch (error) {
+        console.error('Error loading likes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLikes();
+  }, [user?.id]);
 
   return (
     <Layout
