@@ -57,7 +57,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadProfiles();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     applyFilters();
@@ -66,8 +66,8 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
   const loadProfiles = async () => {
     setIsLoading(true);
     try {
-      // Fetch all user profiles except current user
-      const { data, error } = await supabaseClient
+      // Build query to fetch all user profiles except current user
+      let query = supabaseClient
         .from('user_profiles')
         .select(`
           id,
@@ -82,9 +82,17 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
           interests,
           is_verified,
           is_online
-        `)
-        .neq('user_id', user?.id || '')
-        .order('created_at', { ascending: false });
+        `);
+
+      // Only exclude current user if user is authenticated
+      if (user?.id) {
+        query = query.neq('user_id', user.id);
+      }
+
+      // Filter for public profiles for Discovery
+      query = query.eq('profile_visibility', 'public');
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading profiles:', error);
@@ -99,7 +107,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
             .select('photo_url')
             .eq('user_id', profile.user_id)
             .eq('is_public', true)
-            .order('upload_order', { ascending: true })
+            .order('display_order', { ascending: true })
             .limit(5);
 
           return {
@@ -147,7 +155,11 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
   };
 
   const handleLike = async (profileId: string) => {
-    if (!user) return;
+    if (!user) {
+      alert('Please sign in to like profiles');
+      onNavigate('signin');
+      return;
+    }
 
     try {
       await supabaseClient

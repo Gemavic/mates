@@ -39,39 +39,37 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   // Load profiles from database
   React.useEffect(() => {
     loadProfiles();
-  }, [user]);
+  }, []);
 
   const loadProfiles = async () => {
     setLoading(true);
-    
+
     try {
-      if (user) {
-        try {
-          const dbProfiles = await ProfileManager.getDiscoveryProfiles(user.id);
-          if (dbProfiles && dbProfiles.length > 0) {
-            const formattedProfiles = dbProfiles.map(profile => ({
-              id: profile.user_id,
-              name: profile.first_name || profile.full_name || 'User',
-              age: profile.age || 25,
-              location: profile.location || 'Unknown',
-              occupation: profile.occupation || 'Professional',
-              education: profile.education || 'University',
-              images: ['https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800'],
-              bio: profile.bio || 'Hello there!',
-              interests: profile.interests || ['Travel', 'Music'],
-              online: profile.is_online || false,
-              verified: profile.is_verified || false,
-              premium: false
-            }));
-            setProfiles(formattedProfiles);
-          } else {
-            setProfiles(mockProfiles);
-          }
-        } catch (dbError) {
-          console.warn('Database error, using mock profiles:', dbError);
+      // Try to load profiles from database, works for both authenticated and anonymous users
+      try {
+        const dbProfiles = await ProfileManager.getDiscoveryProfiles(user?.id);
+        if (dbProfiles && dbProfiles.length > 0) {
+          const formattedProfiles = dbProfiles.map(profile => ({
+            id: profile.user_id,
+            name: profile.first_name || profile.full_name || 'User',
+            age: profile.age || 25,
+            location: profile.location || 'Unknown',
+            occupation: profile.occupation || 'Professional',
+            education: profile.education || 'University',
+            images: ['https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800'],
+            bio: profile.bio || 'Hello there!',
+            interests: profile.interests || ['Travel', 'Music'],
+            online: profile.is_online || false,
+            verified: profile.is_verified || false,
+            premium: false
+          }));
+          setProfiles(formattedProfiles);
+        } else {
+          // No profiles in database, use mock profiles for demo
           setProfiles(mockProfiles);
         }
-      } else {
+      } catch (dbError) {
+        console.warn('Database error, using mock profiles:', dbError);
         setProfiles(mockProfiles);
       }
     } catch (error) {
