@@ -167,7 +167,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
             <span className="text-white/70 text-sm">💖 Popular</span>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {loading ? (
               <div className="col-span-full text-center text-white py-8">Loading gifts...</div>
             ) : sortedGifts.length === 0 ? (
@@ -176,46 +176,55 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
               sortedGifts.map((gift) => (
                 <div
                   key={gift.id}
-                  className="bg-white rounded-2xl p-4 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col justify-between"
+                  className="bg-white rounded-3xl p-5 text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] flex flex-col"
                 >
                   {gift.image_url ? (
-                    <div className="mb-3 bg-gray-100 rounded-xl p-4 h-32 flex items-center justify-center">
+                    <div className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 h-40 flex items-center justify-center">
                       <img
                         src={gift.image_url}
                         alt={gift.name}
-                        className="max-h-full max-w-full object-contain"
+                        className="max-h-full max-w-full object-contain drop-shadow-md"
                       />
                     </div>
                   ) : (
-                    <div className="text-5xl mb-3">{gift.icon}</div>
+                    <div className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 h-40 flex items-center justify-center">
+                      <span className="text-7xl">{gift.icon}</span>
+                    </div>
                   )}
 
-                  <h4 className="text-gray-900 font-semibold text-base mb-2">{gift.name}</h4>
+                  <h4 className="text-gray-900 font-bold text-lg mb-6">{gift.name}</h4>
 
-                  <div className="flex items-center justify-between mb-3 px-2">
-                    <div className="text-left">
-                      <div className="flex items-center space-x-1">
-                        <div className="w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">C</span>
+                  <div className="flex items-stretch justify-center gap-4 mb-6">
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center shadow-sm">
+                          <span className="text-white text-xs font-black">C</span>
                         </div>
-                        <span className="text-gray-900 font-bold text-lg">{gift.credit_cost}</span>
+                        <span className="text-gray-900 font-black text-2xl">{gift.credit_cost}</span>
                       </div>
-                      <span className="text-gray-500 text-xs">Credits</span>
+                      <span className="text-gray-500 text-xs font-medium">Credits</span>
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-gray-900 font-bold text-lg">{gift.kobos_cost}</div>
-                      <span className="text-gray-500 text-xs">Kobos</span>
+                    <div className="w-px bg-gray-200"></div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center shadow-sm">
+                          <span className="text-white text-xs font-black">K</span>
+                        </div>
+                        <span className="text-gray-900 font-black text-2xl">{gift.kobos_cost}</span>
+                      </div>
+                      <span className="text-gray-500 text-xs font-medium">Kobos</span>
                     </div>
                   </div>
 
                   <Button
                     onClick={() => sendGift(gift)}
                     disabled={!creditManager.canAfford(user?.id || 'demo-user', gift.credit_cost) && !creditManager.isStaffMember(user?.id || 'demo-user')}
-                    className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
+                    className={`w-full py-4 rounded-2xl text-base font-bold transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 shadow-md ${
                       creditManager.canAfford(user?.id || 'demo-user', gift.credit_cost) || creditManager.isStaffMember(user?.id || 'demo-user')
-                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:scale-105'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-pink-500 via-pink-600 to-rose-600 text-white hover:shadow-lg hover:scale-[1.02]'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                     type="button"
                   >
