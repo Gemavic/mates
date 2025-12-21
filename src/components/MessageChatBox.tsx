@@ -20,6 +20,7 @@ interface MessageChatBoxProps {
   selectedUserId?: string;
   selectedUserName?: string;
   selectedUserImage?: string;
+  onNavigate?: (screen: string) => void;
 }
 
 interface ChatMessage {
@@ -49,7 +50,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   className = "",
   selectedUserId,
   selectedUserName,
-  selectedUserImage
+  selectedUserImage,
+  onNavigate = () => {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeThread, setActiveThread] = useState<string | null>(null);
@@ -496,7 +498,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       <div className="p-3 border-t border-pink-200 bg-pink-100">
         <div className="flex justify-center space-x-3">
           <button
-            onClick={() => handleFileUpload('video')}
+            onClick={() => onNavigate('video-chat')}
             className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors touch-manipulation active:scale-95"
             disabled={!creditManager.canAfford(user?.id || 'demo-user', 60) && !creditManager.isStaffMember(user?.id || 'demo-user')}
           >
@@ -504,7 +506,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <span className="text-xs sm:text-sm">Video</span>
           </button>
           <button
-            onClick={() => handleFileUpload('video')}
+            onClick={() => onNavigate('audio-chat')}
             className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors touch-manipulation active:scale-95"
             disabled={!creditManager.canAfford(user?.id || 'demo-user', 50) && !creditManager.isStaffMember(user?.id || 'demo-user')}
           >
@@ -759,17 +761,18 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           setIsOpen(!isOpen);
         }}
         className={cn(
-          "relative w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-gradient-to-r from-pink-500 to-pink-400 rounded-full shadow-lg",
+          "relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-r from-pink-500 to-pink-400 rounded-full shadow-xl",
           "hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center",
-          "touch-manipulation flex-shrink-0 cursor-pointer select-none",
+          "touch-manipulation flex-shrink-0 cursor-pointer select-none border-2 border-white/30",
           className
         )}
         type="button"
         aria-label="Open chat"
+        title="Open Messages"
       >
-        <MessageCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 text-white flex-shrink-0" />
+        <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white flex-shrink-0" />
         {totalUnread > 0 && (
-          <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse shadow-lg">
             <span className="text-white text-xs font-bold leading-none">{totalUnread > 9 ? '9+' : totalUnread}</span>
           </div>
         )}

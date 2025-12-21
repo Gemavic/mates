@@ -165,6 +165,7 @@ export const Menu: React.FC<MenuProps> = ({
           selectedUserId={selectedChatUser?.id}
           selectedUserName={selectedChatUser?.name}
           selectedUserImage={selectedChatUser?.image}
+          onNavigate={onNavigate}
         />
       </div>
       {/* Menu Overlay */}

@@ -110,7 +110,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
 
           {/* Launch Info - Honest messaging */}
           <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 sm:p-5 mt-6 sm:mt-8 border border-white/30">
-            <p className="text-white font-semibold text-lg sm:text-xl mb-2">Join Our Launch</p>
+            <p className="text-white font-semibold text-lg sm:text-xl mb-2">Join Our Dynamic Community for a Real Connection</p>
             <p className="text-white/90 text-sm sm:text-base">Be part of a new community focused on genuine connections</p>
           </div>
         </div>
@@ -262,7 +262,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
             <>
               <Button
                 onClick={() => onNavigate('signup')}
-                className="w-full bg-white text-pink-600 hover:bg-white/90 font-bold text-lg py-6 rounded-2xl shadow-2xl transition-all duration-200 hover:scale-105"
+                className="w-full bg-white text-pink-700 hover:bg-white/90 font-black text-xl py-6 rounded-2xl shadow-2xl transition-all duration-200 hover:scale-105 drop-shadow-lg"
                 size="lg"
               >
                 <Heart className="w-5 h-5 mr-2" fill="currentColor" />
