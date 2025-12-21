@@ -3,7 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { User, Camera, MapPin, Briefcase, GraduationCap, Heart, Settings, Edit, Shield, Star, Upload, X } from 'lucide-react';
+import { User, Camera, MapPin, Briefcase, GraduationCap, Heart, Settings, CreditCard as Edit, Shield, Star, Upload, X } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
