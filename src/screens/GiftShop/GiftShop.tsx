@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Gift, Heart, Star, Crown, Coffee, Flower2, TrendingUp, Clock, CreditCard } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 interface GiftItem {
   id: string;
   name: string;
-  emoji: string;
-  price: number;
-  category: 'romantic' | 'luxury' | 'fun' | 'seasonal' | 'casual';
+  icon: string;
+  image_url?: string;
+  credit_cost: number;
+  kobos_cost: number;
+  category: string;
   description: string;
   popularity: number;
+  is_active: boolean;
 }
 
 interface GiftShopProps {
@@ -23,41 +27,32 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  
-  const giftCatalog: GiftItem[] = [
-    // Romantic Gifts
-    { id: 'red_rose', name: 'Red Rose', emoji: '🌹', price: 5, category: 'romantic', description: 'Classic symbol of love', popularity: 95 },
-    { id: 'bouquet', name: 'Rose Bouquet', emoji: '💐', price: 15, category: 'romantic', description: 'Beautiful flower arrangement', popularity: 88 },
-    { id: 'love_heart', name: 'Love Heart', emoji: '💖', price: 3, category: 'romantic', description: 'Express your feelings', popularity: 92 },
-    { id: 'chocolate_box', name: 'Chocolate Box', emoji: '🍫', price: 12, category: 'romantic', description: 'Sweet treats', popularity: 87 },
-    
-    // Luxury Gifts
-    { id: 'diamond', name: 'Diamond', emoji: '💎', price: 100, category: 'luxury', description: 'Ultimate luxury gift', popularity: 95 },
-    { id: 'emerald', name: 'Emerald', emoji: '💚', price: 80, category: 'luxury', description: 'Precious green gem', popularity: 75 },
-    { id: 'sapphire', name: 'Sapphire', emoji: '💙', price: 85, category: 'luxury', description: 'Royal blue gem', popularity: 78 },
-    { id: 'crown', name: 'Crown', emoji: '👑', price: 50, category: 'luxury', description: 'Treat them like royalty', popularity: 88 },
-    { id: 'champagne', name: 'Champagne', emoji: '🍾', price: 35, category: 'luxury', description: 'Celebrate in style', popularity: 85 },
-    { id: 'luxury_watch', name: 'Luxury Watch', emoji: '⌚', price: 75, category: 'luxury', description: 'Timeless elegance', popularity: 72 },
-    { id: 'sports_car', name: 'Sports Car', emoji: '🏎️', price: 200, category: 'luxury', description: 'Ultimate dream gift', popularity: 90 },
-    { id: 'yacht', name: 'Luxury Yacht', emoji: '🛥️', price: 300, category: 'luxury', description: 'Sail away together', popularity: 85 },
-    { id: 'private_jet', name: 'Private Jet', emoji: '✈️', price: 500, category: 'luxury', description: 'Fly in style', popularity: 92 },
-    { id: 'mansion', name: 'Dream Mansion', emoji: '🏰', price: 1000, category: 'luxury', description: 'Live like royalty', popularity: 88 },
-    
-    // Fun & Cute Gifts
-    { id: 'teddy_bear', name: 'Teddy Bear', emoji: '🧸', price: 8, category: 'fun', description: 'Cuddly companion', popularity: 92 },
-    { id: 'cute_puppy', name: 'Cute Puppy', emoji: '🐶', price: 12, category: 'fun', description: 'Adorable furry friend', popularity: 95 },
-    { id: 'birthday_cake', name: 'Birthday Cake', emoji: '🎂', price: 10, category: 'fun', description: 'Celebrate special moments', popularity: 88 },
-    
-    // Casual Gifts
-    { id: 'coffee', name: 'Coffee', emoji: '☕', price: 3, category: 'casual', description: 'Morning energy boost', popularity: 90 },
-    { id: 'pizza_slice', name: 'Pizza Slice', emoji: '🍕', price: 5, category: 'casual', description: 'Delicious comfort food', popularity: 92 },
-    { id: 'ice_cream', name: 'Ice Cream', emoji: '🍦', price: 4, category: 'casual', description: 'Cool sweet treat', popularity: 89 },
-    
-    // Seasonal Gifts
-    { id: 'christmas_tree', name: 'Christmas Tree', emoji: '🎄', price: 15, category: 'seasonal', description: 'Holiday spirit', popularity: 85 },
-    { id: 'valentine_card', name: 'Valentine Card', emoji: '💝', price: 6, category: 'seasonal', description: 'Love day special', popularity: 90 },
-    { id: 'fireworks', name: 'Fireworks', emoji: '🎆', price: 12, category: 'seasonal', description: 'Celebration spectacular', popularity: 88 }
-  ];
+  const [giftCatalog, setGiftCatalog] = useState<GiftItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadGifts();
+  }, []);
+
+  const loadGifts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('virtual_gifts')
+        .select('*')
+        .eq('is_active', true)
+        .order('popularity', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load gifts:', error);
+      } else {
+        setGiftCatalog(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading gifts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const categories = [
     { id: 'all', name: 'All Gifts', icon: Gift, color: 'from-purple-500 to-pink-500' },
@@ -74,11 +69,13 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
 
   const sortedGifts = filteredGifts.sort((a, b) => b.popularity - a.popularity);
 
-  const sendGift = (giftId: string, giftName: string, price: number) => {
+  const sendGift = async (gift: GiftItem) => {
     if (!user) {
       alert('Please sign in to send gifts');
       return;
     }
+
+    const price = gift.credit_cost;
 
     if (!creditManager.canAfford(user.id, price) && !creditManager.isStaffMember(user.id)) {
       alert(`You need ${formatCredits(price)} to send this gift!`);
@@ -86,14 +83,13 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
     }
 
     if (creditManager.isStaffMember(user.id)) {
-      // Staff members can send gifts for free
       setUserBalance(creditManager.getTotalCredits(user.id));
-      alert(`🎁 Successfully sent ${giftName} (Staff - Free)!`);
+      alert(`🎁 Successfully sent ${gift.name} (Staff - Free)!`);
     } else {
-      const success = creditManager.spendCredits(user.id, price, `Sent ${giftName} gift`);
+      const success = creditManager.spendCredits(user.id, price, `Sent ${gift.name} gift`);
       if (success) {
         setUserBalance(creditManager.getTotalCredits(user.id));
-        alert(`🎁 Successfully sent ${giftName} for ${formatCredits(price)}!`);
+        alert(`🎁 Successfully sent ${gift.name} for ${formatCredits(price)}!`);
       } else {
         alert('Failed to send gift. Please try again.');
       }
@@ -171,46 +167,63 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
             <span className="text-white/70 text-sm">💖 Popular</span>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {sortedGifts.map((gift) => (
-              <div
-                key={gift.id}
-                className="bg-white/10 rounded-xl p-3 text-center hover:bg-white/20 transition-all duration-300 hover:scale-105 flex flex-col justify-between min-h-[180px]"
-              >
-                <div className="text-3xl mb-2">{gift.emoji}</div>
-                <h4 className="text-white font-medium text-sm mb-1">{gift.name}</h4>
-                <p className="text-white/60 text-xs mb-2">{gift.description}</p>
-                <div className="flex items-center justify-center space-x-1 mb-3">
-                  <span className="text-white/70 text-xs">{formatCredits(gift.price)}</span>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <span
-                        key={i}
-                        className={`text-xs ${
-                          i < Math.floor(gift.popularity / 20) ? 'text-yellow-400' : 'text-gray-400'
-                        }`}
-                      >
-                        ⭐
-                      </span>
-                    ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {loading ? (
+              <div className="col-span-full text-center text-white py-8">Loading gifts...</div>
+            ) : sortedGifts.length === 0 ? (
+              <div className="col-span-full text-center text-white/70 py-8">No gifts available in this category</div>
+            ) : (
+              sortedGifts.map((gift) => (
+                <div
+                  key={gift.id}
+                  className="bg-white rounded-2xl p-4 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col justify-between"
+                >
+                  {gift.image_url ? (
+                    <div className="mb-3 bg-gray-100 rounded-xl p-4 h-32 flex items-center justify-center">
+                      <img
+                        src={gift.image_url}
+                        alt={gift.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-5xl mb-3">{gift.icon}</div>
+                  )}
+
+                  <h4 className="text-gray-900 font-semibold text-base mb-2">{gift.name}</h4>
+
+                  <div className="flex items-center justify-between mb-3 px-2">
+                    <div className="text-left">
+                      <div className="flex items-center space-x-1">
+                        <div className="w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">C</span>
+                        </div>
+                        <span className="text-gray-900 font-bold text-lg">{gift.credit_cost}</span>
+                      </div>
+                      <span className="text-gray-500 text-xs">Credits</span>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-gray-900 font-bold text-lg">{gift.kobos_cost}</div>
+                      <span className="text-gray-500 text-xs">Kobos</span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-auto">
+
                   <Button
-                    onClick={() => sendGift(gift.id, gift.name, gift.price)}
-                    disabled={!creditManager.canAfford(user?.id || 'demo-user', gift.price) && !creditManager.isStaffMember(user?.id || 'demo-user')}
-                    className={`w-full text-xs py-2 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
-                      creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user')
+                    onClick={() => sendGift(gift)}
+                    disabled={!creditManager.canAfford(user?.id || 'demo-user', gift.credit_cost) && !creditManager.isStaffMember(user?.id || 'demo-user')}
+                    className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
+                      creditManager.canAfford(user?.id || 'demo-user', gift.credit_cost) || creditManager.isStaffMember(user?.id || 'demo-user')
                         ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:scale-105'
-                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                     type="button"
                   >
-                    {creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user') ? 'Send Gift' : 'Need Credits'}
+                    Send Gift
                   </Button>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
