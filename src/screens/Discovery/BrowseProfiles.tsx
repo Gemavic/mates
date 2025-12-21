@@ -3,6 +3,19 @@ import { useState, useEffect } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
+const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 interface Profile {
   id: string;
   name: string;
@@ -433,7 +446,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
           isOnline: profile.is_online || false,
           location: profile.location || mockProfiles[index % mockProfiles.length].location,
           bio: profile.bio || mockProfiles[index % mockProfiles.length].bio,
-          interests: profile.interests || mockProfiles[index % mockProfiles.length].interests
+          interests: parseArrayField(profile.interests, mockProfiles[index % mockProfiles.length].interests || [])
         };
       });
 

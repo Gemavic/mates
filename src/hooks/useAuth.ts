@@ -4,6 +4,19 @@ import { createUserProfile, getUserProfile, ProfileManager } from '@/lib/databas
 import { anonymousAuth } from '@/lib/anonymousAuth';
 import type { User } from '@supabase/supabase-js';
 
+const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +91,14 @@ export const useAuth = () => {
     setIsLoadingProfile(true);
     try {
       const userProfile = await ProfileManager.getProfile(user.id);
-      setProfile(userProfile);
+      if (userProfile) {
+        setProfile({
+          ...userProfile,
+          interests: parseArrayField(userProfile.interests, [])
+        });
+      } else {
+        setProfile(null);
+      }
     } catch (error) {
       console.error('Failed to load user profile:', error);
       setProfile(null);
