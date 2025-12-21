@@ -6,6 +6,7 @@ import { Welcome } from '@/screens/Welcome/Welcome';
 import { SignIn } from '@/screens/Auth/SignIn';
 import { SignUp } from '@/screens/Auth/SignUp';
 import { Discovery } from '@/screens/Discovery/Discovery';
+import { ModernDiscovery } from '@/screens/Discovery/ModernDiscovery';
 import BrowseProfiles from '@/screens/Discovery/BrowseProfiles';
 import { Matches } from '@/screens/Matches/Matches';
 import { Likes } from '@/screens/Likes/Likes';

@@ -80,6 +80,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
         .from('user_photos')
         .select('id, photo_url, display_order')
         .eq('user_id', userId)
+        .eq('is_public', true)
         .order('display_order', { ascending: true });
 
       if (photosError) throw photosError;

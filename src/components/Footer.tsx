@@ -128,7 +128,7 @@ export const Footer: React.FC<FooterProps> = ({
                 Contact
               </button>
               <button
-                onClick={(e) => { e.preventDefault(); onNavigate('careblog'); }}
+                onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }}
                 className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
                 type="button"
               >
@@ -215,7 +215,7 @@ export const Footer: React.FC<FooterProps> = ({
                   </li>
                   <li>
                     <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('careblog'); }}
+                      onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }}
                       className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
                       type="button"
                     >
