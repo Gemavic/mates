@@ -375,7 +375,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
         
         {/* Interests */}
         <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
-          {profile.interests.map((interest, index) => (
+          {(Array.isArray(profile.interests) ? profile.interests : []).map((interest, index) => (
             <span
               key={index}
               className="px-2 py-0.5 bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 text-xs rounded-full border border-pink-200 hover:from-pink-200 hover:to-rose-200 transition-colors truncate"

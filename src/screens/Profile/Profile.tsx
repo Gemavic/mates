@@ -608,7 +608,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
           <div className="mt-4">
             <h4 className="text-white font-medium mb-2">Interests</h4>
             <div className="flex flex-wrap gap-2">
-              {profileData.interests.map((interest, index) => (
+              {(Array.isArray(profileData.interests) ? profileData.interests : []).map((interest, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-white/20 text-white text-sm rounded-full"

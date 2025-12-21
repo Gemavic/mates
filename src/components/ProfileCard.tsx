@@ -203,7 +203,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         
         {/* Interests */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {profile.interests.map((interest, index) => (
+          {(Array.isArray(profile.interests) ? profile.interests : []).map((interest, index) => (
             <span
               key={index}
               className="px-3 py-1 bg-pink-100 text-pink-700 text-xs rounded-full border border-pink-200"

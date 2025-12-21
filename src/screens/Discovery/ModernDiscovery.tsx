@@ -430,7 +430,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                       <p className="text-white/90 text-xs sm:text-sm mb-3 line-clamp-2">{profile.bio}</p>
                       
                       <div className="flex flex-wrap gap-1 mb-4">
-                        {profile.interests.slice(0, 3).map((interest, index) => (
+                        {(Array.isArray(profile.interests) ? profile.interests : []).slice(0, 3).map((interest, index) => (
                           <span
                             key={index}
                             className="px-2 py-0.5 bg-white/20 text-white text-xs rounded-full truncate"
@@ -438,7 +438,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                             {interest}
                           </span>
                         ))}
-                        {profile.interests.length > 3 && (
+                        {Array.isArray(profile.interests) && profile.interests.length > 3 && (
                           <span className="px-2 py-0.5 bg-white/20 text-white text-xs rounded-full">
                             +{profile.interests.length - 3}
                           </span>

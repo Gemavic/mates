@@ -355,7 +355,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
             </div>
           )}
 
-          {profile.interests && profile.interests.length > 0 && (
+          {Array.isArray(profile.interests) && profile.interests.length > 0 && (
             <div>
               <h2 className="text-white font-semibold text-lg mb-3">Interests</h2>
               <div className="flex flex-wrap gap-2">
