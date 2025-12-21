@@ -10,9 +10,9 @@ interface EducationProps {
 }
 
 export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
-  const [selectedAdvisor, setSelectedAdvisor] = useState<string | null>(null);
+  const [selectedEducator, setSelectedEducator] = useState<string | null>(null);
   const [showBookingCalendar, setShowBookingCalendar] = useState(false);
-  const [activeTab, setActiveTab] = useState<'advisors' | 'calculators' | 'tips'>('calculators');
+  const [activeTab, setActiveTab] = useState<'educators' | 'calculators' | 'tips'>('calculators');
 
   const [investmentAmount, setInvestmentAmount] = useState('10000');
   const [investmentYears, setInvestmentYears] = useState('10');
@@ -28,30 +28,30 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
 
   const [expandedTip, setExpandedTip] = useState<number | null>(null);
 
-  const advisors = [
+  const educators = [
     {
       id: '1',
       name: 'Dr. Matthew Dare',
-      specialization: 'Couples Financial Counseling & Money Communication',
+      specialization: 'Couples Financial Education & Money Communication',
       experience: '18 years',
       rating: 4.9,
       image: 'https://images.pexels.com/photos/3778966/pexels-photo-3778966.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$150/session',
       availability: 'Available today',
-      expertise: ['Financial Compatibility', 'Joint Budget Planning', 'Debt Management for Couples', 'Money Conversations'],
-      credentials: 'CFP, Marriage & Family Therapist'
+      expertise: ['Financial Literacy', 'Joint Budget Planning', 'Debt Education for Couples', 'Money Conversations'],
+      credentials: 'PhD, Certified Financial Educator'
     },
     {
       id: '2',
       name: 'Mina Armis',
-      specialization: 'Relationship Finance & Budget Planning Expert',
+      specialization: 'Relationship Finance Education & Budget Planning',
       experience: '12 years',
       rating: 4.9,
       image: 'https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$125/session',
       availability: 'Available tomorrow',
-      expertise: ['Shared Expenses', 'Financial Trust Building', 'Prenuptial Planning', 'Money Arguments Resolution'],
-      credentials: 'CFP, Certified Financial Counselor'
+      expertise: ['Shared Expenses', 'Financial Trust Building', 'Financial Planning Education', 'Money Communication'],
+      credentials: 'MBA, Certified Financial Educator'
     }
   ];
 
@@ -59,7 +59,7 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
     {
       icon: DollarSign,
       title: 'Shared Budgets',
-      description: 'How to manage money together',
+      description: 'Track income, expenses & the 50/30/20 rule',
       color: 'from-green-500 to-emerald-500',
       action: () => {
         setActiveTab('calculators');
@@ -96,7 +96,7 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
     {
       icon: Target,
       title: 'Couple Goals',
-      description: 'Planning your future together',
+      description: 'Save for wedding, home & dream vacation',
       color: 'from-orange-500 to-amber-500',
       action: () => {
         setActiveTab('calculators');
@@ -293,8 +293,8 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
   const savingsResults = calculateSavings();
   const budgetResults = calculateBudget();
 
-  const handleBookingConfirm = (advisorId: string, date: string, time: string) => {
-    const advisor = advisors.find(a => a.id === advisorId);
+  const handleBookingConfirm = (educatorId: string, date: string, time: string) => {
+    const educator = educators.find(a => a.id === educatorId);
     const formattedDate = new Date(date).toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -310,8 +310,8 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <div>
-          <div class="font-bold">Financial Consultation Booked!</div>
-          <div class="text-sm">${advisor?.name} • ${formattedDate} at ${time}</div>
+          <div class="font-bold">Education Session Booked!</div>
+          <div class="text-sm">${educator?.name} • ${formattedDate} at ${time}</div>
         </div>
       </div>
     `;
@@ -384,15 +384,15 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
             Tips
           </button>
           <button
-            onClick={() => setActiveTab('advisors')}
+            onClick={() => setActiveTab('educators')}
             className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all duration-300 ${
-              activeTab === 'advisors'
+              activeTab === 'educators'
                 ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg'
                 : 'text-white/70 hover:text-white'
             }`}
           >
             <Star className="w-4 h-4 inline mr-1" />
-            Advisors
+            Educators
           </button>
         </div>
 
@@ -670,7 +670,7 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
           </div>
         )}
 
-        {activeTab === 'advisors' && (
+        {activeTab === 'educators' && (
           <div className="space-y-6">
             <div className="mb-6">
               <h3 className="text-white font-semibold text-lg mb-3">Our Services</h3>
@@ -716,52 +716,52 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
             </div>
 
             <div>
-              <h3 className="text-white font-semibold text-lg mb-3">Our Financial Advisors</h3>
+              <h3 className="text-white font-semibold text-lg mb-3">Our Financial Educators</h3>
               <div className="space-y-4">
-                {advisors.map((advisor) => (
+                {educators.map((educator) => (
                   <div
-                    key={advisor.id}
+                    key={educator.id}
                     className="bg-white/10 backdrop-blur-sm rounded-2xl p-4"
                   >
                     <div className="flex items-start space-x-3">
                       <img
-                        src={advisor.image}
-                        alt={advisor.name}
+                        src={educator.image}
+                        alt={educator.name}
                         className="w-14 h-14 rounded-full object-cover"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-white font-semibold text-sm">{advisor.name}</h4>
+                          <h4 className="text-white font-semibold text-sm">{educator.name}</h4>
                           <div className="flex items-center space-x-1">
                             <Star className="w-3 h-3 text-yellow-400" fill="currentColor" />
-                            <span className="text-white text-xs">{advisor.rating}</span>
+                            <span className="text-white text-xs">{educator.rating}</span>
                           </div>
                         </div>
-                        <p className="text-white/80 text-xs mb-1">{advisor.specialization}</p>
-                        <p className="text-white/70 text-xs mb-2">{advisor.experience} • {advisor.credentials}</p>
+                        <p className="text-white/80 text-xs mb-1">{educator.specialization}</p>
+                        <p className="text-white/70 text-xs mb-2">{educator.experience} • {educator.credentials}</p>
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {advisor.expertise.slice(0, 3).map((exp, idx) => (
+                          {educator.expertise.slice(0, 3).map((exp, idx) => (
                             <span key={idx} className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
                               {exp}
                             </span>
                           ))}
                         </div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-white font-medium text-xs">{advisor.price}</span>
-                          <span className="text-green-400 text-xs">{advisor.availability}</span>
+                          <span className="text-white font-medium text-xs">{educator.price}</span>
+                          <span className="text-green-400 text-xs">{educator.availability}</span>
                         </div>
                         <Button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setSelectedAdvisor(advisor.id);
+                            setSelectedEducator(educator.id);
                             setShowBookingCalendar(true);
                           }}
                           className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white text-xs py-2 hover:scale-105 transition-all duration-300"
                           type="button"
                         >
                           <Calendar className="w-3 h-3 mr-1" />
-                          Book Consultation
+                          Book Session
                         </Button>
                       </div>
                     </div>
@@ -802,11 +802,11 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
 
       {showBookingCalendar && (
         <BookingCalendar
-          therapists={advisors}
+          therapists={educators}
           onBookingConfirm={handleBookingConfirm}
           onClose={() => setShowBookingCalendar(false)}
-          selectedTherapist={selectedAdvisor}
-          professionalType="Financial Advisor"
+          selectedTherapist={selectedEducator}
+          professionalType="Financial Educator"
         />
       )}
     </Layout>
