@@ -100,8 +100,8 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
       const { data, error } = await supabaseClient
         .from('user_likes')
         .select('id')
-        .eq('liker_id', user.id)
-        .eq('liked_id', userId)
+        .eq('user_id', user.id)
+        .eq('target_user_id', userId)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -123,22 +123,23 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
 
     try {
       if (isLiked) {
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from('user_likes')
           .delete()
-          .eq('liker_id', user.id)
-          .eq('liked_id', userId);
+          .eq('user_id', user.id)
+          .eq('target_user_id', userId);
 
         if (error) throw error;
 
         setIsLiked(false);
         alert('Removed from your likes');
       } else {
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from('user_likes')
           .insert({
-            liker_id: user.id,
-            liked_id: userId
+            user_id: user.id,
+            target_user_id: userId,
+            like_type: 'like'
           });
 
         if (error) throw error;

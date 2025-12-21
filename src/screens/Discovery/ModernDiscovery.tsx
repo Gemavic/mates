@@ -383,7 +383,11 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               /* Grid Mode for Desktop */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                 {profiles.map((profile) => (
-                  <div key={profile.id} className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer">
+                  <div
+                    key={profile.id}
+                    onClick={() => onNavigate('view-profile', { userId: profile.id })}
+                    className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer"
+                  >
                     <div className="relative">
                       <img
                         src={profile.images[0]}
