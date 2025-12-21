@@ -6,6 +6,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { ProfileManager } from '@/lib/database';
+import { supabaseClient } from '@/lib/supabase';
 import { sendLikeNotification, sendMessageNotification, sendWinkNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -58,35 +59,63 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     setLoading(true);
 
     try {
-      // Try to load profiles from database, works for both authenticated and anonymous users
-      try {
-        const dbProfiles = await ProfileManager.getDiscoveryProfiles(user?.id);
-        if (dbProfiles && dbProfiles.length > 0) {
-          const formattedProfiles = dbProfiles.map(profile => ({
+      const dbProfiles = await ProfileManager.getDiscoveryProfiles(user?.id);
+      if (dbProfiles && dbProfiles.length > 0) {
+        const userPhotos = await Promise.all(
+          dbProfiles.map(async (profile, index) => {
+            try {
+              if (profile.photo_url) {
+                return [profile.photo_url];
+              }
+
+              const { data } = await supabaseClient
+                .from('user_photos')
+                .select('photo_url')
+                .eq('user_id', profile.user_id)
+                .order('is_primary', { ascending: false })
+                .limit(3);
+
+              if (data && data.length > 0) {
+                return data.map(p => p.photo_url);
+              }
+
+              const mockIndex = index % mockProfiles.length;
+              return mockProfiles[mockIndex].images;
+            } catch {
+              const mockIndex = index % mockProfiles.length;
+              return mockProfiles[mockIndex].images;
+            }
+          })
+        );
+
+        const formattedProfiles = dbProfiles.map((profile, index) => {
+          let displayName = profile.first_name || profile.full_name;
+          if (!displayName || displayName === 'User') {
+            const mockIndex = index % mockProfiles.length;
+            displayName = mockProfiles[mockIndex].name;
+          }
+
+          return {
             id: profile.user_id,
-            name: profile.first_name || profile.full_name || 'User',
-            age: profile.age || 25,
-            location: profile.location || 'Unknown',
-            occupation: profile.occupation || 'Professional',
-            education: profile.education || 'University',
-            images: ['https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=800'],
-            bio: profile.bio || 'Hello there!',
-            interests: parseArrayField(profile.interests, ['Travel', 'Music']),
+            name: displayName,
+            age: profile.age || mockProfiles[index % mockProfiles.length].age,
+            location: profile.location || mockProfiles[index % mockProfiles.length].location,
+            occupation: profile.occupation || mockProfiles[index % mockProfiles.length].occupation,
+            education: profile.education || mockProfiles[index % mockProfiles.length].education,
+            images: userPhotos[index],
+            bio: profile.bio || mockProfiles[index % mockProfiles.length].bio,
+            interests: parseArrayField(profile.interests, mockProfiles[index % mockProfiles.length].interests),
             online: profile.is_online || false,
             verified: profile.is_verified || false,
             premium: false
-          }));
-          setProfiles(formattedProfiles);
-        } else {
-          // No profiles in database, use mock profiles for demo
-          setProfiles(mockProfiles);
-        }
-      } catch (dbError) {
-        console.warn('Database error, using mock profiles:', dbError);
+          };
+        });
+        setProfiles(formattedProfiles);
+      } else {
         setProfiles(mockProfiles);
       }
     } catch (error) {
-      console.warn('General error loading profiles, using mock profiles for demo:', error);
+      console.warn('Error loading profiles, using mock profiles:', error);
       setProfiles(mockProfiles);
     } finally {
       setLoading(false);
