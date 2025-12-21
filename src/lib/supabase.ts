@@ -325,19 +325,19 @@ export type Database = {
           user_id: string;
           photo_url: string;
           is_primary: boolean;
-          upload_order: number;
+          display_order: number;
           created_at: string;
         };
         Insert: {
           user_id: string;
           photo_url: string;
           is_primary?: boolean;
-          upload_order?: number;
+          display_order?: number;
         };
         Update: {
           photo_url?: string;
           is_primary?: boolean;
-          upload_order?: number;
+          display_order?: number;
         };
       };
     };

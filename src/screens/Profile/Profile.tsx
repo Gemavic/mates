@@ -77,7 +77,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         .from('user_photos')
         .select('*')
         .eq('user_id', user.id)
-        .order('upload_order', { ascending: true });
+        .order('display_order', { ascending: true });
 
       if (error) throw error;
       setUserPhotos(data?.map(p => ({ id: p.id, url: p.photo_url, isPrimary: p.is_primary })) || []);
@@ -197,7 +197,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                 user_id: user.id,
                 photo_url: dataUrl,
                 is_primary: userPhotos.length === 0,
-                upload_order: userPhotos.length + 1
+                display_order: userPhotos.length + 1
               })
               .select()
               .single();
@@ -447,7 +447,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                             user_id: user.id,
                             photo_url: dataUrl,
                             is_primary: true,
-                            upload_order: 1
+                            display_order: 1
                           });
 
                         if (insertError) throw insertError;
