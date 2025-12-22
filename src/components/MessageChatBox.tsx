@@ -108,7 +108,80 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     { id: 'birthday_cake', name: 'Cake', emoji: '🎂', price: 10, category: 'fun' }
   ];
 
-  const defaultThreads: ChatThread[] = [];
+  const defaultThreads: ChatThread[] = [
+    {
+      id: 'thread-sample-1',
+      participantId: 'user-1',
+      participantName: 'Emma',
+      participantImage: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-1',
+        senderId: 'user-1',
+        senderName: 'Emma',
+        senderImage: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'That sounds amazing! When are you free? 😊',
+        timestamp: new Date(Date.now() - 300000),
+        type: 'text'
+      },
+      unreadCount: 1,
+      isOnline: true,
+      isTyping: false
+    },
+    {
+      id: 'thread-sample-2',
+      participantId: 'user-2',
+      participantName: 'Sarah',
+      participantImage: 'https://images.pexels.com/photos/1064881/pexels-photo-1064881.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-2',
+        senderId: 'user-2',
+        senderName: 'Sarah',
+        senderImage: 'https://images.pexels.com/photos/1064881/pexels-photo-1064881.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Looking for someone genuine and kind ❤️',
+        timestamp: new Date(Date.now() - 600000),
+        type: 'text'
+      },
+      unreadCount: 0,
+      isOnline: true,
+      isTyping: false
+    },
+    {
+      id: 'thread-sample-3',
+      participantId: 'user-3',
+      participantName: 'Jessica',
+      participantImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-3',
+        senderId: 'user-3',
+        senderName: 'Jessica',
+        senderImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Love travel and trying new restaurants 🌍',
+        timestamp: new Date(Date.now() - 1800000),
+        type: 'text'
+      },
+      unreadCount: 0,
+      isOnline: false,
+      isTyping: false
+    },
+    {
+      id: 'thread-sample-4',
+      participantId: 'user-4',
+      participantName: 'Amanda',
+      participantImage: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-4',
+        senderId: 'user-4',
+        senderName: 'Amanda',
+        senderImage: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Yoga enthusiast, dog lover 🐕✨',
+        timestamp: new Date(Date.now() - 3600000),
+        type: 'text'
+      },
+      unreadCount: 0,
+      isOnline: true,
+      isTyping: false
+    }
+  ];
 
   const getInitialThreads = (): ChatThread[] => {
     if (selectedUserId && selectedUserName && selectedUserImage) {
