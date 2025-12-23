@@ -41,6 +41,7 @@ import { PaymentSetup } from '@/screens/PaymentSetup/PaymentSetup';
 import { Help } from '@/screens/Help/Help';
 import { CareBlog } from '@/screens/CareBlog/CareBlog';
 import { Quizzes } from '@/screens/Quizzes/Quizzes';
+import { Onboarding } from '@/screens/Onboarding/Onboarding';
 import { MonitoringDashboard } from '@/components/MonitoringDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
@@ -274,7 +275,10 @@ const App: React.FC = () => {
       
       case 'signup':
         return <SignUp onNavigate={handleNavigate} />;
-      
+
+      case 'onboarding':
+        return <Onboarding onComplete={() => handleNavigate('discovery')} onBack={() => handleNavigate('signup')} />;
+
       case 'discovery':
         return <ModernDiscovery onNavigate={handleNavigate} />;
 

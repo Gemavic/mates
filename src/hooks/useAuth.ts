@@ -73,7 +73,11 @@ export const useAuth = () => {
       })();
     });
 
-    return () => subscription.data.subscription.unsubscribe();
+    return () => {
+      if (subscription?.data?.subscription) {
+        subscription.data.subscription.unsubscribe();
+      }
+    };
   }, []);
 
   // Load user profile when user changes
