@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-red-500" />
             </div>
@@ -64,14 +64,14 @@ export class ErrorBoundary extends Component<Props, State> {
               Refresh Page
             </button>
             {this.state.error && (
-              <details className="mt-4 text-left">
-                <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
-                  Technical Details
-                </summary>
-                <pre className="mt-2 text-xs bg-gray-100 p-3 rounded overflow-auto max-h-32">
+              <div className="mt-6 text-left">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Error Details:</h3>
+                <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto max-h-48 whitespace-pre-wrap break-words">
                   {this.state.error.toString()}
+                  {'\n\n'}
+                  Stack: {this.state.error.stack}
                 </pre>
-              </details>
+              </div>
             )}
           </div>
         </div>

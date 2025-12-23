@@ -5,7 +5,11 @@ import App from "./App";
 import { ToastProvider } from "./components/ui/toast";
 import { initializeConfig } from "./lib/config";
 import { supabase, supabaseConfigError } from "./lib/supabase";
+import { logEnvironmentStatus } from "./lib/debug";
 import "./tailwind.css";
+
+// Log environment status for debugging
+logEnvironmentStatus();
 
 // Initialize configuration on app start
 initializeConfig();

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabaseClient } from '@/lib/supabase';
+import { supabaseClient, supabaseConfigError } from '@/lib/supabase';
 import { createUserProfile, getUserProfile, ProfileManager } from '@/lib/database';
 import { anonymousAuth } from '@/lib/anonymousAuth';
 import type { User } from '@supabase/supabase-js';
@@ -26,6 +26,15 @@ export const useAuth = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      // Skip auth initialization if Supabase isn't configured
+      if (supabaseConfigError) {
+        console.warn('Skipping auth initialization - Supabase not configured');
+        setUser(null);
+        setIsAnonymous(false);
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
 
@@ -55,7 +64,11 @@ export const useAuth = () => {
 
     initializeAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes - only if Supabase is configured
+    if (supabaseConfigError) {
+      return () => {};
+    }
+
     const authClient = supabaseClient;
     const subscription = authClient.auth.onAuthStateChange((event, session) => {
       (async () => {
