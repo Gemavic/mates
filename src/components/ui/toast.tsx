@@ -42,6 +42,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  React.useEffect(() => {
+    const handleToastEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      toast(customEvent.detail);
+    };
+
+    window.addEventListener('show-toast', handleToastEvent);
+    return () => window.removeEventListener('show-toast', handleToastEvent);
+  }, [toast]);
+
   return (
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>
       {children}

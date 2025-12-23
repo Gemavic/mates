@@ -1,8 +1,53 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+interface SafeRequestResult<T> {
+  data: T | null;
+  success: boolean;
+  error?: PostgrestError | Error;
+}
+
+export async function safeRequest<T>(
+  request: Promise<{ data: T | null; error: PostgrestError | null }>,
+  fallbackMessage: string = "Operation failed"
+): Promise<SafeRequestResult<T>> {
+  try {
+    const { data, error } = await request;
+
+    if (error) {
+      console.error(`Error in ${fallbackMessage}:`, error);
+
+      showToastError(fallbackMessage, error.message || 'Unknown error');
+
+      return { data: null, success: false, error };
+    }
+
+    return { data, success: true };
+
+  } catch (err) {
+    const error = err as Error;
+    console.error(`Exception in ${fallbackMessage}:`, error);
+
+    showToastError(fallbackMessage, error.message || 'Unexpected error occurred');
+
+    return { data: null, success: false, error };
+  }
+}
+
+function showToastError(title: string, message: string) {
+  const event = new CustomEvent('show-toast', {
+    detail: {
+      title,
+      description: message,
+      variant: 'destructive'
+    }
+  });
+  window.dispatchEvent(event);
 }
 
 export const mockProfiles = [
