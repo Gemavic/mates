@@ -4,7 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ToastProvider } from "./components/ui/toast";
 import { initializeConfig } from "./lib/config";
-import { supabase } from "./lib/supabase";
+import { supabase, supabaseConfigError } from "./lib/supabase";
 import "./tailwind.css";
 
 // Initialize configuration on app start
@@ -12,6 +12,12 @@ initializeConfig();
 
 // Clear only invalid refresh tokens on app start
 const clearStaleSession = async () => {
+  // Skip if Supabase isn't configured
+  if (supabaseConfigError) {
+    console.warn('Skipping session check - Supabase not configured');
+    return;
+  }
+
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
 

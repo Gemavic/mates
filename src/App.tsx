@@ -46,6 +46,8 @@ import { MonitoringDashboard } from '@/components/MonitoringDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
+import { supabaseConfigError } from '@/lib/supabase';
+import { AlertTriangle } from 'lucide-react';
 
 interface SelectedChatUser {
   id: string;
@@ -162,6 +164,28 @@ const App: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentScreen]);
 
+  // Show configuration error if Supabase isn't set up
+  if (supabaseConfigError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-orange-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Configuration Required</h2>
+          <p className="text-gray-600 mb-4">
+            The app needs to be configured before it can be used.
+          </p>
+          <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg font-mono">
+            {supabaseConfigError}
+          </p>
+          <p className="text-xs text-gray-400 mt-4">
+            Please contact your administrator to set up the Supabase environment variables.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

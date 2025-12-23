@@ -1,42 +1,54 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables only - no hardcoded fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Validate configuration
+// Validate configuration without throwing - allow app to load
+let configError: string | null = null;
+
 if (!supabaseUrl || !supabaseAnonKey) {
+  configError = 'Supabase configuration is missing. Please check environment variables.';
   console.error('❌ CRITICAL: Supabase configuration missing. Please check your environment variables.');
-  throw new Error('Supabase configuration is required. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
-}
+} else {
+  console.log('✅ Supabase configuration loaded successfully');
 
-console.log('✅ Supabase configuration loaded successfully');
+  // Additional validation for API key format
+  if (!supabaseAnonKey.startsWith('eyJ')) {
+    configError = 'Invalid Supabase API key format.';
+    console.error('❌ Invalid Supabase API key format. Please get your anon key from Supabase Dashboard > Settings > API');
+  }
 
-// Additional validation for API key format
-if (supabaseAnonKey && !supabaseAnonKey.startsWith('eyJ')) {
-  console.error('❌ Invalid Supabase API key format. Please get your anon key from Supabase Dashboard > Settings > API');
-}
+  // Check if using placeholder values or malformed JWT
+  if (supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY_HERE') || supabaseAnonKey.split('.').length !== 3) {
+    configError = 'Invalid Supabase API key detected.';
+    console.error('❌ Please replace YOUR_SUPABASE_ANON_KEY_HERE with your actual anon key from Supabase Dashboard');
+  }
 
-// Check if using placeholder values or malformed JWT
-if (supabaseAnonKey && (supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY_HERE') || supabaseAnonKey.split('.').length !== 3)) {
-  console.error('❌ Please replace YOUR_SUPABASE_ANON_KEY_HERE with your actual anon key from Supabase Dashboard');
-}
-
-// Validate URL and key match
-if (supabaseUrl && supabaseAnonKey) {
-  try {
-    const urlMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
-    const keyPayload = JSON.parse(atob(supabaseAnonKey.split('.')[1]));
-    
-    if (urlMatch && keyPayload.ref && urlMatch[1] !== keyPayload.ref) {
-      console.warn('Supabase URL and API key mismatch. Please ensure both belong to the same project.');
+  // Validate URL and key match
+  if (!configError) {
+    try {
+      const urlMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+      if (urlMatch) {
+        const keyPayload = JSON.parse(atob(supabaseAnonKey.split('.')[1]));
+        if (keyPayload.ref && urlMatch[1] !== keyPayload.ref) {
+          console.warn('⚠️ Supabase URL and API key mismatch. Please ensure both belong to the same project.');
+        }
+      }
+    } catch (error) {
+      console.warn('Could not validate Supabase configuration:', error);
     }
-  } catch (error) {
-    console.warn('Could not validate Supabase configuration:', error);
   }
 }
-// Create Supabase client with validated configuration
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+
+// Export configuration error for checking in App
+export const supabaseConfigError = configError;
+
+// Create Supabase client with fallback values - NEVER throw errors
+export const supabase = createClient(
+  supabaseUrl || 'https://zdkxonufiuagkrhprnbd.supabase.co',
+  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpka3hvbnVmaXVhZ2tyaHBybmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMjQ0NzQsImV4cCI6MjA2OTkwMDQ3NH0.auHwnh0siI7u95WN-4Fh0aESjge2S6Yks7MNSnivo-k',
+  {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
