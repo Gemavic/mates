@@ -199,10 +199,12 @@ class TwoFactorAuthManager {
       setup.backupCodes.splice(codeIndex, 1);
 
       if (supabase) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('user_2fa_settings')
           .update({ backup_codes: setup.backupCodes })
           .eq('user_id', userId);
+
+        if (updateError) console.warn('Failed to update backup codes:', updateError);
       }
 
       await this.logSecurityEvent(userId, '2FA_BACKUP_CODE_USED');

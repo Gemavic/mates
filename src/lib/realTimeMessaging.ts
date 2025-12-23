@@ -231,10 +231,12 @@ export class RealtimeMessagingService {
       }
 
       // Update conversation last_message_at
-      await supabaseClient
+      const { error: updateError } = await supabaseClient
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
+
+      if (updateError) console.warn('Failed to update conversation timestamp:', updateError);
 
       return true;
     } catch (error) {

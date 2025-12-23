@@ -329,10 +329,12 @@ export class MessagingManager {
     if (error) throw error;
 
     // Update thread activity
-    await supabaseClient
+    const { error: updateThreadError } = await supabaseClient
       .from('chat_threads')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', threadId);
+
+    if (updateThreadError) console.warn('Failed to update thread activity:', updateThreadError);
 
     return data;
   }
@@ -384,10 +386,12 @@ export class MessagingManager {
       if (messageError) throw messageError;
 
       // Update thread timestamp
-      await supabaseClient
+      const { error: updateThreadError } = await supabaseClient
         .from('mail_threads')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', thread.id);
+
+      if (updateThreadError) console.warn('Failed to update thread timestamp:', updateThreadError);
 
       return { data: messageData, error: null };
     } catch (error) {
@@ -433,10 +437,12 @@ export class MessagingManager {
     if (error) throw error;
 
     // Update thread activity
-    await supabaseClient
+    const { error: updateThreadError } = await supabaseClient
       .from('mail_threads')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', threadId);
+
+    if (updateThreadError) console.warn('Failed to update thread activity:', updateThreadError);
 
     return data;
   }
