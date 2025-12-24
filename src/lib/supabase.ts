@@ -44,10 +44,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Export configuration error for checking in App
 export const supabaseConfigError = configError;
 
-// Create Supabase client with fallback values - NEVER throw errors
+// Create Supabase client - use placeholder if missing to prevent runtime errors
 export const supabase = createClient(
-  supabaseUrl || 'https://zdkxonufiuagkrhprnbd.supabase.co',
-  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpka3hvbnVmaXVhZ2tyaHBybmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMjQ0NzQsImV4cCI6MjA2OTkwMDQ3NH0.auHwnh0siI7u95WN-4Fh0aESjge2S6Yks7MNSnivo-k',
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwbGFjZWhvbGRlciJ9.placeholder',
   {
   auth: {
     autoRefreshToken: true,

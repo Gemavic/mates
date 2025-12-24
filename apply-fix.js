@@ -84,7 +84,7 @@ async function applyMigration() {
     console.log('MANUAL APPLICATION REQUIRED');
     console.log('=====================================');
     console.log('Please apply the SQL manually:');
-    console.log('1. Go to: https://supabase.com/dashboard/project/zdkxonufiuagkrhprnbd/sql');
+    console.log('1. Open your Supabase project SQL Editor');
     console.log('2. Copy the contents of: fix_rls_trigger_signup.sql');
     console.log('3. Paste into SQL Editor and click "Run"');
     console.log('=====================================\n');

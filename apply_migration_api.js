@@ -1,8 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
+import dotenv from 'dotenv';
 
-const supabaseUrl = 'https://zdkxonufiuagkrhprnbd.supabase.co';
-const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpka3hvbnVmaXVhZ2tyaHBybmJkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDMyNDQ3NCwiZXhwIjoyMDY5OTAwNDc0fQ.Lu4cMF-B60bppwbanTLaTRU1xxYfKc5_hoR2UxKftII';
+dotenv.config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error('Error: Missing environment variables');
+  console.error('Please ensure VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in .env');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
@@ -13,7 +22,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 async function executeSQLStatements() {
   console.log('Starting migration process...');
-  console.log('Target database: zdkxonufiuagkrhprnbd.supabase.co');
+  console.log(`Target database: ${supabaseUrl}`);
   console.log('Migration: Fix RLS and Trigger for Signup\n');
   console.log('='.repeat(60));
   
@@ -55,14 +64,13 @@ async function executeSQLStatements() {
     console.log('='.repeat(60));
     console.log('\nThe migration SQL file has been created at:');
     console.log('  /tmp/cc-agent/60502529/project/fix_rls_trigger_signup.sql');
-    console.log('\nTo apply this migration, you have two options:');
+    console.log('\nTo apply this migration:');
     console.log('\n1. Using Supabase Dashboard:');
-    console.log('   - Go to https://zdkxonufiuagkrhprnbd.supabase.co');
+    console.log('   - Open your Supabase project dashboard');
     console.log('   - Navigate to SQL Editor');
     console.log('   - Paste the contents of fix_rls_trigger_signup.sql');
     console.log('   - Click "Run"');
-    console.log('\n2. Using psql command line:');
-    console.log('   psql "postgresql://postgres:GMdare@3728#@db.zdkxonufiuagkrhprnbd.supabase.co:5432/postgres" -f fix_rls_trigger_signup.sql');
+    console.log('\n2. Using the database connection string from your .env file');
     console.log('\n' + '='.repeat(60));
     
   } catch (error) {

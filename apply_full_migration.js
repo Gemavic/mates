@@ -1,8 +1,17 @@
 import fetch from 'node-fetch';
 import { readFileSync } from 'fs';
+import dotenv from 'dotenv';
 
-const supabaseUrl = 'https://zdkxonufiuagkrhprnbd.supabase.co';
-const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpka3hvbnVmaXVhZ2tyaHBybmJkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDMyNDQ3NCwiZXhwIjoyMDY5OTAwNDc0fQ.Lu4cMF-B60bppwbanTLaTRU1xxYfKc5_hoR2UxKftII';
+dotenv.config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error('Error: Missing environment variables');
+  console.error('Please ensure VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in .env');
+  process.exit(1);
+}
 
 async function executeSQLQuery(sql) {
   const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {
@@ -25,7 +34,7 @@ async function executeSQLQuery(sql) {
 
 async function applyMigration() {
   console.log('Starting migration process...');
-  console.log('Target database: zdkxonufiuagkrhprnbd.supabase.co');
+  console.log(`Target database: ${supabaseUrl}`);
   console.log('='.repeat(60));
 
   try {
@@ -57,8 +66,7 @@ async function applyMigration() {
     console.log('\n\nFalling back to manual instructions...');
     console.log('='.repeat(60));
     console.log('Please apply the migration manually:');
-    console.log('\n1. Open Supabase SQL Editor:');
-    console.log('   https://supabase.com/dashboard/project/zdkxonufiuagkrhprnbd/sql');
+    console.log('\n1. Open Supabase SQL Editor in your project dashboard');
     console.log('\n2. Copy and paste the contents of:');
     console.log('   fix_rls_trigger_signup.sql');
     console.log('\n3. Click "Run" to execute the migration');
