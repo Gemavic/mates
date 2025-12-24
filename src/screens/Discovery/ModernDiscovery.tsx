@@ -43,14 +43,18 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         .from('user_profiles')
         .update({ is_online: true, last_active: new Date().toISOString() })
         .eq('user_id', user.id)
-        .catch((err) => console.warn('Failed to update online status:', err));
+        .then(({ error }) => {
+          if (error) console.warn('Failed to update online status:', error);
+        });
 
       const interval = setInterval(() => {
         supabaseClient
           .from('user_profiles')
           .update({ last_active: new Date().toISOString() })
           .eq('user_id', user.id)
-          .catch((err) => console.warn('Failed to update last_active:', err));
+          .then(({ error }) => {
+            if (error) console.warn('Failed to update last_active:', error);
+          });
       }, 60000);
 
       return () => {
@@ -59,7 +63,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           .from('user_profiles')
           .update({ is_online: false })
           .eq('user_id', user.id)
-          .catch((err) => console.warn('Failed to mark offline:', err));
+          .then(({ error }) => {
+            if (error) console.warn('Failed to mark offline:', error);
+          });
       };
     }
   }, [user?.id]);

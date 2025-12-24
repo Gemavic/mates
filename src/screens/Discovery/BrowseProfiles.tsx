@@ -113,15 +113,19 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
         .from('user_profiles')
         .update({ is_online: true, last_active: new Date().toISOString() })
         .eq('user_id', user.id)
-        .then(() => console.log('User marked online'))
-        .catch((err) => console.warn('Failed to mark user online:', err));
+        .then(({ error }) => {
+          if (error) console.warn('Failed to mark user online:', error);
+          else console.log('User marked online');
+        });
 
       const interval = setInterval(() => {
         supabaseClient
           .from('user_profiles')
           .update({ last_active: new Date().toISOString() })
           .eq('user_id', user.id)
-          .catch((err) => console.warn('Failed to update last_active:', err));
+          .then(({ error }) => {
+            if (error) console.warn('Failed to update last_active:', error);
+          });
       }, 60000);
 
       return () => {
@@ -130,7 +134,9 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
           .from('user_profiles')
           .update({ is_online: false })
           .eq('user_id', user.id)
-          .catch((err) => console.warn('Failed to mark user offline:', err));
+          .then(({ error }) => {
+            if (error) console.warn('Failed to mark user offline:', error);
+          });
       };
     }
   }, [user?.id]);
