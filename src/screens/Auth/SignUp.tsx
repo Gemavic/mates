@@ -104,7 +104,22 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
       // Attempt sign up
       console.log('Attempting signup with:', { email: formData.email, name: formData.name });
-      const { error, data } = await signUp(formData.email, formData.password, formData.name);
+
+      let signUpResult;
+      try {
+        signUpResult = await signUp(formData.email, formData.password, formData.name);
+      } catch (networkError: any) {
+        console.error('Network error during signup:', networkError);
+        toast({
+          title: 'Connection Error',
+          description: 'Unable to connect to server. Please check your internet connection and try again.',
+          variant: 'destructive'
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const { error, data } = signUpResult;
 
       if (error) {
         console.error('Sign up error details:', {
@@ -113,25 +128,37 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           data: data
         });
 
-        // Handle specific error cases
         let errorMessage = error.message || 'Failed to create account. Please try again.';
 
-        // Check for email confirmation errors
-        if (error.message?.includes('confirmation') || error.message?.includes('email')) {
-          errorMessage = 'Account created! Please check your email to verify your account, or sign in directly.';
-
-          // Show success message for email confirmation issues
+        if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+          errorMessage = 'This email is already registered. Please sign in instead.';
           toast({
-            title: 'Account Created',
+            title: 'Account Exists',
             description: errorMessage,
-            variant: 'default'
+            variant: 'destructive'
           });
-
-          // Navigate to sign in
           setTimeout(() => {
             onNavigate('signin');
           }, 2000);
+          setIsLoading(false);
           return;
+        }
+
+        if (error.message?.includes('confirmation') || error.message?.includes('verify')) {
+          toast({
+            title: 'Account Created',
+            description: 'Please check your email to verify your account, or sign in directly.',
+            variant: 'default'
+          });
+          setTimeout(() => {
+            onNavigate('signin');
+          }, 2000);
+          setIsLoading(false);
+          return;
+        }
+
+        if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('connect')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
         }
 
         toast({
@@ -145,27 +172,30 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
       console.log('Signup successful, user data:', data);
 
-      // Initialize user credits in localStorage (database trigger also creates them)
       if (data?.user?.id) {
         creditManager.initializeUser(data.user.id);
 
-        // Staff members get unlimited credits
         if (formData.email.endsWith('@dates.care')) {
           creditManager.addCredits(data.user.id, 999999, 'Staff Member - Unlimited Credits', false);
         }
       }
 
-      // Success - show message and navigate to profile completion
       toast({
         title: 'Welcome to Dates!',
         description: 'Your account has been created successfully!',
         variant: 'default'
       });
 
-      // Navigate to onboarding to complete profile
       setTimeout(() => {
         onNavigate('onboarding');
       }, 1000);
+    } catch (unexpectedError: any) {
+      console.error('Unexpected signup error:', unexpectedError);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setTimeout(() => {
         setIsLoading(false);

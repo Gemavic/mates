@@ -1,44 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Environment variables only - no hardcoded fallbacks
+// Environment variables - with logging for debugging
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Log environment variable status (not values) for debugging
+console.log('Supabase Config Status:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  urlPrefix: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'MISSING',
+  keyPrefix: supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'MISSING'
+});
 
 // Validate configuration without throwing - allow app to load
 let configError: string | null = null;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   configError = 'Supabase configuration is missing. Please check environment variables.';
-  console.error('❌ CRITICAL: Supabase configuration missing. Please check your environment variables.');
+  console.error('CRITICAL: Supabase configuration missing.');
+  console.error('Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your environment.');
+} else if (!supabaseAnonKey.startsWith('eyJ')) {
+  configError = 'Invalid Supabase API key format.';
+  console.error('Invalid API key format - must start with eyJ');
+} else if (supabaseAnonKey.split('.').length !== 3) {
+  configError = 'Invalid Supabase API key structure.';
+  console.error('API key must have 3 parts separated by dots');
 } else {
-  console.log('✅ Supabase configuration loaded successfully');
-
-  // Additional validation for API key format
-  if (!supabaseAnonKey.startsWith('eyJ')) {
-    configError = 'Invalid Supabase API key format.';
-    console.error('❌ Invalid Supabase API key format. Please get your anon key from Supabase Dashboard > Settings > API');
-  }
-
-  // Check if using placeholder values or malformed JWT
-  if (supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY_HERE') || supabaseAnonKey.split('.').length !== 3) {
-    configError = 'Invalid Supabase API key detected.';
-    console.error('❌ Please replace YOUR_SUPABASE_ANON_KEY_HERE with your actual anon key from Supabase Dashboard');
-  }
-
-  // Validate URL and key match
-  if (!configError) {
-    try {
-      const urlMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
-      if (urlMatch) {
-        const keyPayload = JSON.parse(atob(supabaseAnonKey.split('.')[1]));
-        if (keyPayload.ref && urlMatch[1] !== keyPayload.ref) {
-          console.warn('⚠️ Supabase URL and API key mismatch. Please ensure both belong to the same project.');
-        }
-      }
-    } catch (error) {
-      console.warn('Could not validate Supabase configuration:', error);
-    }
-  }
+  console.log('Supabase configuration validated successfully');
 }
 
 // Export configuration error for checking in App
@@ -49,42 +37,43 @@ export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwbGFjZWhvbGRlciJ9.placeholder',
   {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    storageKey: 'dates-auth-token',
-    storage: {
-      getItem: (key) => {
-        try {
-          return localStorage.getItem(key);
-        } catch {
-          return null;
-        }
-      },
-      setItem: (key, value) => {
-        try {
-          localStorage.setItem(key, value);
-        } catch {
-          console.warn('Failed to store auth token');
-        }
-      },
-      removeItem: (key) => {
-        try {
-          localStorage.removeItem(key);
-        } catch {
-          console.warn('Failed to remove auth token');
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
+      storageKey: 'dates-auth-token',
+      storage: {
+        getItem: (key) => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        },
+        setItem: (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {
+            console.warn('Failed to store auth token');
+          }
+        },
+        removeItem: (key) => {
+          try {
+            localStorage.removeItem(key);
+          } catch {
+            console.warn('Failed to remove auth token');
+          }
         }
       }
-    }
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'dates-care-app'
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'dates-care-app'
+      }
     }
   }
-});
+);
 
 // Add global error handler for auth issues
 supabase.auth.onAuthStateChange((event, session) => {

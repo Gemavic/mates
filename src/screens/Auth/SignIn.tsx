@@ -84,36 +84,65 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
       }
 
       // Attempt sign in
-      const { data, error } = await signIn(formData.email, formData.password);
+      let signInResult;
+      try {
+        signInResult = await signIn(formData.email, formData.password);
+      } catch (networkError: any) {
+        console.error('Network error during signin:', networkError);
+        setErrors(['Unable to connect to server. Please check your internet connection and try again.']);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = signInResult;
 
       if (error) {
         console.error('Sign in error:', error);
-        setErrors([error.message || 'Failed to sign in. Please check your credentials.']);
+        let errorMessage = error.message || 'Failed to sign in. Please check your credentials.';
+
+        if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('connect')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        }
+
+        setErrors([errorMessage]);
         setIsLoading(false);
         return;
       }
 
       // Success - check if user needs verification
       if (data?.user) {
-        const { data: profileData } = await supabaseClient
-          .from('user_profiles')
-          .select('is_verified')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
+        try {
+          const { data: profileData } = await supabaseClient
+            .from('user_profiles')
+            .select('is_verified')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
 
-        if (profileData?.is_verified) {
-          console.log('✅ User is verified, going to discovery');
+          if (profileData?.is_verified) {
+            console.log('User is verified, going to discovery');
+            onNavigate('discovery');
+          } else {
+            console.log('User not verified, going to verification');
+            onNavigate('verification');
+          }
+        } catch (profileError) {
+          console.warn('Could not check verification status:', profileError);
           onNavigate('discovery');
-        } else {
-          console.log('⚠️ User not verified, going to verification');
-          onNavigate('verification');
         }
       } else {
         onNavigate('discovery');
       }
     } catch (error: any) {
       console.error('Sign in exception:', error);
-      setErrors([error?.message || 'An unexpected error occurred. Please try again.']);
+
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      if (error?.message?.includes('fetch') || error?.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      setErrors([errorMessage]);
       setIsLoading(false);
     }
   };
