@@ -6,6 +6,7 @@ import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { MessagingManager, CreditManager } from '@/lib/database';
+import { supabaseClient } from '@/lib/supabase';
 
 interface GiftItem {
   id: string;
@@ -257,16 +258,28 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       // Update balance after successful credit deduction
       setUserBalance(creditManager.getTotalCredits(user.id));
 
-      // CRITICAL FIX: Save message to database
-      const { data: savedMessage, error: messageError } = await MessagingManager.sendMessage(
-        user.id,
-        activeThreadData.participantId,
-        message.trim()
-      );
+      // Check if recipient exists in database
+      const { data: recipientProfile } = await supabaseClient
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', activeThreadData.participantId)
+        .maybeSingle();
 
-      if (messageError) {
-        console.error('Database save error:', messageError);
-        throw new Error('Failed to save message to database');
+      let savedMessage = null;
+
+      // Only save to database if recipient is a real user
+      if (recipientProfile) {
+        const { data, error: messageError } = await MessagingManager.sendMessage(
+          user.id,
+          activeThreadData.participantId,
+          message.trim()
+        );
+
+        if (messageError) {
+          console.warn('Database save error (demo profile?):', messageError);
+        } else {
+          savedMessage = data;
+        }
       }
 
       // Create message object for UI
@@ -305,17 +318,17 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         }
       }, 2000);
 
-      // Try to send email notification (non-blocking)
-      try {
-        if (user) {
+      // Try to send email notification (non-blocking, only for real users)
+      if (recipientProfile) {
+        try {
           sendMessageNotification(activeThreadData.participantId, {
             name: 'You',
             image: userProfileImage,
             id: user.id
           });
+        } catch (notificationError) {
+          console.log('Notification skipped:', notificationError);
         }
-      } catch (notificationError) {
-        console.log('Notification skipped:', notificationError);
       }
 
     } catch (error) {
