@@ -11,10 +11,10 @@ export const APP_CONFIG = {
 };
 
 // Supabase Configuration
+// SECURITY: Only client-safe keys are exposed here
 export const SUPABASE_CONFIG = {
   url: import.meta.env.VITE_SUPABASE_URL || '',
-  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-  serviceRoleKey: import.meta.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 };
 
 // Security Configuration
