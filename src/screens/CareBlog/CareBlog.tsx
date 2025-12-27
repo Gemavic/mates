@@ -3,15 +3,16 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  BookOpen, 
-  Heart, 
-  PlusCircle, 
-  Calendar, 
-  User, 
-  Clock, 
-  MessageCircle, 
-  ThumbsUp, 
+import {
+  BookOpen,
+  Heart,
+  PlusCircle,
+  Calendar,
+  User,
+  Users,
+  Clock,
+  MessageCircle,
+  ThumbsUp,
   Share,
   Search,
   Filter,
@@ -22,7 +23,8 @@ import {
   DollarSign,
   PiggyBank,
   Calculator,
-  TrendingDown
+  TrendingDown,
+  Sparkles
 } from 'lucide-react';
 
 interface BlogPost {
