@@ -135,12 +135,11 @@ export const useAuth = () => {
         console.error('Sign in error:', error);
         let errorMessage = error.message;
 
-        // Provide clearer error messages
-        if (error.message.includes('Invalid login credentials')) {
+        if (error.message?.includes('Invalid login credentials')) {
           errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (error.message?.includes('Email not confirmed')) {
           errorMessage = 'Please confirm your email address before signing in.';
-        } else if (error.message.includes('User not found')) {
+        } else if (error.message?.includes('User not found')) {
           errorMessage = 'No account found with this email address.';
         }
 
@@ -150,55 +149,83 @@ export const useAuth = () => {
       console.log('Sign in successful:', data.user?.email);
       return { data, error: null };
     } catch (err: any) {
-      console.error('Sign in exception:', err);
-      return { data: null, error: { message: err?.message || 'Failed to sign in. Please try again.' } };
+      console.error('Sign in network error:', err);
+
+      let errorMessage = 'Network error. Please check your internet connection and try again.';
+
+      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      return { data: null, error: { message: errorMessage } };
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     console.log('useAuth.signUp called with:', { email, fullName });
 
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: undefined,
         },
-        emailRedirectTo: undefined,
-      },
-    });
+      });
 
-    console.log('Supabase auth.signUp response:', { data, error });
+      console.log('Supabase auth.signUp response:', { data, error });
 
-    if (error) {
-      console.error('Auth signup error:', error);
-      return { data: null, error: { message: error.message } };
-    }
+      if (error) {
+        console.error('Auth signup error:', error);
+        let errorMessage = error.message;
 
-    // Profile is now created automatically by database trigger
-    // Allow signup to succeed even if profile creation has delays
-    if (data.user) {
-      console.log('User created successfully');
-
-      // Try to create profile in background (non-blocking)
-      setTimeout(async () => {
-        try {
-          const profile = await ProfileManager.getProfile(data.user.id);
-          if (!profile) {
-            console.log('Creating profile as fallback...');
-            await createUserProfile(data.user.id, {
-              email,
-              full_name: fullName,
-            });
-          }
-        } catch (err) {
-          console.warn('Background profile creation failed:', err);
+        if (error.message?.includes('already registered')) {
+          errorMessage = 'This email is already registered. Please sign in instead.';
+        } else if (error.message?.includes('invalid')) {
+          errorMessage = 'Invalid email or password format. Please check your input.';
         }
-      }, 100);
-    }
 
-    return { data, error };
+        return { data: null, error: { message: errorMessage } };
+      }
+
+      if (data.user) {
+        console.log('User created successfully');
+
+        setTimeout(async () => {
+          try {
+            const profile = await ProfileManager.getProfile(data.user.id);
+            if (!profile) {
+              console.log('Creating profile as fallback...');
+              await createUserProfile(data.user.id, {
+                email,
+                full_name: fullName,
+              });
+            }
+          } catch (err) {
+            console.warn('Background profile creation failed:', err);
+          }
+        }, 100);
+      }
+
+      return { data, error };
+    } catch (err: any) {
+      console.error('SignUp network error:', err);
+
+      let errorMessage = 'Network error. Please check your internet connection and try again.';
+
+      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
+        errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      return { data: null, error: { message: errorMessage } };
+    }
   };
 
   const signOut = async () => {
