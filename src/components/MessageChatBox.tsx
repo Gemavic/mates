@@ -248,7 +248,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         return;
       }
 
-      const result = creditManager.sendMessage(user.id, activeThread!, message.trim());
+      const result = await creditManager.sendMessage(user.id, activeThread!, message.trim());
 
       if (!result.success) {
         alert(`Need ${formatCredits(result.cost)} to send this message!`);
@@ -333,7 +333,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
     } catch (error) {
       console.error('Message send error:', error);
-      alert('Failed to send message. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error details:', errorMessage);
+      alert(`Failed to send message: ${errorMessage}`);
       // Refund credits on error
       if (user) {
         creditManager.addCredits(user.id, 2);
