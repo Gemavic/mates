@@ -98,7 +98,11 @@ export class ProfileManager {
     // This ensures we show all users unless they explicitly set their profile to private
     query = query.or('profile_visibility.eq.public,profile_visibility.is.null');
 
+    // PRIORITIZE ONLINE USERS FIRST
+    // Order by: 1) Online status (online first), 2) Last active (recent first), 3) Created date (newest first)
     const { data, error } = await query
+      .order('is_online', { ascending: false })
+      .order('last_active', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(limit);
 

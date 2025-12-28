@@ -3,6 +3,7 @@ import { Heart, X, Star, MapPin, Briefcase, GraduationCap, Search, Filter, Users
 import { SwipeCard } from '@/components/SwipeCard';
 import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { ProfileManager } from '@/lib/database';
@@ -92,9 +93,11 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
     try {
       const dbProfiles = await ProfileManager.getDiscoveryProfiles(user?.id);
+      console.log('✅ Loaded real profiles from database:', dbProfiles?.length || 0);
+
       if (dbProfiles && dbProfiles.length > 0) {
         const userPhotos = await Promise.all(
-          dbProfiles.map(async (profile, index) => {
+          dbProfiles.map(async (profile) => {
             try {
               if (profile.photo_url) {
                 return [profile.photo_url];
@@ -111,45 +114,43 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                 return data.map(p => p.photo_url);
               }
 
-              const mockIndex = index % mockProfiles.length;
-              return mockProfiles[mockIndex].images;
+              // Use a default placeholder image for profiles without photos
+              return ['https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800'];
             } catch {
-              const mockIndex = index % mockProfiles.length;
-              return mockProfiles[mockIndex].images;
+              return ['https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800'];
             }
           })
         );
 
         const formattedProfiles = dbProfiles.map((profile, index) => {
-          let displayName = profile.first_name || profile.full_name;
-          if (!displayName || displayName === 'User') {
-            const mockIndex = index % mockProfiles.length;
-            displayName = mockProfiles[mockIndex].name;
-          }
+          // Use real profile data, with sensible defaults only when data is missing
+          let displayName = profile.first_name || profile.full_name || 'User';
 
           return {
             id: profile.user_id,
             name: displayName,
-            age: profile.age || mockProfiles[index % mockProfiles.length].age,
-            location: profile.location || mockProfiles[index % mockProfiles.length].location,
-            occupation: profile.occupation || mockProfiles[index % mockProfiles.length].occupation,
-            education: profile.education || mockProfiles[index % mockProfiles.length].education,
+            age: profile.age || 25,
+            location: profile.location || 'Location not set',
+            occupation: profile.occupation || 'Occupation not set',
+            education: profile.education || '',
             images: userPhotos[index],
-            bio: profile.bio || mockProfiles[index % mockProfiles.length].bio,
-            interests: parseArrayField(profile.interests, mockProfiles[index % mockProfiles.length].interests),
+            bio: profile.bio || 'No bio yet',
+            interests: parseArrayField(profile.interests, []),
             online: profile.is_online || false,
             verified: profile.is_verified || false,
             premium: false
           };
         });
-        const finalProfiles = formattedProfiles.length > 0 ? formattedProfiles : mockProfiles;
-        setProfiles(finalProfiles);
+
+        console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => ({ name: p.name, online: p.online })));
+        setProfiles(formattedProfiles);
       } else {
-        setProfiles(mockProfiles);
+        console.warn('⚠️ No profiles found in database');
+        setProfiles([]);
       }
     } catch (error) {
-      console.warn('Error loading profiles, using mock profiles:', error);
-      setProfiles(mockProfiles);
+      console.error('❌ Error loading profiles:', error);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
@@ -388,18 +389,30 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
             {/* Swipe Card */}
             <div className="flex justify-center px-1 sm:px-2">
-              <SwipeCard
-                profile={currentProfile}
-                onLike={handleLike}
-                onPass={handlePass}
-                onSuperLike={handleSuperLike}
-                onSendMessage={handleSendMessage}
-                onBlink={handleBlink}
-                onReport={handleReport}
-                onBlock={handleBlock}
-                onNavigate={onNavigate}
-                className="w-full max-w-sm"
-              />
+              {profiles.length === 0 && !loading ? (
+                <EmptyState
+                  message="No profiles available at the moment"
+                  icon={<Users className="w-16 h-16 text-white/50" />}
+                />
+              ) : currentProfile ? (
+                <SwipeCard
+                  profile={currentProfile}
+                  onLike={handleLike}
+                  onPass={handlePass}
+                  onSuperLike={handleSuperLike}
+                  onSendMessage={handleSendMessage}
+                  onBlink={handleBlink}
+                  onReport={handleReport}
+                  onBlock={handleBlock}
+                  onNavigate={onNavigate}
+                  className="w-full max-w-sm"
+                />
+              ) : (
+                <EmptyState
+                  message="You've viewed all available profiles!"
+                  icon={<Heart className="w-16 h-16 text-white/50" />}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -438,22 +451,34 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               </div>
             </div>
 
-            {viewMode === 'swipe' ? (
+            {profiles.length === 0 && !loading ? (
+              <EmptyState
+                message="No profiles available at the moment"
+                icon={<Users className="w-16 h-16 text-white/50" />}
+              />
+            ) : viewMode === 'swipe' ? (
               /* Swipe Mode for Desktop */
-              <div className="flex justify-center">
-                <SwipeCard
-                  profile={currentProfile}
-                  onLike={handleLike}
-                  onPass={handlePass}
-                  onSuperLike={handleSuperLike}
-                  onSendMessage={handleSendMessage}
-                  onBlink={handleBlink}
-                  onReport={handleReport}
-                  onBlock={handleBlock}
-                  onNavigate={onNavigate}
-                  className="w-full max-w-md"
+              currentProfile ? (
+                <div className="flex justify-center">
+                  <SwipeCard
+                    profile={currentProfile}
+                    onLike={handleLike}
+                    onPass={handlePass}
+                    onSuperLike={handleSuperLike}
+                    onSendMessage={handleSendMessage}
+                    onBlink={handleBlink}
+                    onReport={handleReport}
+                    onBlock={handleBlock}
+                    onNavigate={onNavigate}
+                    className="w-full max-w-md"
+                  />
+                </div>
+              ) : (
+                <EmptyState
+                  message="You've viewed all available profiles!"
+                  icon={<Heart className="w-16 h-16 text-white/50" />}
                 />
-              </div>
+              )
             ) : (
               /* Grid Mode for Desktop */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
