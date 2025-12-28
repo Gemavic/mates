@@ -94,8 +94,9 @@ export class ProfileManager {
       query = query.neq('user_id', currentUserId);
     }
 
-    // Filter for public profiles only for Discovery
-    query = query.eq('profile_visibility', 'public');
+    // Show all profiles that are either public OR don't have visibility set (default to public)
+    // This ensures we show all users unless they explicitly set their profile to private
+    query = query.or('profile_visibility.eq.public,profile_visibility.is.null');
 
     const { data, error } = await query
       .order('created_at', { ascending: false })

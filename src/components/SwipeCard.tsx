@@ -83,6 +83,14 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   };
 
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent drag if clicking on interactive elements (buttons, inputs, textareas, etc.)
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button, input, textarea, a, [role="button"]');
+
+    if (isInteractiveElement) {
+      return;
+    }
+
     setIsDragging(true);
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
