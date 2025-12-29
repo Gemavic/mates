@@ -146,34 +146,43 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
   }, [user, activeTab]);
 
   const loadProfiles = async () => {
+    if (!user?.id) {
+      console.warn('⚠️ Cannot load profiles - user not authenticated');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      console.log('Loading profiles from database...');
+      console.log('🔍 Loading profiles from database for user:', user.id);
 
-      let query = supabaseClient
+      // Show all profiles that are either public OR don't have visibility set (default to public)
+      const { data: dbProfiles, error } = await supabaseClient
         .from('user_profiles')
         .select('*')
-        .eq('profile_visibility', 'public')
+        .neq('user_id', user.id)
+        .or('profile_visibility.eq.public,profile_visibility.is.null')
+        .order('is_online', { ascending: false })
+        .order('last_active', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (user?.id) {
-        query = query.neq('user_id', user.id);
-      }
-
-      const { data: dbProfiles, error } = await query;
-
       if (error) {
-        console.error('Database error:', error);
+        console.error('❌ Database error:', error);
         setProfiles([]);
         setLoading(false);
         return;
       }
 
-      console.log('Found profiles:', dbProfiles?.length || 0);
+      console.log('✅ Found profiles:', dbProfiles?.length || 0);
+      console.log('📋 Profile details:', dbProfiles?.map(p => ({
+        name: p.first_name || p.full_name,
+        online: p.is_online,
+        userId: p.user_id
+      })));
 
       if (!dbProfiles || dbProfiles.length === 0) {
-        console.warn('No profiles found in database');
+        console.warn('⚠️ No profiles found in database');
         setProfiles([]);
         setLoading(false);
         return;

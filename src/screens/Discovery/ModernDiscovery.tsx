@@ -72,8 +72,10 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   }, [user?.id]);
 
   React.useEffect(() => {
-    loadProfiles();
-  }, []);
+    if (user) {
+      loadProfiles();
+    }
+  }, [user]);
 
   const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
     if (Array.isArray(value)) return value;
@@ -89,11 +91,23 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   };
 
   const loadProfiles = async () => {
+    if (!user) {
+      console.warn('⚠️ Cannot load profiles - user not authenticated');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    console.log('🔍 Loading profiles for user:', user.id);
 
     try {
-      const dbProfiles = await ProfileManager.getDiscoveryProfiles(user?.id);
+      const dbProfiles = await ProfileManager.getDiscoveryProfiles(user.id);
       console.log('✅ Loaded real profiles from database:', dbProfiles?.length || 0);
+      console.log('📋 Profile details:', dbProfiles?.map(p => ({
+        name: p.first_name || p.full_name,
+        online: p.is_online,
+        userId: p.user_id
+      })));
 
       if (dbProfiles && dbProfiles.length > 0) {
         const userPhotos = await Promise.all(
@@ -142,10 +156,10 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           };
         });
 
-        console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => ({ name: p.name, online: p.online })));
+        console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => ({ name: p.name, online: p.online, id: p.id })));
         setProfiles(formattedProfiles);
       } else {
-        console.warn('⚠️ No profiles found in database');
+        console.warn('⚠️ No profiles found in database for user:', user.id);
         setProfiles([]);
       }
     } catch (error) {

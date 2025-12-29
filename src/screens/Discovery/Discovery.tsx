@@ -56,18 +56,29 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
   });
 
   useEffect(() => {
-    loadProfiles();
-  }, []);
+    if (user) {
+      loadProfiles();
+    }
+  }, [user]);
 
   useEffect(() => {
     applyFilters();
   }, [profiles, activeTab, filters]);
 
   const loadProfiles = async () => {
+    if (!user?.id) {
+      console.warn('⚠️ Cannot load profiles - user not authenticated');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('🔍 Loading profiles from database for user:', user.id);
+
       // Build query to fetch all user profiles except current user
-      let query = supabaseClient
+      // Show all profiles that are either public OR don't have visibility set (default to public)
+      const { data, error } = await supabaseClient
         .from('user_profiles')
         .select(`
           id,
@@ -82,22 +93,24 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
           interests,
           is_verified,
           is_online
-        `);
-
-      // Only exclude current user if user is authenticated
-      if (user?.id) {
-        query = query.neq('user_id', user.id);
-      }
-
-      // Filter for public profiles for Discovery
-      query = query.eq('profile_visibility', 'public');
-
-      const { data, error } = await query.order('created_at', { ascending: false });
+        `)
+        .neq('user_id', user.id)
+        .or('profile_visibility.eq.public,profile_visibility.is.null')
+        .order('is_online', { ascending: false })
+        .order('last_active', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading profiles:', error);
+        console.error('❌ Error loading profiles:', error);
         return;
       }
+
+      console.log('✅ Found profiles:', data?.length || 0);
+      console.log('📋 Profile details:', data?.map(p => ({
+        name: p.first_name || p.full_name,
+        online: p.is_online,
+        userId: p.user_id
+      })));
 
       // Fetch photos for each profile
       const profilesWithPhotos = await Promise.all(
