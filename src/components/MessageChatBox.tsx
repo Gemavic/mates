@@ -62,6 +62,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [userBalance, setUserBalance] = useState(0);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState('https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400');
+  const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
+  const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { getFirstName, user, profile } = useAuth();
 
@@ -166,9 +169,6 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     { id: 'birthday_cake', name: 'Cake', emoji: '🎂', price: 10, category: 'fun' }
   ];
 
-  const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
-  const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
-
   const getInitialThreads = (): ChatThread[] => {
     if (selectedUserId && selectedUserName && selectedUserImage) {
       return [
@@ -198,8 +198,6 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const getInitialMessages = (): ChatMessage[] => {
     return [];
   };
-
-  const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages());
 
   const emojis = [
     '😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '✨', 
