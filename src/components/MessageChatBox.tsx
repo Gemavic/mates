@@ -87,20 +87,82 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     }
   }, [profile]);
 
+  // Fallback demo data if database is empty
+  const getDemoThreads = (): ChatThread[] => [
+    {
+      id: 'thread-demo-1',
+      participantId: 'demo-user-1',
+      participantName: 'Sarah',
+      participantImage: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-demo-1',
+        senderId: 'demo-user-1',
+        senderName: 'Sarah',
+        senderImage: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Hey! How are you doing? 😊',
+        timestamp: new Date(Date.now() - 300000),
+        type: 'text'
+      },
+      unreadCount: 2,
+      isOnline: true,
+      isTyping: false
+    },
+    {
+      id: 'thread-demo-2',
+      participantId: 'demo-user-2',
+      participantName: 'Emma',
+      participantImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-demo-2',
+        senderId: 'demo-user-2',
+        senderName: 'Emma',
+        senderImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Thanks for the message! Would love to chat',
+        timestamp: new Date(Date.now() - 600000),
+        type: 'text'
+      },
+      unreadCount: 1,
+      isOnline: true,
+      isTyping: false
+    },
+    {
+      id: 'thread-demo-3',
+      participantId: 'demo-user-3',
+      participantName: 'Jessica',
+      participantImage: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
+      lastMessage: {
+        id: 'msg-demo-3',
+        senderId: 'demo-user-3',
+        senderName: 'Jessica',
+        senderImage: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
+        message: 'Looking forward to getting to know you better!',
+        timestamp: new Date(Date.now() - 900000),
+        type: 'text'
+      },
+      unreadCount: 0,
+      isOnline: false,
+      isTyping: false
+    }
+  ];
+
   // Load real users from database for chat threads
   useEffect(() => {
     const loadRealUsers = async () => {
-      if (!user) return;
-
       try {
         const { data: profiles, error } = await supabaseClient
           .from('user_profiles')
           .select('user_id, full_name, first_name, photo_url, profile_photo, is_online, bio')
-          .neq('user_id', user.id)
+          .neq('user_id', user?.id || '')
           .limit(10);
+
+        console.log('📱 Chat: Loading profiles...', { error, count: profiles?.length });
 
         if (error) {
           console.error('Failed to load users for chat:', error);
+          // Use demo data as fallback
+          const demoData = getDemoThreads();
+          setDefaultThreads(demoData);
+          setChatThreads(demoData);
           return;
         }
 
@@ -133,9 +195,19 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           console.log('✅ Loaded real users for chat threads:', threads.map(t => t.participantName));
           setDefaultThreads(threads);
           setChatThreads(threads);
+        } else {
+          // No profiles in database, use demo data
+          console.log('📱 No profiles found, using demo data');
+          const demoData = getDemoThreads();
+          setDefaultThreads(demoData);
+          setChatThreads(demoData);
         }
       } catch (error) {
         console.error('Error loading users for chat:', error);
+        // Use demo data as fallback
+        const demoData = getDemoThreads();
+        setDefaultThreads(demoData);
+        setChatThreads(demoData);
       }
     };
 
@@ -481,12 +553,15 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     }
   };
 
-  const renderThreadList = () => (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-pink-200 bg-gradient-to-r from-pink-500 to-pink-400 text-white">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg">Messages</h3>
+  const renderThreadList = () => {
+    console.log('🎨 Rendering thread list. Threads:', chatThreads.length, chatThreads.map(t => t.participantName));
+
+    return (
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-pink-200 bg-gradient-to-r from-pink-500 to-pink-400 text-white">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-lg">Messages</h3>
           <button
             onClick={() => setIsOpen(false)}
             className="p-1 hover:bg-white/20 rounded-full transition-colors"
@@ -511,13 +586,23 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
       {/* Thread List */}
       <div className="flex-1 overflow-y-auto bg-pink-50">
-        {chatThreads.map((thread) => (
-          <button
-            key={thread.id}
-            onClick={() => setActiveThread(thread.id)}
-            className="w-full p-4 border-b border-pink-100 hover:bg-pink-100 transition-colors text-left cursor-pointer touch-manipulation active:scale-95"
-            type="button"
-          >
+        {chatThreads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            <MessageCircle className="w-16 h-16 text-pink-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Conversations Yet</h3>
+            <p className="text-sm text-gray-500">Start chatting with someone to see your messages here!</p>
+          </div>
+        ) : (
+          chatThreads.map((thread) => (
+            <button
+              key={thread.id}
+              onClick={() => {
+                console.log('💬 Thread clicked:', thread.participantName);
+                setActiveThread(thread.id);
+              }}
+              className="w-full p-4 border-b border-pink-100 hover:bg-pink-100 transition-colors text-left cursor-pointer touch-manipulation active:scale-95"
+              type="button"
+            >
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <img
@@ -560,7 +645,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               </div>
             </div>
           </button>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -587,7 +673,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         <p className="text-xs text-green-600">FREE: Likes, Blinks, Messages</p>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderChatView = () => {
     const thread = chatThreads.find(t => t.id === activeThread);
