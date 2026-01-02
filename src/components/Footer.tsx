@@ -63,10 +63,8 @@ export const Footer: React.FC<FooterProps> = ({
             
             if (tab.isChat) {
               return (
-                <div key={tab.id} className="flex flex-col items-center py-1 sm:py-2 px-1 sm:px-2 md:px-3 min-w-0">
-                  <div className="relative">
-                    <MessageChatBox />
-                  </div>
+                <div key={tab.id} className="flex flex-col items-center py-1 sm:py-2 px-1 sm:px-2 md:px-3 min-w-0 z-50 relative">
+                  <MessageChatBox />
                   <span className="text-xs font-medium text-gray-600 mt-0.5 sm:mt-1 truncate hidden sm:block">{tab.label}</span>
                 </div>
               );

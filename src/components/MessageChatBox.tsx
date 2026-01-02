@@ -827,12 +827,16 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       <button
         onClick={(e) => {
           e.preventDefault();
+          e.stopPropagation();
+          console.log('Chat button clicked! isOpen:', !isOpen);
           setIsOpen(!isOpen);
         }}
         className={cn(
           "relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-r from-pink-500 to-pink-400 rounded-full shadow-xl",
           "hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center",
           "touch-manipulation flex-shrink-0 cursor-pointer select-none border-2 border-white/30",
+          "z-50 pointer-events-auto",
+          isOpen && "scale-110 ring-4 ring-pink-300/50",
           className
         )}
         type="button"
@@ -850,17 +854,25 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       {/* Chat Window */}
       {isOpen && (
         <div className={cn(
-          "fixed z-50",
-          "bottom-14 sm:bottom-16 md:bottom-20 lg:bottom-24",
+          "fixed z-[9999]",
+          "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px]",
           "left-1/2 transform -translate-x-1/2",
           "w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px]",
           "max-w-[600px]",
           "h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px]",
-          "bg-pink-50 rounded-2xl shadow-2xl border border-pink-300 overflow-hidden",
-          "animate-slide-up"
+          "bg-pink-50 rounded-2xl shadow-2xl border-2 border-pink-400 overflow-hidden",
+          "animate-slide-up pointer-events-auto"
         )}>
           {activeThread ? renderChatView() : renderThreadList()}
         </div>
+      )}
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998]"
+          onClick={() => setIsOpen(false)}
+        />
       )}
     </>
   );
