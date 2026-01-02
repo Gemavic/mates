@@ -84,14 +84,69 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     }
   }, [profile]);
 
+  // Load real users from database for chat threads
+  useEffect(() => {
+    const loadRealUsers = async () => {
+      if (!user) return;
+
+      try {
+        const { data: profiles, error } = await supabaseClient
+          .from('user_profiles')
+          .select('user_id, full_name, first_name, photo_url, profile_photo, is_online, bio')
+          .neq('user_id', user.id)
+          .limit(10);
+
+        if (error) {
+          console.error('Failed to load users for chat:', error);
+          return;
+        }
+
+        if (profiles && profiles.length > 0) {
+          const threads: ChatThread[] = profiles.map((profile, index) => {
+            const displayName = profile.first_name || profile.full_name || 'User';
+            const displayImage = profile.photo_url || profile.profile_photo || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400';
+            const shortBio = profile.bio?.slice(0, 50) || 'Say hello!';
+
+            return {
+              id: `thread-${profile.user_id}`,
+              participantId: profile.user_id,
+              participantName: displayName,
+              participantImage: displayImage,
+              lastMessage: {
+                id: `msg-${profile.user_id}`,
+                senderId: profile.user_id,
+                senderName: displayName,
+                senderImage: displayImage,
+                message: shortBio,
+                timestamp: new Date(Date.now() - (index * 300000)),
+                type: 'text'
+              },
+              unreadCount: index < 2 ? 1 : 0,
+              isOnline: profile.is_online || false,
+              isTyping: false
+            };
+          });
+
+          console.log('✅ Loaded real users for chat threads:', threads.map(t => t.participantName));
+          setDefaultThreads(threads);
+          setChatThreads(threads);
+        }
+      } catch (error) {
+        console.error('Error loading users for chat:', error);
+      }
+    };
+
+    loadRealUsers();
+  }, [user]);
+
   // Update chat threads when selected user changes
   useEffect(() => {
-    setChatThreads(getInitialThreads());
-    setMessages(getInitialMessages());
-    if (selectedUserId) {
+    if (selectedUserId && selectedUserName && selectedUserImage) {
+      setChatThreads(getInitialThreads());
+      setMessages(getInitialMessages());
       setActiveThread(`thread-${selectedUserId}`);
     }
-  }, [selectedUserId, selectedUserName, selectedUserImage]);
+  }, [selectedUserId, selectedUserName, selectedUserImage, defaultThreads]);
 
   // Quick gift items for chat
   const quickGifts: GiftItem[] = [
@@ -109,80 +164,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     { id: 'birthday_cake', name: 'Cake', emoji: '🎂', price: 10, category: 'fun' }
   ];
 
-  const defaultThreads: ChatThread[] = [
-    {
-      id: 'thread-sample-1',
-      participantId: 'user-1',
-      participantName: 'Emma',
-      participantImage: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-1',
-        senderId: 'user-1',
-        senderName: 'Emma',
-        senderImage: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'That sounds amazing! When are you free? 😊',
-        timestamp: new Date(Date.now() - 300000),
-        type: 'text'
-      },
-      unreadCount: 1,
-      isOnline: true,
-      isTyping: false
-    },
-    {
-      id: 'thread-sample-2',
-      participantId: 'user-2',
-      participantName: 'Sarah',
-      participantImage: 'https://images.pexels.com/photos/1064881/pexels-photo-1064881.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-2',
-        senderId: 'user-2',
-        senderName: 'Sarah',
-        senderImage: 'https://images.pexels.com/photos/1064881/pexels-photo-1064881.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Looking for someone genuine and kind ❤️',
-        timestamp: new Date(Date.now() - 600000),
-        type: 'text'
-      },
-      unreadCount: 0,
-      isOnline: true,
-      isTyping: false
-    },
-    {
-      id: 'thread-sample-3',
-      participantId: 'user-3',
-      participantName: 'Jessica',
-      participantImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-3',
-        senderId: 'user-3',
-        senderName: 'Jessica',
-        senderImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Love travel and trying new restaurants 🌍',
-        timestamp: new Date(Date.now() - 1800000),
-        type: 'text'
-      },
-      unreadCount: 0,
-      isOnline: false,
-      isTyping: false
-    },
-    {
-      id: 'thread-sample-4',
-      participantId: 'user-4',
-      participantName: 'Amanda',
-      participantImage: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-4',
-        senderId: 'user-4',
-        senderName: 'Amanda',
-        senderImage: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Yoga enthusiast, dog lover 🐕✨',
-        timestamp: new Date(Date.now() - 3600000),
-        type: 'text'
-      },
-      unreadCount: 0,
-      isOnline: true,
-      isTyping: false
-    }
-  ];
+  const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
 
   const getInitialThreads = (): ChatThread[] => {
     if (selectedUserId && selectedUserName && selectedUserImage) {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, X, Star, MapPin, Briefcase, GraduationCap, Search, Filter, Users, CreditCard } from 'lucide-react';
 import { SwipeCard } from '@/components/SwipeCard';
+import { GridProfileCard } from '@/components/GridProfileCard';
 import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
@@ -495,104 +496,18 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               )
             ) : (
               /* Grid Mode for Desktop */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto">
                 {profiles.map((profile) => (
-                  <div
+                  <GridProfileCard
                     key={profile.id}
-                    onClick={() => onNavigate('view-profile', { userId: profile.id })}
-                    className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer"
-                  >
-                    <div className="relative">
-                      <img
-                        src={profile.images[0]}
-                        alt={profile.name}
-                        className="w-full h-48 sm:h-56 md:h-64 object-cover"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-col space-y-2">
-                        {profile.online && (
-                          <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
-                            <div className="w-2 h-2 bg-white rounded-full mr-1 animate-pulse"></div>
-                            Online
-                          </div>
-                        )}
-                        {profile.verified && (
-                          <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                            ✓ Verified
-                          </div>
-                        )}
-                        {profile.premium && (
-                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                            Premium
-                          </div>
-                        )}
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-4 left-4 right-4 text-white">
-                        <h3 className="text-lg sm:text-xl font-bold mb-1 truncate">{profile.name}, {profile.age}</h3>
-                        <div className="flex items-center mb-1">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          <span className="text-sm truncate">{profile.location}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Briefcase className="w-4 h-4 mr-1" />
-                          <span className="text-sm truncate">{profile.occupation}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 sm:p-4">
-                      <p className="text-white/90 text-xs sm:text-sm mb-3 line-clamp-2">{profile.bio}</p>
-                      
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {(Array.isArray(profile.interests) ? profile.interests : []).slice(0, 3).map((interest, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-0.5 bg-white/20 text-white text-xs rounded-full truncate"
-                          >
-                            {interest}
-                          </span>
-                        ))}
-                        {Array.isArray(profile.interests) && profile.interests.length > 3 && (
-                          <span className="px-2 py-0.5 bg-white/20 text-white text-xs rounded-full">
-                            +{profile.interests.length - 3}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex justify-center space-x-1 sm:space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePass(profile.id);
-                          }}
-                          className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-gray-500 hover:bg-gray-600 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer touch-manipulation active:scale-95"
-                          type="button"
-                        >
-                          <X className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white flex-shrink-0" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleLike(profile.id);
-                          }}
-                          className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-pink-500 hover:bg-pink-600 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer touch-manipulation active:scale-95"
-                          type="button"
-                        >
-                          <Heart className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white flex-shrink-0" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleSuperLike(profile.id);
-                          }}
-                          className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer touch-manipulation active:scale-95"
-                          type="button"
-                        >
-                          <Star className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white flex-shrink-0" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    id={profile.id}
+                    name={profile.name}
+                    age={profile.age}
+                    images={profile.images}
+                    online={profile.online}
+                    onViewProfile={(id) => onNavigate('view-profile', { userId: id })}
+                    onLike={handleLike}
+                  />
                 ))}
               </div>
             )}
