@@ -7,6 +7,7 @@ import { Eye, EyeOff, Heart, Mail, Lock, Shield, AlertTriangle } from 'lucide-re
 import { SecurityManager } from '@/lib/security';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
+import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 
 interface SignInProps {
   onNavigate: (screen: string) => void;
@@ -189,6 +190,26 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
               <li>• Content moderation</li>
               <li>• Safe reporting system</li>
             </ul>
+          </div>
+
+          {/* Social Auth Section */}
+          <div className="mb-6">
+            <SocialAuthButtons
+              isLoading={isLoading}
+              onError={(error) => setErrors([error])}
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 text-white/80">
+                Or continue with email
+              </span>
+            </div>
           </div>
 
           {/* Sign In Form */}

@@ -7,6 +7,7 @@ import { Eye, EyeOff, Heart, Mail, Lock, User, Shield, AlertTriangle, CheckCircl
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toast';
 import { creditManager } from '@/lib/creditSystem';
+import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 
 interface SignUpProps {
   onNavigate?: (screen: string) => void;
@@ -16,6 +17,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [socialError, setSocialError] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -232,6 +234,33 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
             <li>• Content moderation</li>
             <li>• Safe reporting system</li>
           </ul>
+        </div>
+
+        {/* Social Auth Error */}
+        {socialError && (
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+            <p className="text-red-200 text-sm">{socialError}</p>
+          </div>
+        )}
+
+        {/* Social Auth Section */}
+        <div className="mb-6">
+          <SocialAuthButtons
+            isLoading={isLoading}
+            onError={(error) => setSocialError(error)}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/20"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 text-white/80">
+              Or continue with email
+            </span>
+          </div>
         </div>
 
         {/* Sign Up Form */}
