@@ -302,7 +302,7 @@ const App: React.FC = () => {
         return <SignUp onNavigate={handleNavigate} />;
 
       case 'auth-callback':
-        return <AuthCallback />;
+        return <AuthCallback onNavigate={handleNavigate} />;
 
       case 'onboarding':
         return <Onboarding onComplete={() => handleNavigate('discovery')} onBack={() => handleNavigate('signup')} />;

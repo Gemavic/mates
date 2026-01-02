@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabaseClient } from '@/lib/supabase';
 import { creditManager } from '@/lib/creditSystem';
-import { ProfileManager } from '@/lib/database';
 import { Heart } from 'lucide-react';
 
-export const AuthCallback = () => {
-  const navigate = useNavigate();
+interface AuthCallbackProps {
+  onNavigate?: (screen: string) => void;
+}
+
+export const AuthCallback: React.FC<AuthCallbackProps> = ({ onNavigate }) => {
   const [status, setStatus] = useState('Completing sign in...');
+
+  const navigate = (screen: string) => {
+    if (onNavigate) {
+      onNavigate(screen);
+    } else {
+      window.location.hash = screen;
+    }
+  };
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -17,7 +26,7 @@ export const AuthCallback = () => {
         if (error) {
           console.error('Auth callback error:', error);
           setStatus('Sign in failed. Redirecting...');
-          setTimeout(() => navigate('/signin'), 2000);
+          setTimeout(() => navigate('signin'), 2000);
           return;
         }
 
@@ -76,26 +85,26 @@ export const AuthCallback = () => {
               await new Promise(resolve => setTimeout(resolve, 1000));
 
               if (profileData.is_verified) {
-                navigate('/discovery');
+                navigate('discovery');
               } else {
-                navigate('/verification');
+                navigate('verification');
               }
             } else {
-              navigate('/onboarding');
+              navigate('onboarding');
             }
           } catch (profileError) {
             console.warn('Could not check verification status:', profileError);
             setStatus('Almost there...');
-            setTimeout(() => navigate('/discovery'), 1000);
+            setTimeout(() => navigate('discovery'), 1000);
           }
         } else {
           setStatus('Sign in failed. Redirecting...');
-          setTimeout(() => navigate('/signin'), 2000);
+          setTimeout(() => navigate('signin'), 2000);
         }
       } catch (error) {
         console.error('Unexpected auth callback error:', error);
         setStatus('Something went wrong. Redirecting...');
-        setTimeout(() => navigate('/signin'), 2000);
+        setTimeout(() => navigate('signin'), 2000);
       }
     };
 
