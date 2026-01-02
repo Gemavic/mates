@@ -50,24 +50,26 @@ export const Menu: React.FC<MenuProps> = ({
 
   const menuSections = [
     {
-      title: 'Discover',
+      title: user ? `Hi, ${getFirstName()}!` : 'Get Started',
+      items: user ? [
+        { id: 'profile', icon: User, label: 'My Profile', description: 'View & edit your profile' },
+        { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences & privacy' },
+        { id: 'logout', icon: LogOut, label: 'Logout', description: 'Sign out of your account' },
+      ] : [
+        { id: 'signup', icon: UserPlus, label: 'Sign Up', description: 'Create your profile' },
+        { id: 'signin', icon: LogIn, label: 'Sign In', description: 'Access your account' },
+      ]
+    },
+    {
+      title: 'Discover Matches',
       items: [
-        { id: 'discovery', icon: Home, label: 'Home', description: 'Discover perfect matches' },
-        { id: 'matches', icon: Heart, label: 'Matches', description: 'Your connections' },
+        { id: 'discovery', icon: Home, label: 'Browse All', description: 'Discover perfect matches' },
+        { id: 'matches', icon: Heart, label: 'My Matches', description: 'Your mutual connections' },
         { id: 'likes', icon: Star, label: 'Likes', description: 'Who likes you' },
       ]
     },
     {
-      title: 'Content & Advice',
-      items: [
-        { id: 'care-blog', icon: BookOpen, label: 'Blog', description: 'Dating tips & relationship advice' },
-        { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Fun interactive personality quizzes' },
-        { id: 'newsfeed', icon: Newspaper, label: 'Date Ideas', description: 'Creative date inspiration' },
-        { id: 'help', icon: HelpCircle, label: 'Advice', description: 'Expert guidance & FAQs' },
-      ]
-    },
-    {
-      title: 'Connect',
+      title: 'Messages & Calls',
       items: [
         { id: 'mail', icon: Mail, label: 'Messages', description: 'Private conversations' },
         { id: 'video-chat', icon: Video, label: 'Video Chat', description: 'Face-to-face calls' },
@@ -75,24 +77,20 @@ export const Menu: React.FC<MenuProps> = ({
       ]
     },
     {
-      title: user ? `Account - ${getFirstName()}` : 'Account',
-      items: user ? [
-        // Logged in users see these options
-        { id: 'profile', icon: User, label: 'My Profile', description: 'Edit your profile' },
-        { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences & privacy' },
-        { id: 'logout', icon: LogOut, label: 'Logout', description: 'Sign out of your account' },
-      ] : [
-        // Not logged in users see these options
-        { id: 'signin', icon: LogIn, label: 'Sign In', description: 'Access your account' },
-        { id: 'signup', icon: UserPlus, label: 'Sign Up', description: 'Join Dates today' },
-      ]
-    },
-    {
-      title: 'Premium',
+      title: 'Premium Features',
       items: [
         { id: 'credits', icon: CreditCard, label: 'Buy Credits', description: 'Unlock premium features' },
         { id: 'gift-shop', icon: Gift, label: 'Gift Shop', description: 'Send special gifts' },
         { id: 'match-suitor', icon: Crown, label: 'VIP Matching', description: 'Elite matchmaking service' },
+      ]
+    },
+    {
+      title: 'Dating Advice & Fun',
+      items: [
+        { id: 'care-blog', icon: BookOpen, label: 'Dating Blog', description: 'Tips & relationship advice' },
+        { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Fun personality quizzes' },
+        { id: 'newsfeed', icon: Newspaper, label: 'Date Ideas', description: 'Creative date inspiration' },
+        { id: 'help', icon: HelpCircle, label: 'Help & FAQs', description: 'Expert guidance' },
       ]
     },
     {
