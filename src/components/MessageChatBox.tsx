@@ -167,6 +167,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   ];
 
   const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
+  const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
 
   const getInitialThreads = (): ChatThread[] => {
     if (selectedUserId && selectedUserName && selectedUserImage) {
@@ -193,8 +194,6 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     }
     return [];
   };
-
-  const [chatThreads, setChatThreads] = useState<ChatThread[]>(getInitialThreads());
 
   const getInitialMessages = (): ChatMessage[] => {
     return [];
