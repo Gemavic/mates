@@ -68,16 +68,26 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { getFirstName, user, profile } = useAuth();
 
-  // Load user credits from database
+  // Load user credits from database and refresh periodically
   useEffect(() => {
-    if (user) {
-      CreditManager.getUserCredits(user.id)
-        .then(credits => {
+    const loadCredits = async () => {
+      if (user) {
+        try {
+          const credits = await CreditManager.getUserCredits(user.id);
           const total = (credits?.complimentary_credits || 0) + (credits?.purchased_credits || 0);
           setUserBalance(total);
-        })
-        .catch(err => console.error('Failed to load credits:', err));
-    }
+          console.log('💰 Credits loaded:', total, 'credits for', user.id);
+        } catch (err) {
+          console.error('Failed to load credits:', err);
+        }
+      }
+    };
+
+    loadCredits();
+
+    // Refresh credits every 10 seconds to stay in sync
+    const interval = setInterval(loadCredits, 10000);
+    return () => clearInterval(interval);
   }, [user]);
 
   // Update user profile image from profile data
@@ -90,71 +100,151 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   // Return empty array instead of demo data
   const getEmptyThreads = (): ChatThread[] => [];
 
-  // Load real users from database for chat threads
+  // Load actual mail threads from database
   useEffect(() => {
-    const loadRealUsers = async () => {
+    const loadMailThreads = async () => {
+      if (!user) return;
+
       try {
-        const { data: profiles, error } = await supabaseClient
-          .from('user_profiles')
-          .select('user_id, full_name, first_name, photo_url, profile_photo, is_online, bio')
-          .neq('user_id', user?.id || '')
-          .limit(10);
+        // Load actual mail threads
+        const threads = await MessagingManager.getMailThreads(user.id);
 
-        console.log('📱 Chat: Loading profiles...', { error, count: profiles?.length });
-
-        if (error) {
-          console.error('Failed to load users for chat:', error);
-          // Show empty state instead of demo data
+        if (!threads || threads.length === 0) {
+          console.log('📱 No mail threads found');
           setDefaultThreads([]);
           setChatThreads([]);
           return;
         }
 
-        if (profiles && profiles.length > 0) {
-          const threads: ChatThread[] = profiles.map((profile, index) => {
-            const displayName = profile.first_name || profile.full_name || 'User';
-            const displayImage = profile.photo_url || profile.profile_photo || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400';
-            const shortBio = profile.bio?.slice(0, 50) || 'Say hello!';
+        // Get all other user IDs
+        const otherUserIds = threads.map((thread: any) =>
+          thread.participant1_id === user.id
+            ? thread.participant2_id
+            : thread.participant1_id
+        );
 
-            return {
-              id: `thread-${profile.user_id}`,
-              participantId: profile.user_id,
-              participantName: displayName,
-              participantImage: displayImage,
-              lastMessage: {
-                id: `msg-${profile.user_id}`,
-                senderId: profile.user_id,
-                senderName: displayName,
-                senderImage: displayImage,
-                message: shortBio,
-                timestamp: new Date(Date.now() - (index * 300000)),
-                type: 'text'
-              },
-              unreadCount: index < 2 ? 1 : 0,
-              isOnline: profile.is_online || false,
-              isTyping: false
+        // Fetch all profiles in a single query
+        const { data: profiles } = await supabaseClient
+          .from('user_profiles')
+          .select('user_id, full_name, first_name, photo_url, profile_photo, is_online')
+          .in('user_id', otherUserIds);
+
+        // Fetch last message for each thread
+        const { data: allMessages } = await supabaseClient
+          .from('mail_messages')
+          .select('thread_id, message_text, created_at, is_read, sender_id')
+          .in('thread_id', threads.map((t: any) => t.id))
+          .order('created_at', { ascending: false });
+
+        // Create lookup maps
+        const profileMap = (profiles || []).reduce((acc, p) => {
+          acc[p.user_id] = p;
+          return acc;
+        }, {} as Record<string, any>);
+
+        const messagesByThread = (allMessages || []).reduce((acc, msg) => {
+          if (!acc[msg.thread_id]) {
+            acc[msg.thread_id] = {
+              latest: msg,
+              unreadCount: 0
             };
-          });
+          }
+          if (!msg.is_read && msg.sender_id !== user.id) {
+            acc[msg.thread_id].unreadCount++;
+          }
+          return acc;
+        }, {} as Record<string, any>);
 
-          console.log('✅ Loaded real users for chat threads:', threads.map(t => t.participantName));
-          setDefaultThreads(threads);
-          setChatThreads(threads);
-        } else {
-          // No profiles in database, show empty state
-          console.log('📱 No profiles found, showing empty state');
-          setDefaultThreads([]);
-          setChatThreads([]);
-        }
+        // Map to ChatThread format
+        const chatThreads: ChatThread[] = threads.map((thread: any) => {
+          const otherUserId = thread.participant1_id === user.id
+            ? thread.participant2_id
+            : thread.participant1_id;
+
+          const profile = profileMap[otherUserId];
+          const threadMessages = messagesByThread[thread.id];
+          const displayName = profile?.first_name || profile?.full_name || 'User';
+          const displayImage = profile?.photo_url || profile?.profile_photo || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400';
+
+          return {
+            id: thread.id,
+            participantId: otherUserId,
+            participantName: displayName,
+            participantImage: displayImage,
+            lastMessage: threadMessages?.latest ? {
+              id: threadMessages.latest.id || 'msg-' + thread.id,
+              senderId: threadMessages.latest.sender_id,
+              senderName: threadMessages.latest.sender_id === user.id ? 'You' : displayName,
+              senderImage: displayImage,
+              message: threadMessages.latest.message_text,
+              timestamp: new Date(threadMessages.latest.created_at),
+              type: 'text'
+            } : undefined,
+            unreadCount: threadMessages?.unreadCount || 0,
+            isOnline: profile?.is_online || false,
+            isTyping: false
+          };
+        });
+
+        console.log('✅ Loaded', chatThreads.length, 'mail threads:', chatThreads.map(t => t.participantName));
+        setDefaultThreads(chatThreads);
+        setChatThreads(chatThreads);
       } catch (error) {
-        console.error('Error loading users for chat:', error);
-        // Show empty state instead of demo data
+        console.error('Error loading mail threads:', error);
         setDefaultThreads([]);
         setChatThreads([]);
       }
     };
 
-    loadRealUsers();
+    loadMailThreads();
   }, [user]);
+
+  // Load messages when a thread is selected
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!activeThread || !user) return;
+
+      try {
+        console.log('📨 Loading messages for thread:', activeThread);
+
+        // Fetch messages from database
+        const { data: messagesData, error } = await supabaseClient
+          .from('mail_messages')
+          .select('*')
+          .eq('thread_id', activeThread)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        // Convert to ChatMessage format
+        const loadedMessages: ChatMessage[] = (messagesData || []).map(msg => ({
+          id: msg.id,
+          senderId: msg.sender_id === user.id ? 'me' : msg.sender_id,
+          senderName: msg.sender_id === user.id ? 'You' : chatThreads.find(t => t.id === activeThread)?.participantName || 'User',
+          senderImage: msg.sender_id === user.id ? userProfileImage : chatThreads.find(t => t.id === activeThread)?.participantImage || '',
+          message: msg.message_text,
+          timestamp: new Date(msg.created_at),
+          type: 'text'
+        }));
+
+        setMessages(loadedMessages);
+        console.log('✅ Loaded', loadedMessages.length, 'messages');
+
+        // Mark messages as read
+        await supabaseClient
+          .from('mail_messages')
+          .update({ is_read: true })
+          .eq('thread_id', activeThread)
+          .neq('sender_id', user.id);
+
+      } catch (error) {
+        console.error('Failed to load messages:', error);
+        setMessages([]);
+      }
+    };
+
+    loadMessages();
+  }, [activeThread, user, chatThreads, userProfileImage]);
 
   // Update chat threads when selected user changes
   useEffect(() => {
@@ -243,15 +333,41 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         return;
       }
 
-      const result = await creditManager.sendMessage(user.id, activeThread!, message.trim());
+      // Check if this is the first message in thread (FREE)
+      const { data: existingMessages } = await supabaseClient
+        .from('mail_messages')
+        .select('id')
+        .eq('thread_id', activeThread!)
+        .eq('sender_id', user.id)
+        .limit(1);
 
-      if (!result.success) {
-        alert(`Need ${formatCredits(result.cost)} to send this message!`);
-        return;
+      const isFirstMessage = !existingMessages || existingMessages.length === 0;
+      const messageCost = isFirstMessage ? 0 : 10;
+
+      // Check if user has enough credits (skip check if first message is free)
+      if (!isFirstMessage && messageCost > 0) {
+        const userCredits = await CreditManager.getUserCredits(user.id);
+        const totalCredits = (userCredits?.complimentary_credits || 0) + (userCredits?.purchased_credits || 0);
+
+        if (totalCredits < messageCost) {
+          alert(`Need ${messageCost} credits to send this message!`);
+          return;
+        }
+
+        // Deduct credits from database
+        try {
+          await CreditManager.spendCredits(user.id, messageCost, 'Chat message');
+        } catch (error) {
+          console.error('Failed to deduct credits:', error);
+          alert('Insufficient credits!');
+          return;
+        }
       }
 
-      // Update balance after successful credit deduction
-      setUserBalance(creditManager.getTotalCredits(user.id));
+      // Reload credits after deduction
+      const updatedCredits = await CreditManager.getUserCredits(user.id);
+      const newBalance = (updatedCredits?.complimentary_credits || 0) + (updatedCredits?.purchased_credits || 0);
+      setUserBalance(newBalance);
 
       // Check if recipient exists in database
       const { data: recipientProfile } = await supabaseClient
@@ -303,9 +419,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       // Show feedback based on whether it was free or paid
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = result.isFree
+      successMessage.textContent = isFirstMessage
         ? '💬 First message FREE!'
-        : `💬 Message sent! (-${result.cost} credits)`;
+        : `💬 Message sent! (-${messageCost} credits)`;
       document.body.appendChild(successMessage);
       setTimeout(() => {
         if (document.body.contains(successMessage)) {
