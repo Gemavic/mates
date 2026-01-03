@@ -123,6 +123,13 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         userId: p.user_id
       })));
 
+      if (!dbProfiles || dbProfiles.length === 0) {
+        console.warn('⚠️ No profiles found in database for user:', user.id);
+        setProfiles([]);
+        setLoading(false);
+        return;
+      }
+
       if (dbProfiles && dbProfiles.length > 0) {
         // Fetch all photos in a single query instead of N+1 queries
         const userIds = dbProfiles.map(p => p.user_id);
@@ -180,9 +187,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
         console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => ({ name: p.name, online: p.online, id: p.id })));
         setProfiles(formattedProfiles);
-      } else {
-        console.warn('⚠️ No profiles found in database for user:', user.id);
-        setProfiles([]);
       }
     } catch (error) {
       console.error('❌ Error loading profiles:', error);
@@ -191,69 +195,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       setLoading(false);
     }
   };
-
-  const mockProfiles: Profile[] = [
-    {
-      id: '1',
-      name: 'Sofia',
-      age: 28,
-      location: 'New York, NY',
-      occupation: 'Marketing Manager',
-      education: 'Columbia University',
-      images: [
-        'https://images.pexels.com/photos/1382734/pexels-photo-1382734.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2787341/pexels-photo-2787341.jpeg?auto=compress&cs=tinysrgb&w=800'
-      ],
-      bio: 'Love exploring new places, trying different cuisines, and meeting interesting people. Looking for someone to share adventures with!',
-      interests: ['Travel', 'Photography', 'Cooking', 'Yoga'],
-      online: true,
-      verified: true,
-      premium: true,
-      matchReason: 'Shared love for travel',
-      statusUpdate: 'Just got back from an amazing weekend in the mountains! 🏔️',
-      quoteOfTheDay: 'Adventure awaits those who dare to dream',
-      lastActive: '2 minutes ago'
-    },
-    {
-      id: '2',
-      name: 'Emma',
-      age: 25,
-      location: 'Los Angeles, CA',
-      occupation: 'Graphic Designer',
-      education: 'Art Center College',
-      images: [
-        'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/3196887/pexels-photo-3196887.jpeg?auto=compress&cs=tinysrgb&w=800'
-      ],
-      bio: 'Creative soul with a passion for art and design. Love hiking, coffee shops, and deep conversations under the stars.',
-      interests: ['Art', 'Hiking', 'Coffee', 'Music'],
-      online: false,
-      verified: true,
-      matchReason: 'Both creative types',
-      statusUpdate: 'Working on a new art project that\'s got me so inspired! 🎨',
-      quoteOfTheDay: 'Creativity is intelligence having fun',
-      lastActive: '1 hour ago'
-    },
-    {
-      id: '3',
-      name: 'Jessica',
-      age: 27,
-      location: 'Chicago, IL',
-      occupation: 'Software Engineer',
-      education: 'Northwestern University',
-      images: [
-        'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=800'
-      ],
-      bio: 'Tech enthusiast who loves solving problems and building cool things. When not coding, you can find me at the gym or trying new restaurants.',
-      interests: ['Technology', 'Fitness', 'Food', 'Travel'],
-      online: true,
-      verified: false,
-      matchReason: 'Similar career ambitions',
-      statusUpdate: 'Just finished a challenging coding bootcamp. Feeling accomplished! 💻',
-      quoteOfTheDay: 'Code is poetry written in logic',
-      lastActive: '5 minutes ago'
-    }
-  ];
 
   const currentProfile = profiles[currentProfileIndex];
 
