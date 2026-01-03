@@ -73,7 +73,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
     }
   };
 
-  const awardCredits = () => {
+  const awardCredits = async () => {
     try {
       if (!selectedUserId || !creditAmount || !creditReason) {
         alert('Please fill in all fields');
@@ -91,11 +91,30 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
         return;
       }
 
-      // Award credits
-      creditManager.addCredits(selectedUserId, amount, `Staff Award: ${creditReason}`, false);
-      
-      alert(`✅ Awarded ${amount} credits to user ${selectedUserId}`);
-      
+      // Award credits using database function
+      const { supabaseClient } = await import('@/lib/supabase');
+      const { data, error } = await supabaseClient.rpc('add_credits_atomic', {
+        p_user_id: selectedUserId,
+        p_amount: amount,
+        p_credit_type: 'complimentary',
+        p_description: `Staff Award: ${creditReason}`,
+        p_category: 'staff_award'
+      });
+
+      if (error) {
+        console.error('Error awarding credits:', error);
+        alert('Failed to award credits. Please try again.');
+        return;
+      }
+
+      const result = data as any;
+      if (!result.success) {
+        alert(`Failed to award credits: ${result.error}`);
+        return;
+      }
+
+      alert(`✅ Awarded ${amount} credits to user ${selectedUserId}\nNew balance: ${result.new_balance} credits`);
+
       // Reset form
       setSelectedUserId('');
       setCreditAmount('');
