@@ -27,8 +27,9 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
 import { cn } from '@/lib/utils';
-import { MessagingManager } from '@/lib/database';
+import { MessagingManager, CreditManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
+import { staffManager } from '@/lib/staffManager';
 
 interface MailProps {
   onNavigate: (screen: string) => void;
@@ -58,6 +59,8 @@ interface MailThread {
 interface Message {
   id: string;
   senderId: string;
+  senderName: string;
+  senderImage: string;
   message: string;
   timestamp: string;
   hasPhotos: boolean;
@@ -225,24 +228,50 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
 
       if (error) throw error;
 
-      const formattedMessages: Message[] = messages.map(msg => ({
-        id: msg.id,
-        senderId: msg.sender_id === user.id ? 'me' : 'other',
-        message: msg.message_text,
-        timestamp: new Date(msg.created_at).toLocaleString(),
-        hasPhotos: false
-      }));
+      const senderIds = [...new Set(messages.map(m => m.sender_id))];
+
+      const { data: profiles } = await supabaseClient
+        .from('user_profiles')
+        .select('user_id, first_name, full_name')
+        .in('user_id', senderIds);
+
+      const { data: photos } = await supabaseClient
+        .from('user_photos')
+        .select('user_id, photo_url')
+        .in('user_id', senderIds)
+        .eq('is_primary', true);
+
+      const profileMap = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p;
+        return acc;
+      }, {} as Record<string, any>);
+
+      const photoMap = (photos || []).reduce((acc, p) => {
+        acc[p.user_id] = p.photo_url;
+        return acc;
+      }, {} as Record<string, string>);
+
+      const formattedMessages: Message[] = messages.map(msg => {
+        const profile = profileMap[msg.sender_id];
+        return {
+          id: msg.id,
+          senderId: msg.sender_id,
+          senderName: profile?.first_name || profile?.full_name || 'User',
+          senderImage: photoMap[msg.sender_id] || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+          message: msg.message_text,
+          timestamp: new Date(msg.created_at).toLocaleString(),
+          hasPhotos: msg.has_photos || false
+        };
+      });
 
       setCurrentMessages(formattedMessages);
 
-      // Mark messages as read
       await supabaseClient
         .from('mail_messages')
         .update({ is_read: true })
         .eq('thread_id', threadId)
         .neq('sender_id', user.id);
 
-      // Reload threads to update unread count
       await loadMailThreads();
     } catch (error) {
       console.error('Failed to load messages:', error);
@@ -610,36 +639,81 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
 
         {/* Messages History */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 max-h-96 overflow-y-auto">
-          <div className="space-y-3">
-            {currentMessages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex",
-                  message.senderId === 'me' ? 'justify-end' : 'justify-start'
-                )}
-              >
+          <div className="space-y-4">
+            {currentMessages.map((message) => {
+              const isMe = message.senderId === user?.id;
+              return (
                 <div
+                  key={message.id}
                   className={cn(
-                    "max-w-xs sm:max-w-sm md:max-w-md px-4 py-3 rounded-xl shadow-sm",
-                    message.senderId === 'me'
-                      ? 'bg-pink-500 text-white'
-                      : 'bg-white/20 text-white backdrop-blur-sm'
+                    "flex gap-3",
+                    isMe ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  <p className="text-sm leading-relaxed">{message.message}</p>
-                  {message.hasPhotos && (
-                    <div className="mt-2 p-2 bg-black/20 rounded-lg">
-                      <div className="flex items-center text-xs">
-                        <Image className="w-3 h-3 mr-1" />
-                        <span>Photo attachment</span>
-                      </div>
+                  {/* Profile Image - Left side for receiver */}
+                  {!isMe && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={message.senderImage}
+                        alt={message.senderName}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                      />
                     </div>
                   )}
-                  <p className="text-xs opacity-70 mt-2">{message.timestamp}</p>
+
+                  {/* Message Bubble */}
+                  <div className="flex flex-col max-w-xs sm:max-w-sm md:max-w-md">
+                    {/* Sender Name */}
+                    <p className={cn(
+                      "text-xs font-medium mb-1 px-1",
+                      isMe ? 'text-pink-200 text-right' : 'text-white/80'
+                    )}>
+                      {isMe ? 'You' : message.senderName}
+                    </p>
+
+                    {/* Message Content */}
+                    <div
+                      className={cn(
+                        "px-4 py-3 rounded-2xl shadow-md",
+                        isMe
+                          ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-tr-sm'
+                          : 'bg-white text-gray-800 rounded-tl-sm'
+                      )}
+                    >
+                      <p className="text-sm leading-relaxed break-words">{message.message}</p>
+                      {message.hasPhotos && (
+                        <div className={cn(
+                          "mt-2 p-2 rounded-lg",
+                          isMe ? 'bg-black/20' : 'bg-gray-100'
+                        )}>
+                          <div className="flex items-center text-xs">
+                            <Image className="w-3 h-3 mr-1" />
+                            <span>Photo attachment</span>
+                          </div>
+                        </div>
+                      )}
+                      <p className={cn(
+                        "text-xs mt-2",
+                        isMe ? 'opacity-70' : 'text-gray-500'
+                      )}>
+                        {message.timestamp}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Profile Image - Right side for sender (you) */}
+                  {isMe && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={message.senderImage}
+                        alt="You"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-pink-300"
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

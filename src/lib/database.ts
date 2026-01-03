@@ -157,55 +157,23 @@ export class CreditManager {
     return data || [];
   }
 
-  static async spendCredits(userId: string, amount: number, description: string) {
-    // Start transaction
-    const { data: credits, error: creditsError } = await supabaseClient
-      .from('user_credits')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+  static async spendCredits(userId: string, amount: number, description: string, category: string = 'general') {
+    const { data, error } = await supabaseClient.rpc('spend_credits_atomic', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_description: description,
+      p_category: category
+    });
 
-    if (creditsError) throw creditsError;
-
-    const totalCredits = credits.complimentary_credits + credits.purchased_credits;
-    if (totalCredits < amount) {
-      throw new Error('Insufficient credits');
+    if (error) {
+      console.error('Failed to spend credits:', error);
+      throw error;
     }
 
-    // Update credits
-    let newComplimentary = credits.complimentary_credits;
-    let newPurchased = credits.purchased_credits;
-
-    if (newPurchased >= amount) {
-      newPurchased -= amount;
-    } else {
-      const remainingAmount = amount - newPurchased;
-      newPurchased = 0;
-      newComplimentary -= remainingAmount;
+    const result = data as any;
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to spend credits');
     }
-
-    const { error: updateError } = await supabaseClient
-      .from('user_credits')
-      .update({
-        complimentary_credits: newComplimentary,
-        purchased_credits: newPurchased,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId);
-
-    if (updateError) throw updateError;
-
-    // Record transaction
-    const { error: transactionError } = await supabaseClient
-      .from('credit_transactions')
-      .insert({
-        user_id: userId,
-        transaction_type: 'spend',
-        amount,
-        description
-      });
-
-    if (transactionError) throw transactionError;
 
     return true;
   }
