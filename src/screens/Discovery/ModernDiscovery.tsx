@@ -34,10 +34,23 @@ interface ModernDiscoveryProps {
 export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = () => {} }) => {
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const { user } = useAuth();
-  const [userBalance, setUserBalance] = useState(creditManager.getBalance(user?.id || 'demo-user'));
+  const [userBalance, setUserBalance] = useState(0);
   const [viewMode, setViewMode] = useState<'swipe' | 'grid'>('swipe');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Load user balance on mount and periodically (reduced frequency)
+  React.useEffect(() => {
+    if (user) {
+      setUserBalance(creditManager.getBalance(user.id));
+
+      const interval = setInterval(() => {
+        setUserBalance(creditManager.getBalance(user.id));
+      }, 30000); // Check every 30 seconds instead of constant polling
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   React.useEffect(() => {
     if (user?.id) {

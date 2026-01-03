@@ -50,6 +50,62 @@ function showToastError(title: string, message: string) {
   window.dispatchEvent(event);
 }
 
+/**
+ * Sanitize user input to prevent XSS attacks
+ * Removes HTML tags and dangerous characters
+ */
+export function sanitizeInput(input: string): string {
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+
+  return input
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .trim()
+    .slice(0, 5000); // Limit length to prevent DoS
+}
+
+/**
+ * Sanitize display text (allows some formatting but prevents XSS)
+ */
+export function sanitizeDisplayText(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+
+  // Allow newlines and basic characters but escape HTML
+  return text
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .trim()
+    .slice(0, 10000);
+}
+
+/**
+ * Validate and sanitize URL input
+ */
+export function sanitizeUrl(url: string): string {
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
+
+  // Only allow http:// and https:// URLs
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return url;
+    }
+  } catch {
+    // Invalid URL
+  }
+
+  return '';
+}
+
 export const mockProfiles = [
   {
     id: '1',
