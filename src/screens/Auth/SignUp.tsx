@@ -177,9 +177,14 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       if (data?.user?.id) {
         creditManager.initializeUser(data.user.id);
 
-        if (formData.email.endsWith('@dates.care')) {
-          creditManager.addCredits(data.user.id, 999999, 'Staff Member - Unlimited Credits', false);
-        }
+        // ⚠️ SECURITY FIX: Removed automatic credit grant for @dates.care emails
+        // Previous vulnerability: Anyone could register with @dates.care email to get unlimited credits
+        //
+        // PROPER IMPLEMENTATION:
+        // - Staff roles should be assigned in database by super admin only
+        // - Use Supabase Auth custom claims for staff identification
+        // - Verify email ownership before granting any privileges
+        // - Credits should be managed server-side with proper validation
       }
 
       toast({

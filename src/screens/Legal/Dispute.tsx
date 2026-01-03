@@ -43,19 +43,23 @@ export const Dispute: React.FC<DisputeProps> = ({ onNavigate = () => {} }) => {
     setTimeout(() => {
       const disputeId = 'DSP-' + Math.random().toString(36).substring(2).toUpperCase();
       
+      // ⚠️ SECURITY FIX: Replaced innerHTML with textContent to prevent XSS
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.innerHTML = `
-        <div class="flex items-center space-x-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <div>
-            <div class="font-bold">Dispute Filed Successfully!</div>
-            <div class="text-sm">Reference: ${disputeId}</div>
-          </div>
-        </div>
-      `;
+
+      const textDiv = document.createElement('div');
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'font-bold';
+      titleDiv.textContent = 'Dispute Filed Successfully!';
+
+      const refDiv = document.createElement('div');
+      refDiv.className = 'text-sm';
+      refDiv.textContent = 'Reference: ' + disputeId;
+
+      textDiv.appendChild(titleDiv);
+      textDiv.appendChild(refDiv);
+      successMessage.appendChild(textDiv);
+
       document.body.appendChild(successMessage);
       setTimeout(() => {
         if (document.body.contains(successMessage)) {

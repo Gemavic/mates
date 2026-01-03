@@ -286,20 +286,29 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
     }
 
     const ticketId = 'TKT-' + Math.random().toString(36).substring(2).toUpperCase();
-    
+
+    // ⚠️ SECURITY FIX: Replaced innerHTML with textContent to prevent XSS
     const successMessage = document.createElement('div');
     successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    successMessage.innerHTML = `
-      <div class="flex items-center space-x-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-        <div>
-          <div class="font-bold">Support Ticket Created!</div>
-          <div class="text-sm">Ticket ID: ${ticketId}</div>
-        </div>
-      </div>
-    `;
+
+    // Create structure using DOM methods instead of innerHTML
+    const messageContent = document.createElement('div');
+    messageContent.className = 'flex items-center space-x-2';
+
+    const textDiv = document.createElement('div');
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'font-bold';
+    titleDiv.textContent = 'Support Ticket Created!';
+
+    const ticketDiv = document.createElement('div');
+    ticketDiv.className = 'text-sm';
+    ticketDiv.textContent = 'Ticket ID: ' + ticketId;
+
+    textDiv.appendChild(titleDiv);
+    textDiv.appendChild(ticketDiv);
+    messageContent.appendChild(textDiv);
+    successMessage.appendChild(messageContent);
+
     document.body.appendChild(successMessage);
     setTimeout(() => {
       if (document.body.contains(successMessage)) {

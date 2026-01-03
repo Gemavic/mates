@@ -24,60 +24,40 @@ class StaffAuthManager {
   private readonly STORAGE_KEY = 'staffCredentials';
   private readonly SESSION_KEY = 'staffAuth';
 
-  // Initialize default staff members
+  // ⚠️ SECURITY WARNING: HARDCODED CREDENTIALS REMOVED
+  //
+  // This client-side authentication system has been disabled due to critical security vulnerabilities.
+  //
+  // CRITICAL ISSUES IDENTIFIED:
+  // 1. ✗ Hardcoded credentials exposed in source code (visible to anyone)
+  // 2. ✗ No server-side validation (all checks happen in browser)
+  // 3. ✗ Authentication state stored in sessionStorage only (easily faked)
+  // 4. ✗ Anyone can modify sessionStorage to become staff
+  // 5. ✗ Plaintext passwords (no hashing)
+  // 6. ✗ No audit logging
+  //
+  // REQUIRED FOR PRODUCTION:
+  // - Implement Supabase Auth with custom claims for staff roles
+  // - Store staff credentials in database with bcrypt/argon2 hashing
+  // - Add server-side role validation on ALL operations
+  // - Use JWT tokens with encrypted role claims
+  // - Implement comprehensive audit logging for all staff actions
+  // - Add 2FA for staff accounts
+  // - Implement session timeout and refresh tokens
+  //
+  // DO NOT ENABLE THIS SYSTEM IN PRODUCTION WITHOUT PROPER SERVER-SIDE AUTH
   private getDefaultStaffMembers(): Record<string, StaffMember> {
-    return {
-      'SU': {
-        id: 'SU',
-        email: 'su@dates.care',
-        password: 'su2025',
-        role: 'Super User',
-        permissions: ['all'],
-        isActive: true,
-        createdAt: new Date(),
-        passwordLastChanged: new Date()
-      },
-      'admin@dates.care': {
-        id: 'admin@dates.care',
-        email: 'admin@dates.care',
-        password: 'admin2025',
-        role: 'Administrator',
-        permissions: ['award_credits', 'approve_all', 'manage_users', 'view_reports'],
-        isActive: true,
-        createdAt: new Date(),
-        passwordLastChanged: new Date()
-      },
-      'creditmanager@dates.care': {
-        id: 'creditmanager@dates.care',
-        email: 'creditmanager@dates.care',
-        password: 'credit2025',
-        role: 'Credit Manager',
-        permissions: ['award_credits', 'manage_credits', 'reset_passwords', 'change_staff_passwords'],
-        isActive: true,
-        createdAt: new Date(),
-        passwordLastChanged: new Date()
-      },
-      'support@dates.care': {
-        id: 'support@dates.care',
-        email: 'support@dates.care',
-        password: 'support2025',
-        role: 'Support Agent',
-        permissions: ['view_users', 'basic_credits', 'answer_tickets'],
-        isActive: true,
-        createdAt: new Date(),
-        passwordLastChanged: new Date()
-      },
-      'moderator@dates.care': {
-        id: 'moderator@dates.care',
-        email: 'moderator@dates.care',
-        password: 'mod2025',
-        role: 'Moderator',
-        permissions: ['view_users', 'moderate_content', 'review_reports'],
-        isActive: true,
-        createdAt: new Date(),
-        passwordLastChanged: new Date()
-      }
-    };
+    console.error('⚠️ SECURITY: Staff authentication system is disabled. Implement server-side auth before use.');
+
+    // All credentials have been removed for security
+    // To implement staff access:
+    // 1. Use Supabase Auth with custom user metadata
+    // 2. Store roles in user_profiles table with is_staff flag
+    // 3. Implement RLS policies to restrict staff operations
+    // 4. Use Edge Functions for all staff operations
+    // 5. Hash passwords with bcrypt/argon2 on server-side
+
+    return {};
   }
 
   // Get all staff credentials (with any updates)
@@ -105,45 +85,16 @@ class StaffAuthManager {
     }
   }
 
-  // Authenticate staff member
+  // ⚠️ SECURITY: This function has been disabled
+  // Client-side authentication is not secure and has been removed
   authenticate(staffId: string, password: string): { success: boolean; staff?: StaffMember; error?: string } {
-    try {
-      const credentials = this.getStaffCredentials();
-      const staff = credentials[staffId];
+    console.error('❌ SECURITY: Staff authentication is disabled. Implement server-side authentication first.');
+    console.error('Required: Use Supabase Auth with custom claims and Edge Functions for staff operations.');
 
-      if (!staff) {
-        return { success: false, error: 'Invalid staff ID' };
-      }
-
-      if (!staff.isActive) {
-        return { success: false, error: 'Account is disabled' };
-      }
-
-      if (password !== staff.password) {
-        return { success: false, error: 'Invalid password' };
-      }
-
-      // Update last login
-      staff.lastLogin = new Date();
-      credentials[staffId] = staff;
-      this.saveStaffCredentials(credentials);
-
-      // Create session
-      const session: StaffSession = {
-        staffId: staff.id,
-        role: staff.role,
-        permissions: staff.permissions,
-        loginTime: new Date().toISOString(),
-        isAuthenticated: true
-      };
-
-      sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
-
-      return { success: true, staff };
-    } catch (error) {
-      console.error('Authentication error:', error);
-      return { success: false, error: 'Authentication failed' };
-    }
+    return {
+      success: false,
+      error: 'Staff authentication system is disabled for security reasons. Please contact your system administrator to implement proper server-side authentication.'
+    };
   }
 
   // Get current session
