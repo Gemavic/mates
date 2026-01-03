@@ -327,47 +327,16 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       const activeThreadData = chatThreads.find(t => t.id === activeThread);
       if (!activeThreadData) return;
 
-      // ENFORCE: Check credits BEFORE sending message
+      // ENFORCE: User authentication
       if (!user) {
         alert('Please sign in to send messages');
         return;
       }
 
-      // Check if this is the first message in thread (FREE)
-      const { data: existingMessages } = await supabaseClient
-        .from('mail_messages')
-        .select('id')
-        .eq('thread_id', activeThread!)
-        .eq('sender_id', user.id)
-        .limit(1);
-
-      const isFirstMessage = !existingMessages || existingMessages.length === 0;
-      const messageCost = isFirstMessage ? 0 : 10;
-
-      // Check if user has enough credits (skip check if first message is free)
-      if (!isFirstMessage && messageCost > 0) {
-        const userCredits = await CreditManager.getUserCredits(user.id);
-        const totalCredits = (userCredits?.complimentary_credits || 0) + (userCredits?.purchased_credits || 0);
-
-        if (totalCredits < messageCost) {
-          alert(`Need ${messageCost} credits to send this message!`);
-          return;
-        }
-
-        // Deduct credits from database
-        try {
-          await CreditManager.spendCredits(user.id, messageCost, 'Chat message');
-        } catch (error) {
-          console.error('Failed to deduct credits:', error);
-          alert('Insufficient credits!');
-          return;
-        }
-      }
-
-      // Reload credits after deduction
-      const updatedCredits = await CreditManager.getUserCredits(user.id);
-      const newBalance = (updatedCredits?.complimentary_credits || 0) + (updatedCredits?.purchased_credits || 0);
-      setUserBalance(newBalance);
+      // CHAT PRICING: 2 credits per minute OR 1 kobo per minute (time-based)
+      // Chat messages are FREE - charging happens by TIME when chat session is active
+      // TODO: Implement timer-based charging (2 credits/min or 1 kobo/min)
+      // For now, messages are sent without per-message cost
 
       // Check if recipient exists in database
       const { data: recipientProfile } = await supabaseClient
@@ -416,12 +385,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           : thread
       ));
 
-      // Show feedback based on whether it was free or paid
+      // Show success feedback
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = isFirstMessage
-        ? '💬 First message FREE!'
-        : `💬 Message sent! (-${messageCost} credits)`;
+      successMessage.textContent = '💬 Message sent! (Chat charges 2 credits/min)';
       document.body.appendChild(successMessage);
       setTimeout(() => {
         if (document.body.contains(successMessage)) {
