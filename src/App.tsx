@@ -45,9 +45,12 @@ import { Onboarding } from '@/screens/Onboarding/Onboarding';
 import { AuthCallback } from '@/screens/Auth/AuthCallback';
 import { MonitoringDashboard } from '@/components/MonitoringDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { PublicRoute } from '@/components/PublicRoute';
 import { useAuth } from '@/hooks/useAuth';
 import { creditManager } from '@/lib/creditSystem';
 import { supabaseConfigError } from '@/lib/supabase';
+import { getRouteConfig } from '@/lib/routeConfig';
 import { AlertTriangle } from 'lucide-react';
 
 interface SelectedChatUser {
@@ -291,15 +294,18 @@ const App: React.FC = () => {
   };
 
   const renderScreen = () => {
-    switch (currentScreen) {
-      case 'welcome':
-        return <Welcome onNavigate={handleNavigate} />;
-      
-      case 'signin':
-        return <SignIn onNavigate={handleNavigate} />;
-      
-      case 'signup':
-        return <SignUp onNavigate={handleNavigate} />;
+    const config = getRouteConfig(currentScreen);
+
+    const renderScreenContent = () => {
+      switch (currentScreen) {
+        case 'welcome':
+          return <Welcome onNavigate={handleNavigate} />;
+
+        case 'signin':
+          return <SignIn onNavigate={handleNavigate} />;
+
+        case 'signup':
+          return <SignUp onNavigate={handleNavigate} />;
 
       case 'auth-callback':
         return <AuthCallback onNavigate={handleNavigate} />;
@@ -416,9 +422,39 @@ const App: React.FC = () => {
       case 'monitoring':
         return <MonitoringDashboard />;
 
-      default:
-        return <Discovery onNavigate={handleNavigate} />;
+        default:
+          return <Discovery onNavigate={handleNavigate} />;
+      }
+    };
+
+    const content = renderScreenContent();
+
+    if (config.isPublicOnly) {
+      return (
+        <PublicRoute
+          onNavigate={handleNavigate}
+          redirectIfAuthenticated={true}
+          redirectTo={config.redirectIfAuthenticated}
+        >
+          {content}
+        </PublicRoute>
+      );
     }
+
+    if (config.requireAuth) {
+      return (
+        <ProtectedRoute
+          onNavigate={handleNavigate}
+          requireAuth={true}
+          allowAnonymous={config.allowAnonymous}
+          redirectTo="signin"
+        >
+          {content}
+        </ProtectedRoute>
+      );
+    }
+
+    return content;
   };
 
   return (
