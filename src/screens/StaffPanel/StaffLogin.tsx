@@ -88,17 +88,13 @@ export const StaffLogin: React.FC<StaffLoginProps> = ({ onNavigate, onStaffLogin
           </p>
         </div>
 
-        {/* Valid Staff IDs */}
+        {/* Valid Staff Accounts */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="text-blue-800 font-semibold mb-3">Valid Staff IDs</h3>
+          <h3 className="text-blue-800 font-semibold mb-3">Available Staff Accounts</h3>
           <div className="space-y-2 text-blue-700 text-sm">
             <div className="flex justify-between">
-              <span><strong>SU</strong> - Super User</span>
+              <span><strong>admin@dates.care</strong> - Super User</span>
               <span className="text-blue-600">Full Access</span>
-            </div>
-            <div className="flex justify-between">
-              <span><strong>admin@dates.care</strong> - Administrator</span>
-              <span className="text-blue-600">Admin Access</span>
             </div>
             <div className="flex justify-between">
               <span><strong>creditmanager@dates.care</strong> - Credit Manager</span>
@@ -108,21 +104,17 @@ export const StaffLogin: React.FC<StaffLoginProps> = ({ onNavigate, onStaffLogin
               <span><strong>support@dates.care</strong> - Support Agent</span>
               <span className="text-blue-600">Support Access</span>
             </div>
-            <div className="flex justify-between">
-              <span><strong>moderator@dates.care</strong> - Moderator</span>
-              <span className="text-blue-600">Moderation Tools</span>
-            </div>
           </div>
-          
-          {/* Password Security Notice */}
+
+          {/* Database-backed Notice */}
           <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center text-green-600 mb-2">
               <Key className="w-4 h-4 mr-2" />
-              <strong>Password Management</strong>
+              <strong>Secure Authentication</strong>
             </div>
             <p className="text-green-600 text-xs">
-              Credit Managers can change and reset passwords for all staff members. 
-              This ensures secure password management and prevents unauthorized changes.
+              All staff credentials are now stored securely in the database with bcrypt hashing.
+              Passwords can be changed by Super Users and Credit Managers.
             </p>
           </div>
         </div>
@@ -200,55 +192,58 @@ export const StaffLogin: React.FC<StaffLoginProps> = ({ onNavigate, onStaffLogin
           </Button>
         </form>
 
-        {/* Demo Credentials */}
+        {/* Initial Setup Credentials */}
         <div className="mt-6 bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 shadow-md">
-          <h3 className="text-yellow-800 font-semibold mb-3 text-center">Quick Access - Demo Credentials</h3>
+          <h3 className="text-yellow-800 font-semibold mb-3 text-center">Initial Setup - Default Credentials</h3>
           <p className="text-yellow-700 text-sm mb-4 text-center">Click any button below to auto-fill login form:</p>
           <div className="grid grid-cols-1 gap-3">
             <button
               type="button"
               onClick={() => {
-                setStaffId('SU');
-                setPassword('su2025');
-                setError('');
-              }}
-              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 font-semibold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <span>Super User (SU)</span>
-                <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded">Full Access</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
                 setStaffId('admin@dates.care');
-                setPassword('admin2025');
+                setPassword('AdminPass2025!');
                 setError('');
               }}
               className="bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 shadow-md"
             >
               <div className="flex items-center justify-between">
-                <span>Administrator</span>
-                <span className="text-xs bg-blue-700 px-2 py-1 rounded">Admin</span>
+                <span>Super User</span>
+                <span className="text-xs bg-blue-700 px-2 py-1 rounded">Full Access</span>
               </div>
             </button>
             <button
               type="button"
               onClick={() => {
                 setStaffId('creditmanager@dates.care');
-                setPassword('credit2025');
+                setPassword('CreditPass2025!');
                 setError('');
               }}
               className="bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span>Credit Manager</span>
-                <span className="text-xs bg-green-700 px-2 py-1 rounded">Credits</span>
+                <span className="text-xs bg-green-700 px-2 py-1 rounded">Credits + Passwords</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStaffId('support@dates.care');
+                setPassword('SupportPass2025!');
+                setError('');
+              }}
+              className="bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <span>Support Agent</span>
+                <span className="text-xs bg-purple-700 px-2 py-1 rounded">Support</span>
               </div>
             </button>
           </div>
-          <p className="text-yellow-600 text-xs mt-3 text-center italic">
+          <p className="text-red-600 text-xs mt-3 text-center font-semibold">
+            ⚠️ IMPORTANT: Change these default passwords immediately after first login!
+          </p>
+          <p className="text-yellow-600 text-xs mt-1 text-center italic">
             After clicking, press "Access Staff Panel" button above
           </p>
         </div>

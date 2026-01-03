@@ -85,16 +85,69 @@ class StaffAuthManager {
     }
   }
 
-  // ⚠️ SECURITY: This function has been disabled
-  // Client-side authentication is not secure and has been removed
-  authenticate(staffId: string, password: string): { success: boolean; staff?: StaffMember; error?: string } {
-    console.error('❌ SECURITY: Staff authentication is disabled. Implement server-side authentication first.');
-    console.error('Required: Use Supabase Auth with custom claims and Edge Functions for staff operations.');
+  // Database-backed authentication using Supabase
+  async authenticate(staffId: string, password: string): Promise<{ success: boolean; staff?: StaffMember; error?: string }> {
+    try {
+      // Import supabase client
+      const { supabaseClient } = await import('@/lib/supabase');
 
-    return {
-      success: false,
-      error: 'Staff authentication system is disabled for security reasons. Please contact your system administrator to implement proper server-side authentication.'
-    };
+      // Call the database function to authenticate
+      const { data, error } = await supabaseClient.rpc('authenticate_staff', {
+        p_email: staffId,
+        p_password: password
+      });
+
+      if (error) {
+        console.error('Authentication error:', error);
+        return {
+          success: false,
+          error: 'Authentication failed. Please try again.'
+        };
+      }
+
+      const result = data as any;
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || 'Invalid credentials'
+        };
+      }
+
+      // Create staff object
+      const staff: StaffMember = {
+        id: result.staff.id,
+        email: result.staff.email,
+        password: '', // Never store password
+        role: result.staff.role,
+        permissions: result.staff.permissions || [],
+        isActive: result.staff.is_active,
+        lastLogin: new Date(),
+        createdAt: new Date()
+      };
+
+      // Store session
+      const session: StaffSession = {
+        staffId: staff.email,
+        role: staff.role,
+        permissions: staff.permissions,
+        loginTime: new Date().toISOString(),
+        isAuthenticated: true
+      };
+
+      sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+
+      return {
+        success: true,
+        staff
+      };
+    } catch (error) {
+      console.error('Authentication exception:', error);
+      return {
+        success: false,
+        error: 'Authentication failed. Please try again.'
+      };
+    }
   }
 
   // Get current session
@@ -132,47 +185,38 @@ class StaffAuthManager {
   }
 
   // Change password (only by Credit Manager or Super User)
-  changePassword(
-    managerStaffId: string, 
-    managerPassword: string, 
-    targetStaffId: string, 
+  async changePassword(
+    managerStaffId: string,
+    managerPassword: string,
+    targetStaffId: string,
     newPassword: string
-  ): { success: boolean; error?: string } {
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const credentials = this.getStaffCredentials();
-      const manager = credentials[managerStaffId];
-      const target = credentials[targetStaffId];
+      const { supabaseClient } = await import('@/lib/supabase');
 
-      // Verify manager credentials
-      if (!manager || manager.password !== managerPassword) {
-        return { success: false, error: 'Manager authentication failed' };
+      // Call database function
+      const { data, error } = await supabaseClient.rpc('change_staff_password', {
+        p_manager_email: managerStaffId,
+        p_manager_password: managerPassword,
+        p_target_email: targetStaffId,
+        p_new_password: newPassword
+      });
+
+      if (error) {
+        console.error('Password change error:', error);
+        return { success: false, error: 'Password change failed' };
       }
 
-      // Check manager permissions
-      if (!manager.permissions.includes('change_staff_passwords') && !manager.permissions.includes('all')) {
-        return { success: false, error: 'Insufficient permissions to change passwords' };
-      }
+      const result = data as any;
 
-      // Check target exists
-      if (!target) {
-        return { success: false, error: 'Target staff member not found' };
+      if (!result.success) {
+        return { success: false, error: result.error || 'Password change failed' };
       }
-
-      // Validate password strength
-      if (newPassword.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
-      }
-
-      // Update password
-      target.password = newPassword;
-      target.passwordLastChanged = new Date();
-      credentials[targetStaffId] = target;
-      this.saveStaffCredentials(credentials);
 
       console.log(`✅ Password changed for ${targetStaffId} by ${managerStaffId}`);
       return { success: true };
     } catch (error) {
-      console.error('Password change error:', error);
+      console.error('Password change exception:', error);
       return { success: false, error: 'Password change failed' };
     }
   }
@@ -229,18 +273,38 @@ class StaffAuthManager {
   }
 
   // Get all staff members (for managers only)
-  getAllStaffMembers(requestingStaffId: string): StaffMember[] | null {
+  async getAllStaffMembers(requestingStaffId: string): Promise<StaffMember[] | null> {
     try {
-      const credentials = this.getStaffCredentials();
-      const requester = credentials[requestingStaffId];
+      const { supabaseClient } = await import('@/lib/supabase');
 
-      if (!requester || (!requester.permissions.includes('manage_users') && !requester.permissions.includes('all'))) {
+      // Get all staff from database
+      const { data, error } = await supabaseClient
+        .from('staff_members')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Get staff members error:', error);
         return null;
       }
 
-      return Object.values(credentials);
+      // Transform to StaffMember format
+      const staffMembers: StaffMember[] = (data || []).map((staff: any) => ({
+        id: staff.id,
+        email: staff.email,
+        password: '', // Never expose password
+        role: staff.role,
+        permissions: staff.permissions || [],
+        isActive: staff.is_active,
+        lastLogin: staff.last_login ? new Date(staff.last_login) : undefined,
+        passwordLastChanged: staff.password_last_changed ? new Date(staff.password_last_changed) : undefined,
+        createdBy: staff.created_by,
+        createdAt: new Date(staff.created_at)
+      }));
+
+      return staffMembers;
     } catch (error) {
-      console.error('Get staff members error:', error);
+      console.error('Get staff members exception:', error);
       return null;
     }
   }
@@ -296,13 +360,13 @@ class StaffAuthManager {
 export const staffManager = new StaffAuthManager();
 
 // Utility functions
-export const authenticateStaff = (staffId: string, password: string) => 
+export const authenticateStaff = (staffId: string, password: string) =>
   staffManager.authenticate(staffId, password);
 
-export const getCurrentStaffSession = () => 
+export const getCurrentStaffSession = () =>
   staffManager.getCurrentSession();
 
-export const logoutStaff = () => 
+export const logoutStaff = () =>
   staffManager.logout();
 
 export const changeStaffPassword = (managerStaffId: string, managerPassword: string, targetStaffId: string, newPassword: string) =>
