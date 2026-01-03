@@ -88,11 +88,18 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
     setMessageText('');
   }, [selectedThread]);
 
-  // Update balance periodically
+  // Update balance periodically (reduced frequency to avoid excessive polling)
   React.useEffect(() => {
+    if (user) {
+      setUserBalance(creditManager.getTotalCredits(user.id));
+    }
+
     const interval = setInterval(() => {
-      setUserBalance(creditManager.getTotalCredits(user?.id || 'demo-user'));
-    }, 2000);
+      if (user) {
+        setUserBalance(creditManager.getTotalCredits(user.id));
+      }
+    }, 30000); // Check every 30 seconds instead of 2 seconds
+
     return () => clearInterval(interval);
   }, [user]);
 
@@ -112,88 +119,75 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
     try {
       const threads = await MessagingManager.getMailThreads(user.id);
 
-      // Transform to MailThread format
-      const formattedThreads: MailThread[] = await Promise.all(
-        threads.map(async (thread: any) => {
-          try {
-            // Determine who the other participant is
-            const otherUserId = thread.participant1_id === user.id
-              ? thread.participant2_id
-              : thread.participant1_id;
+      if (threads.length === 0) {
+        setMailThreads([]);
+        return;
+      }
 
-            // Get other user's profile
-            let otherProfile = null;
-            try {
-              const { data } = await supabaseClient
-                .from('user_profiles')
-                .select('full_name, first_name, age, is_verified')
-                .eq('user_id', otherUserId)
-                .maybeSingle();
-              otherProfile = data;
-            } catch (err) {
-              console.warn('Failed to load user profile:', err);
-            }
-
-            // Get latest message
-            let latestMessage = null;
-            try {
-              const { data } = await supabaseClient
-                .from('mail_messages')
-                .select('message_text, created_at, is_read, sender_id')
-                .eq('thread_id', thread.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-              latestMessage = data;
-            } catch (err) {
-              console.warn('Failed to load latest message:', err);
-            }
-
-            // Count unread messages
-            let unreadCount = 0;
-            try {
-              const { count } = await supabaseClient
-                .from('mail_messages')
-                .select('*', { count: 'exact', head: true })
-                .eq('thread_id', thread.id)
-                .eq('is_read', false)
-                .neq('sender_id', user.id);
-              unreadCount = count || 0;
-            } catch (err) {
-              console.warn('Failed to count unread messages:', err);
-            }
-
-            return {
-              id: thread.id,
-              participantId: otherUserId,
-              participantName: otherProfile?.first_name || otherProfile?.full_name || 'User',
-              participantAge: otherProfile?.age || 25,
-              lastMessage: latestMessage?.message_text || 'Start a conversation',
-              timestamp: latestMessage?.created_at || thread.created_at,
-              unreadCount: unreadCount,
-              hasPhotos: false,
-              isVerified: otherProfile?.is_verified || false
-            };
-          } catch (err) {
-            console.error('Failed to format thread:', err);
-            // Return minimal thread data as fallback
-            const otherUserId = thread.participant1_id === user.id
-              ? thread.participant2_id
-              : thread.participant1_id;
-            return {
-              id: thread.id,
-              participantId: otherUserId,
-              participantName: 'User',
-              participantAge: 25,
-              lastMessage: 'Start a conversation',
-              timestamp: thread.created_at,
-              unreadCount: 0,
-              hasPhotos: false,
-              isVerified: false
-            };
-          }
-        })
+      // Get all other user IDs
+      const otherUserIds = threads.map((thread: any) =>
+        thread.participant1_id === user.id
+          ? thread.participant2_id
+          : thread.participant1_id
       );
+
+      const threadIds = threads.map((t: any) => t.id);
+
+      // Fetch all profiles in a single query
+      const { data: profiles } = await supabaseClient
+        .from('user_profiles')
+        .select('user_id, full_name, first_name, age, is_verified')
+        .in('user_id', otherUserIds);
+
+      // Fetch all messages in a single query
+      const { data: allMessages } = await supabaseClient
+        .from('mail_messages')
+        .select('thread_id, message_text, created_at, is_read, sender_id')
+        .in('thread_id', threadIds)
+        .order('created_at', { ascending: false });
+
+      // Create lookup maps
+      const profileMap = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p;
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Group messages by thread and get latest + unread count
+      const messagesByThread = (allMessages || []).reduce((acc, msg) => {
+        if (!acc[msg.thread_id]) {
+          acc[msg.thread_id] = {
+            latest: msg,
+            unreadCount: 0
+          };
+        }
+        // Count unread messages from other users
+        if (!msg.is_read && msg.sender_id !== user.id) {
+          acc[msg.thread_id].unreadCount++;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Map threads to formatted data
+      const formattedThreads: MailThread[] = threads.map((thread: any) => {
+        const otherUserId = thread.participant1_id === user.id
+          ? thread.participant2_id
+          : thread.participant1_id;
+
+        const profile = profileMap[otherUserId];
+        const threadMessages = messagesByThread[thread.id];
+
+        return {
+          id: thread.id,
+          participantId: otherUserId,
+          participantName: profile?.first_name || profile?.full_name || 'User',
+          participantAge: profile?.age || 25,
+          lastMessage: threadMessages?.latest?.message_text || 'Start a conversation',
+          timestamp: threadMessages?.latest?.created_at || thread.created_at,
+          unreadCount: threadMessages?.unreadCount || 0,
+          hasPhotos: false,
+          isVerified: profile?.is_verified || false
+        };
+      });
 
       setMailThreads(formattedThreads);
     } catch (error) {
