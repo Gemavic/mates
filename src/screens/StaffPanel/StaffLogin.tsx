@@ -30,7 +30,7 @@ export const StaffLogin: React.FC<StaffLoginProps> = ({ onNavigate, onStaffLogin
 
     try {
       console.log('Attempting staff authentication...');
-      const result = authenticateStaff(staffId.trim(), password);
+      const result = await authenticateStaff(staffId.trim(), password);
 
       if (result.success) {
         console.log(`✅ Staff authentication successful: ${staffId}`);

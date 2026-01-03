@@ -51,12 +51,15 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
   
   // Load staff members once
   React.useEffect(() => {
-    if (staffAuth && staffAuth.permissions?.includes('manage_users')) {
-      const staff = getAllStaffMembers(staffAuth.staffId);
-      if (staff) {
-        setAllStaff(staff);
+    const loadStaff = async () => {
+      if (staffAuth && staffAuth.permissions?.includes('manage_users')) {
+        const staff = await getAllStaffMembers(staffAuth.staffId);
+        if (staff) {
+          setAllStaff(staff);
+        }
       }
-    }
+    };
+    loadStaff();
   }, [staffAuth?.staffId, staffAuth?.permissions]);
 
   const handleLogout = () => {
@@ -103,7 +106,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
     }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     try {
       if (!passwordForm.targetStaffId || !passwordForm.newPassword || !passwordForm.confirmPassword || !passwordForm.managerPassword) {
         alert('Please fill in all fields');
@@ -120,7 +123,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
         return;
       }
 
-      const result = changeStaffPassword(
+      const result = await changeStaffPassword(
         staffAuth.staffId,
         passwordForm.managerPassword,
         passwordForm.targetStaffId,
@@ -146,14 +149,14 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
     }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     try {
       if (!passwordForm.targetStaffId || !passwordForm.managerPassword) {
         alert('Please enter target staff ID and your manager password');
         return;
       }
 
-      const result = resetStaffPassword(
+      const result = await resetStaffPassword(
         staffAuth.staffId,
         passwordForm.managerPassword,
         passwordForm.targetStaffId
