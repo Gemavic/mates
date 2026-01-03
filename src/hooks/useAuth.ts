@@ -71,25 +71,15 @@ export const useAuth = () => {
 
     const authClient = supabaseClient;
     const subscription = authClient.auth.onAuthStateChange((event, session) => {
-      (async () => {
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          setUser(session?.user ?? null);
-          setIsAnonymous(session?.user?.is_anonymous || false);
-        } else if (event === 'SIGNED_IN') {
-          setUser(session?.user ?? null);
-          setIsAnonymous(session?.user?.is_anonymous || false);
-        } else {
-          setUser(session?.user ?? null);
-          setIsAnonymous(session?.user?.is_anonymous || false);
-        }
-        setLoading(false);
-      })();
+      // Update state directly without async IIFE to prevent memory leaks
+      setUser(session?.user ?? null);
+      setIsAnonymous(session?.user?.is_anonymous || false);
+      setLoading(false);
     });
 
     return () => {
-      if (subscription?.data?.subscription) {
-        subscription.data.subscription.unsubscribe();
-      }
+      // Properly unsubscribe from auth state changes
+      subscription?.data?.subscription?.unsubscribe();
     };
   }, []);
 
