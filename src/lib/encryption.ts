@@ -1,4 +1,33 @@
-// High-Security Encryption for Credit Purchasers
+// ⚠️⚠️⚠️ CRITICAL SECURITY WARNING ⚠️⚠️⚠️
+//
+// THIS ENCRYPTION SYSTEM IS FUNDAMENTALLY BROKEN AND HAS BEEN DISABLED
+//
+// VULNERABILITIES:
+// 1. XOR cipher with repeating key - TRIVIALLY BREAKABLE
+// 2. Caesar cipher (ROT13 variant) - TRIVIALLY BREAKABLE
+// 3. Base64 encoding - NOT ENCRYPTION, just encoding
+// 4. String reversal - NO SECURITY VALUE
+// 5. All operations done client-side - NO SECURITY
+//
+// WHY IT'S BROKEN:
+// - XOR with repeating key can be broken with frequency analysis
+// - Caesar cipher is a simple shift, easily reversed
+// - Base64 is just encoding, anyone can decode it
+// - Reversing a string is not cryptography
+// - Combining weak methods doesn't make them strong
+//
+// ATTACK:
+// Anyone can decrypt by: reverse string → base64 decode → shift back → XOR with key
+//
+// PROPER SOLUTION:
+// - Use Web Crypto API with AES-256-GCM
+// - Or don't store sensitive data client-side at all
+// - Encrypt on server-side if needed
+// - Use HTTPS for all connections
+// - Store sensitive data in database only
+//
+// THIS FILE IS DISABLED AND RETURNS UNENCRYPTED DATA WITH WARNINGS
+//
 import { creditManager } from './creditSystem';
 
 export interface EncryptedUserData {
@@ -44,68 +73,43 @@ class HighSecurityEncryption {
     ).join('');
   }
   
-  // Advanced encryption for credit purchasers
+  // ⚠️ SECURITY: This "encryption" system has been DISABLED
+  // The previous implementation used weak cryptography (XOR + Caesar + Base64) which is trivially breakable
+  //
+  // THIS FUNCTION NOW RETURNS UNENCRYPTED DATA TO PREVENT FALSE SENSE OF SECURITY
+  //
+  // To properly protect sensitive data:
+  // 1. Don't store sensitive data client-side
+  // 2. If encryption is required, use Web Crypto API with AES-256-GCM
+  // 3. Manage keys server-side
+  // 4. Use HTTPS for all connections
   async encryptUserData(userId: string, sensitiveData: any): Promise<string> {
-    try {
-      // Check if user is a credit purchaser
-      const userData = creditManager.getUserData(userId);
-      const isPurchaser = userData.purchasedCredits > 0;
-      
-      if (!isPurchaser) {
-        return this.basicEncryption(JSON.stringify(sensitiveData));
-      }
-      
-      // High-security encryption for purchasers
-      const salt = this.generateSalt();
-      const iv = this.generateIV();
-      const dataString = JSON.stringify(sensitiveData);
-      
-      // Multi-layer encryption
-      const layer1 = this.xorEncrypt(dataString, salt);
-      const layer2 = this.caesarCipher(layer1, 13);
-      const layer3 = this.base64Encode(layer2);
-      const finalEncrypted = this.reverseString(layer3);
-      
-      // Store encrypted data
-      this.encryptedUsers.set(userId, {
-        userId,
-        encryptedData: finalEncrypted,
-        salt,
-        iv,
-        timestamp: new Date(),
-        securityLevel: 'maximum'
-      });
-      
-      this.logSecurityAction(userId, 'DATA_ENCRYPTED', 'maximum', true);
-      
-      return finalEncrypted;
-    } catch (error) {
-      this.logSecurityAction(userId, 'ENCRYPTION_FAILED', 'maximum', false);
-      throw new Error('Encryption failed');
-    }
+    console.error('⚠️ SECURITY WARNING: Encryption system is disabled. Data is NOT encrypted.');
+    console.error('Do NOT store sensitive data using this system.');
+    console.error('Implement proper server-side encryption or use Web Crypto API with AES-256-GCM.');
+
+    // Return plaintext with warning - do NOT use for sensitive data
+    return JSON.stringify({
+      _warning: 'DATA_NOT_ENCRYPTED',
+      _message: 'Encryption system disabled due to security vulnerabilities',
+      data: sensitiveData
+    });
   }
   
-  // Decrypt user data
+  // ⚠️ SECURITY: Decryption disabled - returns plaintext
   async decryptUserData(userId: string, encryptedData: string): Promise<any> {
+    console.error('⚠️ SECURITY WARNING: Decryption system is disabled.');
+
     try {
-      const storedData = this.encryptedUsers.get(userId);
-      
-      if (!storedData) {
-        return this.basicDecryption(encryptedData);
+      // Try to parse as JSON (new format with warning)
+      const parsed = JSON.parse(encryptedData);
+      if (parsed._warning === 'DATA_NOT_ENCRYPTED') {
+        return parsed.data;
       }
-      
-      // Reverse the encryption process
-      const step1 = this.reverseString(encryptedData);
-      const step2 = this.base64Decode(step1);
-      const step3 = this.caesarCipher(step2, -13);
-      const step4 = this.xorDecrypt(step3, storedData.salt);
-      
-      this.logSecurityAction(userId, 'DATA_DECRYPTED', storedData.securityLevel, true);
-      
-      return JSON.parse(step4);
+      return parsed;
     } catch (error) {
-      this.logSecurityAction(userId, 'DECRYPTION_FAILED', 'maximum', false);
-      throw new Error('Decryption failed');
+      // Return as-is if not JSON
+      return encryptedData;
     }
   }
   

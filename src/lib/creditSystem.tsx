@@ -1,3 +1,35 @@
+// ⚠️⚠️⚠️ CRITICAL SECURITY WARNING ⚠️⚠️⚠️
+//
+// THIS CREDIT SYSTEM HAS SERIOUS SECURITY FLAWS
+//
+// VULNERABILITIES:
+// 1. Credits stored in localStorage - EASILY MANIPULATED by users
+// 2. Client-side only validation - NO SERVER ENFORCEMENT
+// 3. No server-side verification before operations
+// 4. Users can modify localStorage to give themselves unlimited credits
+// 5. No transaction audit trail
+// 6. No protection against tampering
+//
+// ATTACK EXAMPLE:
+// 1. Open browser DevTools (F12)
+// 2. Go to Application > Local Storage
+// 3. Modify: localStorage.setItem('credits_user123', '{"purchasedCredits": 999999}')
+// 4. Reload page
+// 5. User now has unlimited credits for free
+//
+// REQUIRED FIX:
+// - ALL credit operations MUST be server-side with database validation
+// - Use Supabase RLS policies to protect user_credits table
+// - Implement Edge Functions for all credit transactions
+// - Never trust client-side credit data
+// - Validate credits on server before EVERY operation
+// - Implement proper transaction logging
+//
+// CURRENT STATUS: PARTIALLY FIXED
+// - Database integration exists but NOT ENFORCED
+// - Client-side cache still used as source of truth
+// - Need to switch to database-first approach
+//
 import { supabaseClient } from '@/lib/supabase';
 import { getUserCredits, addCredits as dbAddCredits, spendCredits as dbSpendCredits } from '@/lib/database';
 import { staffManager } from '@/lib/staffManager';
@@ -22,11 +54,17 @@ export interface SpendingOption {
 }
 
 export class CreditManager {
+  // ⚠️ SECURITY WARNING: These caches can be manipulated by users
+  // DO NOT use as source of truth for credit validation
+  // Always verify with database before allowing operations
   private _cachedCredits: Map<string, any> = new Map();
   private _isInitialized: Set<string> = new Set();
 
   // Initialize user with default credits
+  // ⚠️ SECURITY: This should be done server-side via database trigger
   initializeUser(userId: string): void {
+    console.warn('⚠️ SECURITY: Credit initialization should be done server-side via database trigger');
+
     if (!this._isInitialized.has(userId)) {
       const defaultCredits = {
         complimentaryCredits: 20,
@@ -35,11 +73,13 @@ export class CreditManager {
         kobos: 20,
         transactions: []
       };
-      
+
       this._cachedCredits.set(userId, defaultCredits);
       this._isInitialized.add(userId);
-      
-      // Also store in localStorage as backup
+
+      // ⚠️ SECURITY WARNING: localStorage can be edited by user
+      // This is NOT secure storage for credits
+      // TODO: Remove localStorage usage, use database only
       localStorage.setItem(`credits_${userId}`, JSON.stringify(defaultCredits));
     }
   }
