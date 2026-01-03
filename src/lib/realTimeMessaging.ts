@@ -354,8 +354,17 @@ export class RealtimeMessagingService {
    * Subscribe to unread count changes
    */
   static subscribeToUnreadCount(userId: string, callback: (count: number) => void): () => void {
+    const channelName = `unread_count_${userId}`;
+
+    // Remove existing channel if any
+    if (this.channels.has(channelName)) {
+      const oldChannel = this.channels.get(channelName);
+      oldChannel?.unsubscribe();
+      this.channels.delete(channelName);
+    }
+
     const channel = supabaseClient
-      .channel(`unread_count_${userId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -371,8 +380,12 @@ export class RealtimeMessagingService {
       )
       .subscribe();
 
+    // Track the channel for cleanup
+    this.channels.set(channelName, channel);
+
     return () => {
       channel.unsubscribe();
+      this.channels.delete(channelName);
     };
   }
 

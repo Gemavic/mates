@@ -153,6 +153,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check rate limiting
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient.rpc(
+      'check_and_update_rate_limit',
+      {
+        p_user_id: user.id,
+        p_action_type: 'likes',
+        p_increment: true,
+      }
+    );
+
+    if (rateLimitError || !rateLimitCheck) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rate limit exceeded. Please try again later.',
+          errorCode: 'RATE_LIMIT_EXCEEDED',
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Determine credit cost
     const creditCost = CREDIT_COSTS[likeType];
 

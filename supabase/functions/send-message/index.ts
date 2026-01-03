@@ -128,6 +128,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check rate limiting
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient.rpc(
+      'check_and_update_rate_limit',
+      {
+        p_user_id: user.id,
+        p_action_type: 'messages',
+        p_increment: true,
+      }
+    );
+
+    if (rateLimitError || !rateLimitCheck) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rate limit exceeded. Please try again later.',
+          errorCode: 'RATE_LIMIT_EXCEEDED',
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Determine credit cost
     // First message in a thread is free, subsequent messages cost 10 credits
     let creditCost = 10;
@@ -149,47 +173,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // New thread - first message is free
       creditCost = 0;
       isFirstMessage = true;
-    }
-
-    // Check if user has sufficient credits (skip check for free messages)
-    if (creditCost > 0) {
-      const { data: hasCredits, error: checkError } = await supabaseClient.rpc(
-        "check_sufficient_credits",
-        {
-          p_user_id: user.id,
-          p_amount: creditCost,
-        }
-      );
-
-      if (checkError) {
-        console.error("Credit check error:", checkError);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Failed to check credits",
-            errorCode: "CREDIT_CHECK_FAILED",
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      if (!hasCredits) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Insufficient credits",
-            errorCode: "INSUFFICIENT_CREDITS",
-            required: creditCost,
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
     }
 
     // Find or create mail thread
@@ -237,34 +220,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // Send the message
-    const { data: messageData, error: messageError } = await supabaseClient
-      .from("mail_messages")
-      .insert({
-        thread_id: finalThreadId,
-        sender_id: user.id,
-        subject: "Chat Message",
-        message_text: message,
-        credits_spent: creditCost,
-      })
-      .select("id")
-      .single();
-
-    if (messageError) {
-      console.error("Message send error:", messageError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to send message",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Deduct credits if not free
+    // Deduct credits FIRST if not free
     let newBalance = 0;
     if (creditCost > 0) {
       const { data: spendResult, error: spendError } = await supabaseClient.rpc(
@@ -279,16 +235,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (spendError || !spendResult?.success) {
         console.error("Credit deduction error:", spendError || spendResult);
-        // Message was sent but credits weren't deducted
-        // Log this for manual review
-        console.error("CRITICAL: Message sent but credits not deducted", {
-          userId: user.id,
-          messageId: messageData.id,
-          amount: creditCost,
-        });
-      } else {
-        newBalance = spendResult.new_balance;
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: spendResult?.error_code === 'INSUFFICIENT_CREDITS'
+              ? "Insufficient credits"
+              : "Failed to process payment",
+            errorCode: spendResult?.error_code || "CREDIT_DEDUCTION_FAILED",
+            required: creditCost,
+          }),
+          {
+            status: spendResult?.error_code === 'INSUFFICIENT_CREDITS' ? 402 : 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
+      newBalance = spendResult.new_balance;
     } else {
       // Get current balance for free messages
       const { data: balance } = await supabaseClient.rpc("get_user_balance", {
@@ -297,6 +259,42 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (balance && balance.length > 0) {
         newBalance = balance[0].total_credits;
       }
+    }
+
+    // Now send the message (after payment successful or if free)
+    const { data: messageData, error: messageError } = await supabaseClient
+      .from("mail_messages")
+      .insert({
+        thread_id: finalThreadId,
+        sender_id: user.id,
+        subject: "Chat Message",
+        message_text: message,
+        credits_spent: creditCost,
+      })
+      .select("id")
+      .single();
+
+    if (messageError) {
+      console.error("Message send error:", messageError);
+      // Credits were deducted but message failed to send
+      if (creditCost > 0) {
+        console.error("CRITICAL: Credits deducted but message failed to send", {
+          userId: user.id,
+          amount: creditCost,
+          error: messageError,
+        });
+      }
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to send message" + (creditCost > 0 ? ". Credits have been deducted and will be refunded." : ""),
+          errorCode: "MESSAGE_SEND_FAILED",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Update thread timestamp

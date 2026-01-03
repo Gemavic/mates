@@ -160,46 +160,62 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const creditCost = gift.price_credits;
 
-    // Check if user has sufficient credits
-    const { data: hasCredits, error: checkError } = await supabaseClient.rpc(
-      "check_sufficient_credits",
+    // Check rate limiting
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient.rpc(
+      'check_and_update_rate_limit',
       {
         p_user_id: user.id,
-        p_amount: creditCost,
+        p_action_type: 'gifts',
+        p_increment: true,
       }
     );
 
-    if (checkError) {
-      console.error("Credit check error:", checkError);
+    if (rateLimitError || !rateLimitCheck) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to check credits",
-          errorCode: "CREDIT_CHECK_FAILED",
+          error: 'Rate limit exceeded. Please try again later.',
+          errorCode: 'RATE_LIMIT_EXCEEDED',
         }),
         {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    if (!hasCredits) {
+    // Deduct credits FIRST (before sending gift)
+    const { data: spendResult, error: spendError } = await supabaseClient.rpc(
+      "spend_credits_atomic",
+      {
+        p_user_id: user.id,
+        p_amount: creditCost,
+        p_description: `Sent ${gift.gift_name} to ${recipientId}`,
+        p_category: "gifts",
+      }
+    );
+
+    if (spendError || !spendResult?.success) {
+      console.error("Credit deduction error:", spendError || spendResult);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Insufficient credits",
-          errorCode: "INSUFFICIENT_CREDITS",
+          error: spendResult?.error_code === 'INSUFFICIENT_CREDITS'
+            ? "Insufficient credits"
+            : "Failed to process payment",
+          errorCode: spendResult?.error_code || "CREDIT_DEDUCTION_FAILED",
           required: creditCost,
         }),
         {
-          status: 402,
+          status: spendResult?.error_code === 'INSUFFICIENT_CREDITS' ? 402 : 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
 
-    // Send the gift
+    const newBalance = spendResult.new_balance;
+
+    // Now send the gift (after payment successful)
     const { data: sentGiftData, error: sentGiftError } = await supabaseClient
       .from("sent_gifts")
       .insert({
@@ -214,10 +230,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (sentGiftError) {
       console.error("Gift send error:", sentGiftError);
+      // Credits were deducted but gift failed to send
+      console.error("CRITICAL: Credits deducted but gift failed to send", {
+        userId: user.id,
+        amount: creditCost,
+        error: sentGiftError,
+      });
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to send gift",
+          error: "Failed to send gift. Credits have been deducted and will be refunded.",
+          errorCode: "GIFT_SEND_FAILED",
         }),
         {
           status: 500,
@@ -225,29 +248,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
         }
       );
     }
-
-    // Deduct credits
-    const { data: spendResult, error: spendError } = await supabaseClient.rpc(
-      "spend_credits_atomic",
-      {
-        p_user_id: user.id,
-        p_amount: creditCost,
-        p_description: `Sent ${gift.gift_name} to ${recipientId}`,
-        p_category: "gifts",
-      }
-    );
-
-    if (spendError || !spendResult?.success) {
-      console.error("Credit deduction error:", spendError || spendResult);
-      // Gift was sent but credits weren't deducted
-      console.error("CRITICAL: Gift sent but credits not deducted", {
-        userId: user.id,
-        giftId: sentGiftData.id,
-        amount: creditCost,
-      });
-    }
-
-    const newBalance = spendResult?.new_balance || 0;
 
     // Increment gift popularity score
     await supabaseClient

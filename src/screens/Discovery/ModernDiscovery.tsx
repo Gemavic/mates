@@ -111,31 +111,39 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       })));
 
       if (dbProfiles && dbProfiles.length > 0) {
-        const userPhotos = await Promise.all(
-          dbProfiles.map(async (profile) => {
-            try {
-              if (profile.photo_url) {
-                return [profile.photo_url];
-              }
+        // Fetch all photos in a single query instead of N+1 queries
+        const userIds = dbProfiles.map(p => p.user_id);
+        const { data: allPhotos } = await supabaseClient
+          .from('user_photos')
+          .select('user_id, photo_url, is_primary')
+          .in('user_id', userIds)
+          .order('is_primary', { ascending: false });
 
-              const { data } = await supabaseClient
-                .from('user_photos')
-                .select('photo_url')
-                .eq('user_id', profile.user_id)
-                .order('is_primary', { ascending: false })
-                .limit(3);
+        // Group photos by user_id
+        const photosByUser = (allPhotos || []).reduce((acc, photo) => {
+          if (!acc[photo.user_id]) {
+            acc[photo.user_id] = [];
+          }
+          if (acc[photo.user_id].length < 3) {
+            acc[photo.user_id].push(photo.photo_url);
+          }
+          return acc;
+        }, {} as Record<string, string[]>);
 
-              if (data && data.length > 0) {
-                return data.map(p => p.photo_url);
-              }
+        // Map profiles to photos
+        const userPhotos = dbProfiles.map((profile) => {
+          if (profile.photo_url) {
+            return [profile.photo_url];
+          }
 
-              // Use a default placeholder image for profiles without photos
-              return ['https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800'];
-            } catch {
-              return ['https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800'];
-            }
-          })
-        );
+          const photos = photosByUser[profile.user_id];
+          if (photos && photos.length > 0) {
+            return photos;
+          }
+
+          // Use a default placeholder image for profiles without photos
+          return ['https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800'];
+        });
 
         const formattedProfiles = dbProfiles.map((profile, index) => {
           // Use real profile data, with sensible defaults only when data is missing

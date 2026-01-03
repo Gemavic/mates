@@ -1,4 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +21,68 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing authorization' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Create Supabase client with user's JWT
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Check rate limiting
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient.rpc(
+      'check_and_update_rate_limit',
+      {
+        p_user_id: user.id,
+        p_action_type: 'api_calls',
+        p_increment: true,
+      }
+    );
+
+    if (rateLimitError || !rateLimitCheck) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rate limit exceeded. Please try again later.',
+          errorCode: 'RATE_LIMIT_EXCEEDED',
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
     // Get Twilio credentials - try multiple possible environment variable names
     let TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || Deno.env.get('Twilio_Account_SID');
     let TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') || Deno.env.get('Twilio_AUTH_Token') || Deno.env.get('TWILIO_AUTH_TOKEN');

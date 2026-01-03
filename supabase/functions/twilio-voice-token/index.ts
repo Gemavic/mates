@@ -118,12 +118,36 @@ Deno.serve(async (req: Request) => {
     );
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
+
     if (userError || !user) {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         {
           status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Check rate limiting
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient.rpc(
+      'check_and_update_rate_limit',
+      {
+        p_user_id: user.id,
+        p_action_type: 'api_calls',
+        p_increment: true,
+      }
+    );
+
+    if (rateLimitError || !rateLimitCheck) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rate limit exceeded. Please try again later.',
+          errorCode: 'RATE_LIMIT_EXCEEDED',
+        }),
+        {
+          status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );

@@ -46,42 +46,62 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         const threads = await MessagingManager.getMailThreads(user.id);
 
         if (threads && threads.length > 0) {
-          const formattedMatches = await Promise.all(
-            threads.map(async (thread: any) => {
-              const otherUserId = thread.participant1_id === user.id
-                ? thread.participant2_id
-                : thread.participant1_id;
-
-              const { data: profile } = await supabaseClient
-                .from('user_profiles')
-                .select('full_name, first_name, age')
-                .eq('user_id', otherUserId)
-                .maybeSingle();
-
-              const { data: photo } = await supabaseClient
-                .from('user_photos')
-                .select('photo_url')
-                .eq('user_id', otherUserId)
-                .eq('is_primary', true)
-                .maybeSingle();
-
-              const latestMsg = thread.latest_message?.[0];
-              const msgTime = latestMsg?.created_at
-                ? new Date(latestMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : '';
-
-              return {
-                id: otherUserId,
-                name: profile?.first_name || profile?.full_name || 'User',
-                age: profile?.age || 25,
-                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-                lastMessage: latestMsg?.message_text || 'Start a conversation...',
-                time: msgTime,
-                unread: latestMsg && !latestMsg.is_read,
-                isNew: latestMsg && !latestMsg.is_read
-              };
-            })
+          // Get all other user IDs
+          const otherUserIds = threads.map((thread: any) =>
+            thread.participant1_id === user.id
+              ? thread.participant2_id
+              : thread.participant1_id
           );
+
+          // Fetch all profiles in a single query
+          const { data: profiles } = await supabaseClient
+            .from('user_profiles')
+            .select('user_id, full_name, first_name, age')
+            .in('user_id', otherUserIds);
+
+          // Fetch all photos in a single query
+          const { data: photos } = await supabaseClient
+            .from('user_photos')
+            .select('user_id, photo_url')
+            .in('user_id', otherUserIds)
+            .eq('is_primary', true);
+
+          // Create lookup maps
+          const profileMap = (profiles || []).reduce((acc, p) => {
+            acc[p.user_id] = p;
+            return acc;
+          }, {} as Record<string, any>);
+
+          const photoMap = (photos || []).reduce((acc, p) => {
+            acc[p.user_id] = p.photo_url;
+            return acc;
+          }, {} as Record<string, string>);
+
+          // Map threads to matches
+          const formattedMatches = threads.map((thread: any) => {
+            const otherUserId = thread.participant1_id === user.id
+              ? thread.participant2_id
+              : thread.participant1_id;
+
+            const profile = profileMap[otherUserId];
+            const photo = photoMap[otherUserId];
+
+            const latestMsg = thread.latest_message?.[0];
+            const msgTime = latestMsg?.created_at
+              ? new Date(latestMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : '';
+
+            return {
+              id: otherUserId,
+              name: profile?.first_name || profile?.full_name || 'User',
+              age: profile?.age || 25,
+              image: photo || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+              lastMessage: latestMsg?.message_text || 'Start a conversation...',
+              time: msgTime,
+              unread: latestMsg && !latestMsg.is_read,
+              isNew: latestMsg && !latestMsg.is_read
+            };
+          });
 
           setMatches(formattedMatches);
         }
