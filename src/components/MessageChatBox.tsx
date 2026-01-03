@@ -87,63 +87,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     }
   }, [profile]);
 
-  // Fallback demo data if database is empty
-  const getDemoThreads = (): ChatThread[] => [
-    {
-      id: 'thread-demo-1',
-      participantId: 'demo-user-1',
-      participantName: 'Sarah',
-      participantImage: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-demo-1',
-        senderId: 'demo-user-1',
-        senderName: 'Sarah',
-        senderImage: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Hey! How are you doing? 😊',
-        timestamp: new Date(Date.now() - 300000),
-        type: 'text'
-      },
-      unreadCount: 2,
-      isOnline: true,
-      isTyping: false
-    },
-    {
-      id: 'thread-demo-2',
-      participantId: 'demo-user-2',
-      participantName: 'Emma',
-      participantImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-demo-2',
-        senderId: 'demo-user-2',
-        senderName: 'Emma',
-        senderImage: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Thanks for the message! Would love to chat',
-        timestamp: new Date(Date.now() - 600000),
-        type: 'text'
-      },
-      unreadCount: 1,
-      isOnline: true,
-      isTyping: false
-    },
-    {
-      id: 'thread-demo-3',
-      participantId: 'demo-user-3',
-      participantName: 'Jessica',
-      participantImage: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
-      lastMessage: {
-        id: 'msg-demo-3',
-        senderId: 'demo-user-3',
-        senderName: 'Jessica',
-        senderImage: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
-        message: 'Looking forward to getting to know you better!',
-        timestamp: new Date(Date.now() - 900000),
-        type: 'text'
-      },
-      unreadCount: 0,
-      isOnline: false,
-      isTyping: false
-    }
-  ];
+  // Return empty array instead of demo data
+  const getEmptyThreads = (): ChatThread[] => [];
 
   // Load real users from database for chat threads
   useEffect(() => {
@@ -159,10 +104,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
         if (error) {
           console.error('Failed to load users for chat:', error);
-          // Use demo data as fallback
-          const demoData = getDemoThreads();
-          setDefaultThreads(demoData);
-          setChatThreads(demoData);
+          // Show empty state instead of demo data
+          setDefaultThreads([]);
+          setChatThreads([]);
           return;
         }
 
@@ -196,18 +140,16 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           setDefaultThreads(threads);
           setChatThreads(threads);
         } else {
-          // No profiles in database, use demo data
-          console.log('📱 No profiles found, using demo data');
-          const demoData = getDemoThreads();
-          setDefaultThreads(demoData);
-          setChatThreads(demoData);
+          // No profiles in database, show empty state
+          console.log('📱 No profiles found, showing empty state');
+          setDefaultThreads([]);
+          setChatThreads([]);
         }
       } catch (error) {
         console.error('Error loading users for chat:', error);
-        // Use demo data as fallback
-        const demoData = getDemoThreads();
-        setDefaultThreads(demoData);
-        setChatThreads(demoData);
+        // Show empty state instead of demo data
+        setDefaultThreads([]);
+        setChatThreads([]);
       }
     };
 
