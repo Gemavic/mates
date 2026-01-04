@@ -347,10 +347,12 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
 
         // Deduct credits from database
         try {
+          console.log('Attempting to spend', totalCost, 'credits for user', user.id);
           await CreditManager.spendCredits(user.id, totalCost, 'Mail message with attachments', 'mail');
-        } catch (error) {
+          console.log('Credits deducted successfully');
+        } catch (error: any) {
           console.error('Failed to deduct credits:', error);
-          alert('Insufficient credits!');
+          alert(`Credit deduction failed: ${error?.message || 'Unknown error'}\n\nAvailable: ${availableCredits}\nNeeded: ${totalCost}`);
           return;
         }
 
@@ -359,30 +361,48 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         setUserBalance((updatedCredits?.complimentary_credits || 0) + (updatedCredits?.total_kobos || 0) + (updatedCredits?.purchased_credits || 0));
       }
 
-      // CRITICAL FIX: Save message to database
+      // CRITICAL FIX: Save message to database directly
       const currentThread = mailThreads.find(t => t.id === selectedThread);
       if (!currentThread) {
         throw new Error('No thread selected');
       }
 
-      console.log('Sending message to:', currentThread.participantId, 'in thread:', selectedThread);
+      console.log('Sending message:', {
+        threadId: selectedThread,
+        senderId: user.id,
+        recipientId: currentThread.participantId,
+        message: messageText.trim() || 'Sent attachments',
+        credits: totalCost
+      });
 
-      const { data: savedMessage, error: messageError } = await MessagingManager.sendMessage(
-        user.id,
-        currentThread.participantId,
-        messageText.trim() || 'Sent attachments',
-        totalCost
-      );
+      // Direct database insert - bypass complex MessagingManager logic
+      const { data: savedMessage, error: messageError } = await supabaseClient
+        .from('mail_messages')
+        .insert({
+          thread_id: selectedThread,
+          sender_id: user.id,
+          subject: 'Mail Message',
+          message_text: messageText.trim() || 'Sent attachments',
+          credits_spent: totalCost,
+          has_photos: attachedFiles.length > 0
+        })
+        .select()
+        .single();
 
       if (messageError) {
         console.error('Database save error:', messageError);
-        alert(`Failed to save message: ${messageError.message || 'Unknown error'}`);
-        // Note: In production, implement proper transaction rollback
-        // For now, credits are already deducted - consider refund logic if needed
+        console.error('Error details:', JSON.stringify(messageError, null, 2));
+        alert(`Failed to save message to database:\n\n${messageError.message || messageError.toString()}\n\nPlease contact support. Your credits have been deducted.`);
         throw new Error('Failed to save message to database');
       }
 
-      console.log('Message saved to database:', savedMessage);
+      console.log('Message saved successfully:', savedMessage);
+
+      // Update thread timestamp
+      await supabaseClient
+        .from('mail_threads')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', selectedThread);
 
       // Reload messages to show the new message
       await loadThreadMessages(selectedThread);
@@ -406,9 +426,10 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         }
       }, 3000);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Send message error:', error);
-      alert('Failed to send message. Please try again.');
+      console.error('Error stack:', error?.stack);
+      alert(`Failed to send message:\n\n${error?.message || error?.toString() || 'Unknown error'}\n\nPlease check console for details.`);
     }
   };
 
