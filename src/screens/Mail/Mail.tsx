@@ -324,7 +324,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
       }
 
       // Check if staff member (free for staff)
-      const isStaff = await staffManager.isStaffMember(user.id);
+      // Note: Staff check disabled until proper implementation
+      const isStaff = false;
 
       // Check credits (skip for staff)
       if (totalCost > 0 && !isStaff) {
