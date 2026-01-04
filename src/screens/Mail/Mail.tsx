@@ -97,8 +97,14 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
       if (user) {
         try {
           const credits = await CreditManager.getUserCredits(user.id);
-          const total = (credits?.complimentary_credits || 0) + (credits?.purchased_credits || 0);
+          const total = (credits?.complimentary_credits || 0) + (credits?.total_kobos || 0) + (credits?.purchased_credits || 0);
           setUserBalance(total);
+          console.log('Credits loaded:', {
+            complimentary: credits?.complimentary_credits,
+            kobos: credits?.total_kobos,
+            purchased: credits?.purchased_credits,
+            total
+          });
         } catch (err) {
           console.error('Failed to load credits:', err);
         }
@@ -323,7 +329,15 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
       // Check credits (skip for staff)
       if (totalCost > 0 && !isStaff) {
         const userCredits = await CreditManager.getUserCredits(user.id);
-        const availableCredits = (userCredits?.complimentary_credits || 0) + (userCredits?.purchased_credits || 0);
+        const availableCredits = (userCredits?.complimentary_credits || 0) + (userCredits?.total_kobos || 0) + (userCredits?.purchased_credits || 0);
+
+        console.log('Credit check:', {
+          complimentary: userCredits?.complimentary_credits,
+          kobos: userCredits?.total_kobos,
+          purchased: userCredits?.purchased_credits,
+          total: availableCredits,
+          needed: totalCost
+        });
 
         if (availableCredits < totalCost) {
           alert(`Insufficient credits! Need ${totalCost} credits to send this message with attachments.`);
@@ -333,16 +347,16 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
 
         // Deduct credits from database
         try {
-          await CreditManager.spendCredits(user.id, totalCost, 'Mail message with attachments');
+          await CreditManager.spendCredits(user.id, totalCost, 'Mail message with attachments', 'mail');
         } catch (error) {
           console.error('Failed to deduct credits:', error);
           alert('Insufficient credits!');
           return;
         }
 
-        // Reload balance
+        // Reload balance (including kobos now)
         const updatedCredits = await CreditManager.getUserCredits(user.id);
-        setUserBalance((updatedCredits?.complimentary_credits || 0) + (updatedCredits?.purchased_credits || 0));
+        setUserBalance((updatedCredits?.complimentary_credits || 0) + (updatedCredits?.total_kobos || 0) + (updatedCredits?.purchased_credits || 0));
       }
 
       // CRITICAL FIX: Save message to database
@@ -351,20 +365,27 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         throw new Error('No thread selected');
       }
 
+      console.log('Sending message to:', currentThread.participantId, 'in thread:', selectedThread);
+
       const { data: savedMessage, error: messageError } = await MessagingManager.sendMessage(
         user.id,
         currentThread.participantId,
-        messageText.trim() || 'Sent attachments'
+        messageText.trim() || 'Sent attachments',
+        totalCost
       );
 
       if (messageError) {
         console.error('Database save error:', messageError);
+        alert(`Failed to save message: ${messageError.message || 'Unknown error'}`);
         // Note: In production, implement proper transaction rollback
         // For now, credits are already deducted - consider refund logic if needed
         throw new Error('Failed to save message to database');
       }
 
       console.log('Message saved to database:', savedMessage);
+
+      // Reload messages to show the new message
+      await loadThreadMessages(selectedThread);
 
       setMessageText('');
       setAttachedFiles([]);

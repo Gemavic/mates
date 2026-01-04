@@ -313,8 +313,10 @@ export class MessagingManager {
   }
 
   // Simple message sending that auto-creates thread if needed
-  static async sendMessage(senderId: string, recipientId: string, message: string) {
+  static async sendMessage(senderId: string, recipientId: string, message: string, creditsSpent: number = 0) {
     try {
+      console.log('Sending message:', { senderId, recipientId, message, creditsSpent });
+
       // Ensure participants are in correct order for constraint
       const [participant1, participant2] = [senderId, recipientId].sort();
 
@@ -326,9 +328,13 @@ export class MessagingManager {
         .eq('participant2_id', participant2)
         .maybeSingle();
 
-      if (threadError) throw threadError;
+      if (threadError) {
+        console.error('Thread lookup error:', threadError);
+        throw threadError;
+      }
 
       if (!thread) {
+        console.log('Creating new thread between', participant1, 'and', participant2);
         // Create new thread
         const { data: newThread, error: createError } = await supabaseClient
           .from('mail_threads')
@@ -339,9 +345,14 @@ export class MessagingManager {
           .select('id')
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          console.error('Thread creation error:', createError);
+          throw createError;
+        }
         thread = newThread;
       }
+
+      console.log('Using thread:', thread.id);
 
       // Send message
       const { data: messageData, error: messageError } = await supabaseClient
@@ -349,14 +360,19 @@ export class MessagingManager {
         .insert({
           thread_id: thread.id,
           sender_id: senderId,
-          subject: 'Chat Message',
+          subject: 'Mail Message',
           message_text: message,
-          credits_spent: 2
+          credits_spent: creditsSpent
         })
         .select()
         .single();
 
-      if (messageError) throw messageError;
+      if (messageError) {
+        console.error('Message insert error:', messageError);
+        throw messageError;
+      }
+
+      console.log('Message inserted successfully:', messageData);
 
       // Update thread timestamp
       const { error: updateThreadError } = await supabaseClient
@@ -364,7 +380,9 @@ export class MessagingManager {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', thread.id);
 
-      if (updateThreadError) console.warn('Failed to update thread timestamp:', updateThreadError);
+      if (updateThreadError) {
+        console.warn('Failed to update thread timestamp:', updateThreadError);
+      }
 
       return { data: messageData, error: null };
     } catch (error) {
