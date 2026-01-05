@@ -61,7 +61,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [userBalance, setUserBalance] = useState(0);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
-  const [userProfileImage, setUserProfileImage] = useState('https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400');
+  const [userProfileImage, setUserProfileImage] = useState('');
   const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
   const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -163,8 +163,19 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
           const profile = profileMap[otherUserId];
           const threadMessages = messagesByThread[thread.id];
-          const displayName = profile?.first_name || profile?.full_name || 'User';
-          const displayImage = profile?.photo_url || profile?.profile_photo || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400';
+
+          if (!profile) {
+            console.warn('Profile not found for user:', otherUserId);
+            return null;
+          }
+
+          const displayName = profile.first_name || profile.full_name || 'User';
+          const displayImage = profile.photo_url || profile.profile_photo;
+
+          if (!displayImage) {
+            console.warn('No profile image for user:', otherUserId);
+            return null;
+          }
 
           return {
             id: thread.id,
@@ -181,10 +192,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               type: 'text'
             } : undefined,
             unreadCount: threadMessages?.unreadCount || 0,
-            isOnline: profile?.is_online || false,
+            isOnline: profile.is_online || false,
             isTyping: false
           };
-        });
+        }).filter((thread): thread is ChatThread => thread !== null);
 
         console.log('✅ Loaded', chatThreads.length, 'mail threads:', chatThreads.map(t => t.participantName));
         setDefaultThreads(chatThreads);
@@ -216,19 +227,68 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
         if (error) throw error;
 
-        // Convert to ChatMessage format
-        const loadedMessages: ChatMessage[] = (messagesData || []).map(msg => ({
-          id: msg.id,
-          senderId: msg.sender_id === user.id ? 'me' : msg.sender_id,
-          senderName: msg.sender_id === user.id ? 'You' : chatThreads.find(t => t.id === activeThread)?.participantName || 'User',
-          senderImage: msg.sender_id === user.id ? userProfileImage : chatThreads.find(t => t.id === activeThread)?.participantImage || '',
-          message: msg.message_text,
-          timestamp: new Date(msg.created_at),
-          type: 'text'
-        }));
+        // Get all unique sender IDs
+        const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
+
+        // Fetch sender profiles and photos
+        const { data: senderProfiles } = await supabaseClient
+          .from('user_profiles')
+          .select('user_id, first_name, full_name, photo_url')
+          .in('user_id', senderIds);
+
+        const { data: senderPhotos } = await supabaseClient
+          .from('user_photos')
+          .select('user_id, photo_url')
+          .in('user_id', senderIds)
+          .eq('is_primary', true);
+
+        // Create lookup maps
+        const profileLookup = (senderProfiles || []).reduce((acc, p) => {
+          acc[p.user_id] = p;
+          return acc;
+        }, {} as Record<string, any>);
+
+        const photoLookup = (senderPhotos || []).reduce((acc, p) => {
+          acc[p.user_id] = p.photo_url;
+          return acc;
+        }, {} as Record<string, string>);
+
+        // Convert to ChatMessage format with real sender data
+        const loadedMessages: ChatMessage[] = (messagesData || [])
+          .map(msg => {
+            const isCurrentUser = msg.sender_id === user.id;
+            const senderProfile = profileLookup[msg.sender_id];
+
+            let senderName: string;
+            let senderImage: string;
+
+            if (isCurrentUser) {
+              senderName = 'You';
+              senderImage = userProfileImage || photoLookup[user.id] || '';
+            } else {
+              senderName = senderProfile?.first_name || senderProfile?.full_name || 'User';
+              senderImage = senderProfile?.photo_url || photoLookup[msg.sender_id] || '';
+            }
+
+            if (!senderImage) {
+              console.warn('No image for sender:', msg.sender_id, senderName);
+              return null;
+            }
+
+            return {
+              id: msg.id,
+              senderId: isCurrentUser ? 'me' : msg.sender_id,
+              senderName,
+              senderImage,
+              message: msg.message_text,
+              timestamp: new Date(msg.created_at),
+              type: 'text' as const
+            };
+          })
+          .filter((msg): msg is ChatMessage => msg !== null);
 
         setMessages(loadedMessages);
-        console.log('✅ Loaded', loadedMessages.length, 'messages');
+        console.log('✅ Loaded', loadedMessages.length, 'messages with correct sender profiles');
 
         // Mark messages as read
         await supabaseClient

@@ -259,16 +259,23 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
 
       const formattedMessages: Message[] = messages.map(msg => {
         const profile = profileMap[msg.sender_id];
+        const photoUrl = photoMap[msg.sender_id];
+
+        if (!profile || !photoUrl) {
+          console.warn('Missing profile or photo for sender:', msg.sender_id);
+          return null;
+        }
+
         return {
           id: msg.id,
           senderId: msg.sender_id,
-          senderName: profile?.first_name || profile?.full_name || 'User',
-          senderImage: photoMap[msg.sender_id] || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+          senderName: profile.first_name || profile.full_name || 'User',
+          senderImage: photoUrl,
           message: msg.message_text,
           timestamp: new Date(msg.created_at).toLocaleString(),
           hasPhotos: msg.has_photos || false
         };
-      });
+      }).filter((msg): msg is Message => msg !== null);
 
       setCurrentMessages(formattedMessages);
 
