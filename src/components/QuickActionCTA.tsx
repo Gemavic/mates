@@ -12,115 +12,99 @@ export const QuickActionCTA: React.FC<QuickActionCTAProps> = ({ onNavigate, clas
     {
       id: 'browse-profiles',
       icon: Users,
-      label: 'Browse All',
-      description: 'View all profiles',
-      color: 'from-blue-500 to-blue-600',
-      hoverColor: 'hover:from-blue-600 hover:to-blue-700',
+      label: 'Browse',
+      color: 'bg-blue-500/90',
+      hoverColor: 'hover:bg-blue-600',
     },
     {
       id: 'matches',
       icon: Heart,
-      label: 'My Matches',
-      description: 'Your connections',
-      color: 'from-rose-500 to-pink-600',
-      hoverColor: 'hover:from-rose-600 hover:to-pink-700',
+      label: 'Matches',
+      color: 'bg-rose-500/90',
+      hoverColor: 'hover:bg-rose-600',
     },
     {
       id: 'likes',
       icon: Star,
       label: 'Likes',
-      description: 'Who likes you',
-      color: 'from-amber-500 to-orange-600',
-      hoverColor: 'hover:from-amber-600 hover:to-orange-700',
+      color: 'bg-amber-500/90',
+      hoverColor: 'hover:bg-amber-600',
     },
     {
       id: 'video-chat',
       icon: Video,
-      label: 'Video Chat',
-      description: 'Face-to-face',
-      color: 'from-purple-500 to-purple-600',
-      hoverColor: 'hover:from-purple-600 hover:to-purple-700',
+      label: 'Video',
+      color: 'bg-purple-500/90',
+      hoverColor: 'hover:bg-purple-600',
     },
     {
       id: 'audio-chat',
       icon: Phone,
-      label: 'Audio Chat',
-      description: 'Voice calls',
-      color: 'from-green-500 to-emerald-600',
-      hoverColor: 'hover:from-green-600 hover:to-emerald-700',
+      label: 'Audio',
+      color: 'bg-green-500/90',
+      hoverColor: 'hover:bg-green-600',
     },
     {
       id: 'mail',
       icon: Mail,
       label: 'Messages',
-      description: 'Your inbox',
-      color: 'from-indigo-500 to-indigo-600',
-      hoverColor: 'hover:from-indigo-600 hover:to-indigo-700',
+      color: 'bg-blue-600/90',
+      hoverColor: 'hover:bg-blue-700',
     },
   ];
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-xl border border-white/20">
-        <h2 className="text-white text-lg sm:text-xl font-bold mb-4 text-center sm:text-left">
-          Quick Actions
-        </h2>
+      {/* Mobile: Horizontal Scroll */}
+      <div className="sm:hidden flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={action.id}
+              onClick={() => onNavigate(action.id)}
+              className={cn(
+                'flex flex-col items-center justify-center min-w-[70px] p-2.5 rounded-lg',
+                action.color,
+                action.hoverColor,
+                'text-white shadow-md backdrop-blur-sm',
+                'transform transition-all duration-200',
+                'active:scale-95',
+                'cursor-pointer touch-manipulation'
+              )}
+              type="button"
+            >
+              <Icon className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium whitespace-nowrap">{action.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Mobile: 2-column Grid */}
-        <div className="grid grid-cols-2 sm:hidden gap-3">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={action.id}
-                onClick={() => onNavigate(action.id)}
-                className={cn(
-                  'flex flex-col items-center justify-center p-4 rounded-xl',
-                  'bg-gradient-to-br',
-                  action.color,
-                  action.hoverColor,
-                  'text-white shadow-lg',
-                  'transform transition-all duration-200',
-                  'active:scale-95 hover:scale-105',
-                  'cursor-pointer touch-manipulation'
-                )}
-                type="button"
-              >
-                <Icon className="w-8 h-8 mb-2" />
-                <span className="text-sm font-semibold text-center">{action.label}</span>
-                <span className="text-xs opacity-90 mt-1 text-center">{action.description}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tablet/Desktop: 3-column Grid */}
-        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={action.id}
-                onClick={() => onNavigate(action.id)}
-                className={cn(
-                  'flex flex-col items-center justify-center p-4 rounded-xl',
-                  'bg-gradient-to-br',
-                  action.color,
-                  action.hoverColor,
-                  'text-white shadow-lg',
-                  'transform transition-all duration-200',
-                  'active:scale-95 hover:scale-105',
-                  'cursor-pointer touch-manipulation'
-                )}
-                type="button"
-              >
-                <Icon className="w-10 h-10 mb-2" />
-                <span className="text-sm font-semibold text-center">{action.label}</span>
-                <span className="text-xs opacity-90 mt-1 text-center">{action.description}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Tablet/Desktop: Grid */}
+      <div className="hidden sm:grid sm:grid-cols-6 gap-2">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={action.id}
+              onClick={() => onNavigate(action.id)}
+              className={cn(
+                'flex flex-col items-center justify-center p-3 rounded-lg',
+                action.color,
+                action.hoverColor,
+                'text-white shadow-md backdrop-blur-sm',
+                'transform transition-all duration-200',
+                'active:scale-95 hover:scale-105',
+                'cursor-pointer touch-manipulation'
+              )}
+              type="button"
+            >
+              <Icon className="w-6 h-6 mb-1.5" />
+              <span className="text-xs font-medium text-center">{action.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
