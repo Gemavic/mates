@@ -28,13 +28,6 @@ interface Profile {
   interests?: string[];
 }
 
-const placeholderImages = [
-  'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/1468379/pexels-photo-1468379.jpeg?auto=compress&cs=tinysrgb&w=800'
-];
 
 function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike: (profileId: string) => void; onNavigate: (screen: string, params?: any) => void }) {
   const [isLiked, setIsLiked] = useState(false);
@@ -203,7 +196,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       );
 
       const primaryPhotos = await Promise.all(
-        dbProfiles.map(async (profile, index) => {
+        dbProfiles.map(async (profile) => {
           try {
             const { data } = await supabaseClient
               .from('user_photos')
@@ -212,32 +205,36 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
               .eq('is_primary', true)
               .maybeSingle();
 
-            if (data?.photo_url) {
-              return data.photo_url;
-            }
-
-            return placeholderImages[index % placeholderImages.length];
+            return data?.photo_url || null;
           } catch {
-            return placeholderImages[index % placeholderImages.length];
+            return null;
           }
         })
       );
 
-      const formattedProfiles: Profile[] = dbProfiles.map((profile, index) => {
-        const displayName = profile.first_name || profile.full_name || 'New User';
+      const formattedProfiles: Profile[] = dbProfiles
+        .map((profile, index) => {
+          const photoUrl = primaryPhotos[index];
 
-        return {
-          id: profile.user_id,
-          name: displayName,
-          age: profile.age || 25,
-          photoCount: photoCounts[index],
-          imageUrl: primaryPhotos[index],
-          isOnline: profile.is_online || false,
-          location: profile.location || 'Location not set',
-          bio: profile.bio || 'No bio yet',
-          interests: parseArrayField(profile.interests, [])
-        };
-      });
+          if (!photoUrl) {
+            return null;
+          }
+
+          const displayName = profile.first_name || profile.full_name || 'New User';
+
+          return {
+            id: profile.user_id,
+            name: displayName,
+            age: profile.age || 25,
+            photoCount: photoCounts[index],
+            imageUrl: photoUrl,
+            isOnline: profile.is_online || false,
+            location: profile.location || 'Location not set',
+            bio: profile.bio || 'No bio yet',
+            interests: parseArrayField(profile.interests, [])
+          };
+        })
+        .filter((profile): profile is Profile => profile !== null);
 
       const uniqueProfiles = Array.from(
         new Map(formattedProfiles.map(p => [p.id, p])).values()

@@ -151,40 +151,41 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           return acc;
         }, {} as Record<string, string[]>);
 
-        // Map profiles to photos
-        const userPhotos = dbProfiles.map((profile) => {
-          if (profile.photo_url) {
-            return [profile.photo_url];
-          }
+        const formattedProfiles = dbProfiles
+          .map((profile) => {
+            let userPhotos: string[] = [];
 
-          const photos = photosByUser[profile.user_id];
-          if (photos && photos.length > 0) {
-            return photos;
-          }
+            if (profile.photo_url) {
+              userPhotos = [profile.photo_url];
+            } else {
+              const photos = photosByUser[profile.user_id];
+              if (photos && photos.length > 0) {
+                userPhotos = photos;
+              }
+            }
 
-          // Use a default placeholder image for profiles without photos
-          return ['https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800'];
-        });
+            if (userPhotos.length === 0) {
+              return null;
+            }
 
-        const formattedProfiles = dbProfiles.map((profile, index) => {
-          // Use real profile data, with sensible defaults only when data is missing
-          let displayName = profile.first_name || profile.full_name || 'User';
+            let displayName = profile.first_name || profile.full_name || 'User';
 
-          return {
-            id: profile.user_id,
-            name: displayName,
-            age: profile.age || 25,
-            location: profile.location || 'Location not set',
-            occupation: profile.occupation || 'Occupation not set',
-            education: profile.education || '',
-            images: userPhotos[index],
-            bio: profile.bio || 'No bio yet',
-            interests: parseArrayField(profile.interests, []),
-            online: profile.is_online || false,
-            verified: profile.is_verified || false,
-            premium: false
-          };
-        });
+            return {
+              id: profile.user_id,
+              name: displayName,
+              age: profile.age || 25,
+              location: profile.location || 'Location not set',
+              occupation: profile.occupation || 'Occupation not set',
+              education: profile.education || '',
+              images: userPhotos,
+              bio: profile.bio || 'No bio yet',
+              interests: parseArrayField(profile.interests, []),
+              online: profile.is_online || false,
+              verified: profile.is_verified || false,
+              premium: false
+            };
+          })
+          .filter((profile): profile is Profile => profile !== null);
 
         console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => ({ name: p.name, online: p.online, id: p.id })));
         setProfiles(formattedProfiles);
@@ -202,14 +203,24 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   const handleLike = async (profileId: string) => {
     console.log('💖 Like action triggered for profile:', profileId);
 
-    // Send notification
     const profile = profiles.find(p => p.id === profileId);
     if (profile && user) {
-      sendLikeNotification(profileId, {
-        name: 'You',
-        image: 'https://images.pexels.com/photos/1848565/pexels-photo-1848565.jpeg?auto=compress&cs=tinysrgb&w=400',
-        id: user.id
-      });
+      const { data: currentUserProfile } = await supabaseClient
+        .from('user_profiles')
+        .select('photo_url, first_name, full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const userImage = currentUserProfile?.photo_url || '';
+      const userName = currentUserProfile?.first_name || currentUserProfile?.full_name || 'Someone';
+
+      if (userImage) {
+        sendLikeNotification(profileId, {
+          name: userName,
+          image: userImage,
+          id: user.id
+        });
+      }
     }
 
     nextProfile();
