@@ -6,6 +6,7 @@ import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { QuickActionCTA } from '@/components/QuickActionCTA';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { ProfileManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
@@ -347,6 +348,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         {/* Mobile View */}
         <div className="lg:hidden">
           <div className="p-2 sm:p-4 space-y-3 sm:space-y-4 pt-16 pb-20">
+            {/* Quick Action CTAs */}
+            <QuickActionCTA onNavigate={onNavigate} />
+
             {/* Balance Display */}
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 sm:p-4 text-white text-center">
               <p className="text-xs sm:text-sm opacity-90">Your Balance</p>
@@ -397,6 +401,11 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         {/* Desktop View */}
         <div className="hidden lg:block">
           <div className="p-4 lg:p-6 pt-20">
+            {/* Quick Action CTAs - Desktop */}
+            <div className="mb-6">
+              <QuickActionCTA onNavigate={onNavigate} />
+            </div>
+
             {/* View Mode Toggle */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
