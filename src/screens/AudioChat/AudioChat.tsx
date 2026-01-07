@@ -5,6 +5,7 @@ import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power,
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
+import { twilioVoiceManager } from '@/lib/twilioVoice';
 
 interface ActiveMatch {
   id: string;
@@ -24,9 +25,33 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showAudioSettings, setShowAudioSettings] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [currentMatchName, setCurrentMatchName] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
+
+  useEffect(() => {
+    const initializeVoice = async () => {
+      if (!user?.id || isInitialized) return;
+
+      try {
+        await twilioVoiceManager.initialize(user.id);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing Twilio Voice:', error);
+      }
+    };
+
+    initializeVoice();
+
+    return () => {
+      if (isInitialized) {
+        twilioVoiceManager.destroy();
+      }
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -68,22 +93,38 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     loadMatches();
   }, [user?.id]);
 
-  const startAudioCall = (matchName: string) => {
+  const startAudioCall = async (matchId: string, matchName: string) => {
     if (!user) {
       alert('Please sign in to make audio calls');
       return;
     }
 
+    if (!isInitialized) {
+      alert('Audio system is initializing. Please wait a moment.');
+      return;
+    }
+
     const canAfford = creditManager.canAfford(user.id, 50);
-    if (canAfford || creditManager.isStaffMember(user.id)) {
+    if (!canAfford && !creditManager.isStaffMember(user.id)) {
+      alert(`Need ${formatCredits(50)} per minute for audio calls!`);
+      return;
+    }
+
+    try {
+      setIsConnecting(true);
+      setCurrentMatchName(matchName);
+
+      await twilioVoiceManager.makeCall(matchId);
+
       setIsInCall(true);
+      setIsConnecting(false);
       setCallDuration(0);
-      // Start timer for credit deduction
+
       const timer = setInterval(() => {
         setCallDuration(prev => {
           const newDuration = prev + 1;
-          if (newDuration % 60 === 0) { // Every minute
-           const success = creditManager.deductCredits(user.id, 50);
+          if (newDuration % 60 === 0) {
+            const success = creditManager.deductCredits(user.id, 50);
             if (success) {
               setUserBalance(creditManager.getTotalCredits(user.id));
             } else if (!creditManager.isStaffMember(user.id)) {
@@ -95,16 +136,27 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         });
       }, 1000);
       (window as any).callTimer = timer;
-    } else {
-      alert(`Need ${formatCredits(50)} per minute for audio calls!`);
+
+    } catch (error) {
+      console.error('Error starting audio call:', error);
+      setIsConnecting(false);
+      alert('Failed to start audio call. Please try again.');
     }
   };
 
   const endCall = () => {
+    twilioVoiceManager.endCall();
     setIsInCall(false);
+    setIsConnecting(false);
     if ((window as any).callTimer) {
       clearInterval((window as any).callTimer);
     }
+  };
+
+  const handleToggleMic = () => {
+    const newState = !isMicOn;
+    setIsMicOn(newState);
+    twilioVoiceManager.toggleMute(!newState);
   };
 
   if (isInCall) {
@@ -117,17 +169,16 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         <div className="h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-rose-500 relative flex flex-col items-center justify-center">
           {/* Call Info */}
           <div className="text-center mb-12">
-            <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden border-4 border-white/30">
-              <img
-                src="https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=400"
-                alt="Emma"
-                className="w-full h-full object-cover"
-              />
+            <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center border-4 border-white/30">
+              <Phone className="w-16 h-16 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Emma</h2>
+            <h2 className="text-3xl font-bold text-white mb-2">{currentMatchName}</h2>
             <p className="text-white/80 text-lg">{Math.floor(callDuration / 60).toString().padStart(2, '0')}:{(callDuration % 60).toString().padStart(2, '0')}</p>
-            <p className="text-white/60 text-sm mt-2">Voice call in progress...</p>
-            <p className="text-white/60 text-sm mt-1">{formatCredits(userBalance)} remaining</p>
+            {isConnecting ? (
+              <p className="text-white/60 text-sm mt-2">Connecting...</p>
+            ) : (
+              <p className="text-white/60 text-sm mt-2">Voice call in progress...</p>
+            )}
             <p className="text-white/60 text-sm mt-1">{formatCredits(userBalance)} remaining</p>
           </div>
 
@@ -178,7 +229,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
             </button>
 
             <button
-              onClick={() => setIsMicOn(!isMicOn)}
+              onClick={handleToggleMic}
               className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
                 isMicOn ? 'bg-white/10' : 'bg-red-500'
               }`}
@@ -352,13 +403,13 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                   </div>
                   
                   <Button
-                    onClick={() => startAudioCall(match.name)}
+                    onClick={() => startAudioCall(match.id, match.name)}
                     className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 hover:scale-105 transition-all duration-300"
                     type="button"
-                    disabled={match.status !== 'online' || !audioEnabled}
+                    disabled={match.status !== 'online' || !audioEnabled || !isInitialized || isConnecting}
                   >
                     <Phone className="w-4 h-4 mr-2" />
-                    {audioEnabled ? 'Call' : 'Audio Disabled'}
+                    {!isInitialized ? 'Initializing...' : audioEnabled ? 'Call' : 'Audio Disabled'}
                   </Button>
                   <div className="flex space-x-2 ml-2">
                     <Button
@@ -368,10 +419,10 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                         successMessage.textContent = `✅ Accepted call from ${match.name}`;
                         document.body.appendChild(successMessage);
                         setTimeout(() => document.body.removeChild(successMessage), 3000);
-                        startAudioCall(match.name);
+                        startAudioCall(match.id, match.name);
                       }}
                       className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-colors"
-                      disabled={match.status !== 'online'}
+                      disabled={match.status !== 'online' || !isInitialized || isConnecting}
                       type="button"
                       title="Accept call"
                     >
