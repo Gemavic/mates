@@ -459,9 +459,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      startVideoCall(match.id, match.name);
                     }}
                     className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 hover:scale-105 transition-all duration-300"
-                    disabled={match.status !== 'online' || !videoEnabled || !audioEnabled}
+                    disabled={match.status !== 'online' || !videoEnabled || !audioEnabled || isConnecting}
                     type="button"
                   >
                     <Video className="w-4 h-4 mr-2" />
