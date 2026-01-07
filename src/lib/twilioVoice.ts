@@ -9,8 +9,10 @@ export class TwilioVoiceManager {
     try {
       const session = await supabaseClient.auth.getSession();
       if (!session.data.session) {
-        throw new Error('Not authenticated');
+        throw new Error('Not authenticated. Please sign in and try again.');
       }
+
+      console.log('[Twilio Voice] Requesting token for user:', userId);
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twilio-voice-token`, {
         method: 'POST',
@@ -22,14 +24,18 @@ export class TwilioVoiceManager {
       });
 
       const data = await response.json();
+      console.log('[Twilio Voice] Token response:', { success: data.success, hasToken: !!data.token, testMode: data.testMode });
 
       if (!data.success) {
+        if (data.testMode) {
+          throw new Error('Twilio credentials not configured. Please contact support or check the TWILIO_TROUBLESHOOTING.md file.');
+        }
         throw new Error(data.error || 'Failed to get voice token');
       }
 
       return data.token;
     } catch (error) {
-      console.error('Error getting voice token:', error);
+      console.error('[Twilio Voice] Error getting voice token:', error);
       throw error;
     }
   }

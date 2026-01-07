@@ -10,8 +10,10 @@ export class TwilioVideoManager {
     try {
       const session = await supabaseClient.auth.getSession();
       if (!session.data.session) {
-        throw new Error('Not authenticated');
+        throw new Error('Not authenticated. Please sign in and try again.');
       }
+
+      console.log('[Twilio Video] Requesting token for room:', roomName);
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twilio-video-token`, {
         method: 'POST',
@@ -23,14 +25,18 @@ export class TwilioVideoManager {
       });
 
       const data = await response.json();
+      console.log('[Twilio Video] Token response:', { success: data.success, hasToken: !!data.token, testMode: data.testMode });
 
       if (!data.success) {
+        if (data.testMode) {
+          throw new Error('Twilio credentials not configured. Please contact support or check the TWILIO_TROUBLESHOOTING.md file.');
+        }
         throw new Error(data.error || 'Failed to get video token');
       }
 
       return data.token;
     } catch (error) {
-      console.error('Error getting video token:', error);
+      console.error('[Twilio Video] Error getting video token:', error);
       throw error;
     }
   }

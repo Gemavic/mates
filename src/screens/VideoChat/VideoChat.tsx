@@ -145,14 +145,27 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       }, 1000);
       (window as any).callTimer = timer;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting video call:', error);
       setIsConnecting(false);
       const errorMessage = document.createElement('div');
-      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = 'Failed to start video call. Please try again.';
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-md';
+      const errorText = error.message || 'Failed to start video call. Please try again.';
+
+      if (errorText.includes('credentials not configured')) {
+        errorMessage.innerHTML = `<strong>Twilio Not Configured</strong><br><small>Please check TWILIO_TROUBLESHOOTING.md or contact support.</small>`;
+      } else if (errorText.includes('Not authenticated')) {
+        errorMessage.textContent = 'Please sign in to make video calls.';
+      } else {
+        errorMessage.textContent = errorText;
+      }
+
       document.body.appendChild(errorMessage);
-      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+      setTimeout(() => {
+        if (errorMessage.parentNode) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 5000);
     }
   };
 

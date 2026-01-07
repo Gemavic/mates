@@ -137,10 +137,18 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       }, 1000);
       (window as any).callTimer = timer;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting audio call:', error);
       setIsConnecting(false);
-      alert('Failed to start audio call. Please try again.');
+      const errorText = error.message || 'Failed to start audio call. Please try again.';
+
+      if (errorText.includes('credentials not configured')) {
+        alert('Twilio Not Configured\n\nThe calling system needs to be configured by an administrator. Please check TWILIO_TROUBLESHOOTING.md or contact support.');
+      } else if (errorText.includes('Not authenticated')) {
+        alert('Please sign in to make audio calls.');
+      } else {
+        alert(errorText);
+      }
     }
   };
 
