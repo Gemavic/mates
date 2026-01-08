@@ -315,7 +315,7 @@ Each record shows:
 - kobos_awarded: Kobos amount
 - reason: Why awarded
 - awarded_by: 'staff', 'system', 'achievement', 'promotion'
-- staff_id: Which staff member (if manual)
+- staff_id: Which staff member (if manual) - references staff_members table
 - rule_id: Which rule triggered (if automated)
 - metadata: Additional data
 - created_at: When awarded
@@ -332,7 +332,7 @@ Each record shows:
 - max_awards_per_user: Limit per user
 - valid_from: Start date
 - valid_until: Expiry date
-- created_by: Staff who created it
+- created_by: Staff who created it - references staff_members table
 - created_at/updated_at: Timestamps
 ```
 

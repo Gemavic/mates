@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS reward_history (
   kobos_awarded integer DEFAULT 0,
   reason text NOT NULL,
   awarded_by text NOT NULL CHECK (awarded_by IN ('staff', 'system', 'achievement', 'promotion')),
-  staff_id uuid REFERENCES staff_accounts(id) ON DELETE SET NULL,
+  staff_id uuid REFERENCES staff_members(id) ON DELETE SET NULL,
   rule_id uuid,
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now()
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS reward_rules (
   max_awards_per_user integer DEFAULT 1,
   valid_from timestamptz DEFAULT now(),
   valid_until timestamptz,
-  created_by uuid REFERENCES staff_accounts(id) ON DELETE SET NULL,
+  created_by uuid REFERENCES staff_members(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -79,7 +79,7 @@ CREATE POLICY "Staff can view all reward history"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM staff_accounts
+      SELECT 1 FROM staff_members
       WHERE id = auth.uid()
       AND is_active = true
     )
@@ -96,10 +96,10 @@ CREATE POLICY "Staff can manage rules"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM staff_accounts
+      SELECT 1 FROM staff_members
       WHERE id = auth.uid()
       AND is_active = true
-      AND 'manage_rewards' = ANY(permissions)
+      AND permissions ? 'manage_rewards'
     )
   );
 
@@ -114,7 +114,7 @@ CREATE POLICY "Staff can view all achievements"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM staff_accounts
+      SELECT 1 FROM staff_members
       WHERE id = auth.uid()
       AND is_active = true
     )
@@ -542,3 +542,29 @@ CREATE INDEX IF NOT EXISTS idx_reward_history_user_id ON reward_history(user_id)
 CREATE INDEX IF NOT EXISTS idx_reward_history_created_at ON reward_history(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_reward_rules_type_active ON reward_rules(rule_type, is_active);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user_type ON user_achievements(user_id, achievement_type);
+
+-- Grant manage_rewards permission to existing staff (if staff_members table exists)
+DO $$
+BEGIN
+  -- Update Super User to include manage_rewards
+  UPDATE staff_members
+  SET permissions = permissions || '["manage_rewards"]'::jsonb
+  WHERE role = 'Super User'
+  AND NOT (permissions ? 'manage_rewards');
+
+  -- Update Credit Manager to include manage_rewards
+  UPDATE staff_members
+  SET permissions = permissions || '["manage_rewards"]'::jsonb
+  WHERE role = 'Credit Manager'
+  AND NOT (permissions ? 'manage_rewards');
+
+  -- Update Administrator to include manage_rewards
+  UPDATE staff_members
+  SET permissions = permissions || '["manage_rewards"]'::jsonb
+  WHERE role = 'Administrator'
+  AND NOT (permissions ? 'manage_rewards');
+EXCEPTION
+  WHEN OTHERS THEN
+    -- If staff_members doesn't exist yet, skip silently
+    NULL;
+END $$;
