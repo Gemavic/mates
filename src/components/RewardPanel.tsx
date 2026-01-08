@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Gift, Coins, Zap, Award, TrendingUp } from 'lucide-react';
+import { Gift, Coins, Zap, Award, TrendingUp, User } from 'lucide-react';
 
 interface RewardPanelProps {
   selectedUserId: string;
@@ -13,11 +13,12 @@ interface RewardPanelProps {
 type RewardType = 'bonus_credits' | 'purchased_credits' | 'kobos' | 'combo';
 
 export const RewardPanel: React.FC<RewardPanelProps> = ({
-  selectedUserId,
+  selectedUserId: initialUserId,
   staffId,
   onSuccess,
   onError,
 }) => {
+  const [userIdInput, setUserIdInput] = useState(initialUserId || '');
   const [rewardType, setRewardType] = useState<RewardType>('bonus_credits');
   const [credits, setCredits] = useState('');
   const [kobos, setKobos] = useState('');
@@ -25,8 +26,10 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAwardReward = async () => {
-    if (!selectedUserId) {
-      onError('Please select a user first');
+    const targetUserId = userIdInput.trim();
+
+    if (!targetUserId) {
+      onError('Please enter a user ID or email');
       return;
     }
 
@@ -51,7 +54,7 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
           }
 
           const { data, error } = await supabaseClient.rpc('award_bonus_credits', {
-            p_user_id: selectedUserId,
+            p_user_id: targetUserId,
             p_amount: amount,
             p_reason: reason,
             p_staff_id: staffId,
@@ -72,7 +75,7 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
           }
 
           const { data, error } = await supabaseClient.rpc('award_purchased_credits', {
-            p_user_id: selectedUserId,
+            p_user_id: targetUserId,
             p_amount: amount,
             p_reason: reason,
             p_staff_id: staffId
@@ -92,7 +95,7 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
           }
 
           const { data, error } = await supabaseClient.rpc('award_kobos', {
-            p_user_id: selectedUserId,
+            p_user_id: targetUserId,
             p_amount: amount,
             p_reason: reason,
             p_staff_id: staffId,
@@ -115,7 +118,7 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
           }
 
           const { data, error } = await supabaseClient.rpc('award_combo_reward', {
-            p_user_id: selectedUserId,
+            p_user_id: targetUserId,
             p_credits: creditAmount,
             p_kobos: koboAmount,
             p_credit_type: 'complimentary',
@@ -162,6 +165,23 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
           <Gift className="w-6 h-6 text-white" />
         </div>
         <h3 className="text-xl font-bold text-white">Award Rewards</h3>
+      </div>
+
+      <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
+        <label className="block text-white text-sm font-medium mb-2">
+          <User className="w-4 h-4 inline mr-2" />
+          User ID or Email
+        </label>
+        <Input
+          type="text"
+          value={userIdInput}
+          onChange={(e) => setUserIdInput(e.target.value)}
+          placeholder="Enter user ID or email address"
+          className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+        />
+        <p className="text-xs text-gray-400 mt-2">
+          Enter the UUID from the user profile or their email address
+        </p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
@@ -271,8 +291,8 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
 
         <Button
           onClick={handleAwardReward}
-          disabled={isProcessing || !selectedUserId}
-          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 rounded-lg"
+          disabled={isProcessing || !userIdInput.trim()}
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center">
