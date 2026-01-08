@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Video, VideoOff, Mic, MicOff, Phone, Camera, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, Phone, PhoneOff, Camera, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';

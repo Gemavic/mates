@@ -11,19 +11,16 @@ interface TokenRequest {
   userId: string;
 }
 
-// Twilio Voice token generation using JWT
 function generateVoiceToken(accountSid: string, apiKey: string, apiSecret: string, identity: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const exp = now + 3600; // 1 hour
+  const exp = now + 3600;
 
-  // JWT Header
   const header = {
     cty: 'twilio-fpa;v=1',
     typ: 'JWT',
     alg: 'HS256'
   };
 
-  // JWT Payload
   const payload = {
     jti: `${apiKey}-${now}`,
     iss: apiKey,
@@ -42,7 +39,6 @@ function generateVoiceToken(accountSid: string, apiKey: string, apiSecret: strin
     }
   };
 
-  // Encode to base64url
   const base64url = (str: string) => btoa(str)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -51,7 +47,6 @@ function generateVoiceToken(accountSid: string, apiKey: string, apiSecret: strin
   const encodedHeader = base64url(JSON.stringify(header));
   const encodedPayload = base64url(JSON.stringify(payload));
 
-  // Sign with HMAC SHA256
   const encoder = new TextEncoder();
   const data = encoder.encode(`${encodedHeader}.${encodedPayload}`);
   const key = encoder.encode(apiSecret);
@@ -79,7 +74,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Get Twilio credentials
     const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
     const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY');
     const TWILIO_API_SECRET = Deno.env.get('TWILIO_API_SECRET');
@@ -98,7 +92,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Verify JWT from Supabase
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -129,7 +122,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check rate limiting
     const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient.rpc(
       'check_and_update_rate_limit',
       {
@@ -165,10 +157,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate identity from user ID
     const identity = `user_${userId}`;
 
-    // Generate Twilio Voice token
     const voiceToken = await generateVoiceToken(
       TWILIO_ACCOUNT_SID,
       TWILIO_API_KEY,
