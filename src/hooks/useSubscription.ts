@@ -70,11 +70,23 @@ export function useSubscription() {
   }, [user?.id, loadSubscriptionData]);
 
   const isFreeTier = subscription?.tier_name === 'free';
+  const isCreditsModel = subscriptionManager.isCreditsModel(subscription);
+  const isSubscriptionModel = subscriptionManager.isSubscriptionModel(subscription);
   const isGracePeriodActive = subscription?.grace_period_ends_at
     ? new Date(subscription.grace_period_ends_at) > new Date()
     : false;
   const daysRemaining = subscriptionManager.getDaysUntilGracePeriodEnds(subscription);
   const shouldShowUpgradePrompt = subscriptionManager.shouldShowUpgradePrompt(subscription);
+
+  const switchToCredits = useCallback(async () => {
+    if (!user?.id) return false;
+    return await subscriptionManager.switchToCreditsModel(user.id);
+  }, [user?.id]);
+
+  const switchToSubscription = useCallback(async (tierId: string) => {
+    if (!user?.id) return false;
+    return await subscriptionManager.switchToSubscriptionModel(user.id, tierId);
+  }, [user?.id]);
 
   return {
     subscription,
@@ -82,12 +94,16 @@ export function useSubscription() {
     usage,
     loading,
     isFreeTier,
+    isCreditsModel,
+    isSubscriptionModel,
     isGracePeriodActive,
     daysRemaining,
     shouldShowUpgradePrompt,
     checkAccess,
     trackUsage,
     recordUpgradePrompt,
+    switchToCredits,
+    switchToSubscription,
     refreshSubscription: loadSubscriptionData,
   };
 }

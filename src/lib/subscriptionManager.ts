@@ -36,6 +36,7 @@ export interface UserSubscription {
   grace_period_ends_at?: string;
   upgrade_prompts_shown: number;
   last_upgrade_prompt_at?: string;
+  payment_model: 'subscription' | 'credits';
 }
 
 export interface FeatureAccessResult {
@@ -50,6 +51,9 @@ export interface FeatureAccessResult {
   days_since_signup?: number;
   feature?: string;
   current_tier?: string;
+  payment_model?: 'subscription' | 'credits';
+  credit_balance?: number;
+  message?: string;
 }
 
 export interface FeatureUsage {
@@ -220,6 +224,47 @@ class SubscriptionManager {
 
   isFreeTier(subscription: UserSubscription | null): boolean {
     return subscription?.tier_name === 'free';
+  }
+
+  isCreditsModel(subscription: UserSubscription | null): boolean {
+    return subscription?.payment_model === 'credits';
+  }
+
+  isSubscriptionModel(subscription: UserSubscription | null): boolean {
+    return subscription?.payment_model === 'subscription';
+  }
+
+  async switchToCreditsModel(userId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabaseClient.rpc('switch_to_credits_model', {
+        p_user_id: userId,
+      });
+
+      if (error) throw error;
+
+      this.clearCache();
+      return data === true;
+    } catch (error) {
+      console.error('Error switching to credits model:', error);
+      return false;
+    }
+  }
+
+  async switchToSubscriptionModel(userId: string, tierId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabaseClient.rpc('switch_to_subscription_model', {
+        p_user_id: userId,
+        p_tier_id: tierId,
+      });
+
+      if (error) throw error;
+
+      this.clearCache();
+      return data === true;
+    } catch (error) {
+      console.error('Error switching to subscription model:', error);
+      return false;
+    }
   }
 
   isGracePeriodActive(subscription: UserSubscription | null): boolean {

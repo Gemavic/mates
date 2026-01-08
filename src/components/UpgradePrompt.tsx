@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Crown, X, Zap, Heart, MessageCircle, Video, Star } from 'lucide-react';
+import { Crown, X, Zap, Heart, MessageCircle, Video, Star, Coins } from 'lucide-react';
+import { PaymentModelChoice } from './PaymentModelChoice';
 
 interface UpgradePromptProps {
   reason: string;
@@ -10,7 +11,9 @@ interface UpgradePromptProps {
   limit?: number;
   gracePeriodExpired?: boolean;
   daysRemaining?: number;
+  paymentModel?: 'subscription' | 'credits';
   onUpgrade: () => void;
+  onUpgradeCredits?: () => void;
   onClose: () => void;
 }
 
@@ -22,9 +25,12 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
   limit,
   gracePeriodExpired,
   daysRemaining,
+  paymentModel,
   onUpgrade,
+  onUpgradeCredits,
   onClose,
 }) => {
+  const [showPaymentChoice, setShowPaymentChoice] = useState(false);
   const getFeatureIcon = () => {
     switch (feature) {
       case 'video_calls':
@@ -52,16 +58,44 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
 
   const getMessage = () => {
     if (gracePeriodExpired) {
-      return "Thank you for trying our platform! Your free trial period has ended. Upgrade now to continue enjoying all features and connecting with amazing people.";
+      return "Thank you for trying our platform! Your free trial period has ended. Choose a payment option to continue enjoying all features and connecting with amazing people.";
     }
     if (feature === 'video_calls' || feature === 'audio_calls') {
-      return `${reason}. Upgrade to unlock unlimited video and audio calls with your matches!`;
+      return `${reason}. Choose a payment option to unlock unlimited video and audio calls with your matches!`;
     }
     if (currentUsage !== undefined && limit !== undefined) {
-      return `You've used all your daily ${feature}s. Upgrade to Premium for unlimited access!`;
+      return `You've used all your daily ${feature}s. Choose Premium Subscription for unlimited access or buy credits for pay-as-you-go!`;
     }
     return reason;
   };
+
+  const handleUpgradeClick = () => {
+    setShowPaymentChoice(true);
+  };
+
+  const handleSubscriptionChoice = () => {
+    setShowPaymentChoice(false);
+    onUpgrade();
+  };
+
+  const handleCreditsChoice = () => {
+    setShowPaymentChoice(false);
+    if (onUpgradeCredits) {
+      onUpgradeCredits();
+    } else {
+      onUpgrade();
+    }
+  };
+
+  if (showPaymentChoice) {
+    return (
+      <PaymentModelChoice
+        onSelectSubscription={handleSubscriptionChoice}
+        onSelectCredits={handleCreditsChoice}
+        onClose={() => setShowPaymentChoice(false)}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -121,16 +155,35 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
           </div>
         </div>
 
-        <Button
-          onClick={onUpgrade}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
-        >
-          <Crown className="w-5 h-5 mr-2" />
-          Upgrade to Premium
-        </Button>
+        <div className="space-y-3">
+          <Button
+            onClick={handleUpgradeClick}
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
+            <Crown className="w-5 h-5 mr-2" />
+            Choose Payment Option
+          </Button>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleSubscriptionChoice}
+              className="flex items-center justify-center space-x-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg transition-all duration-200 text-sm"
+            >
+              <Crown className="w-4 h-4" />
+              <span>Subscription</span>
+            </button>
+            <button
+              onClick={handleCreditsChoice}
+              className="flex items-center justify-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-4 py-2 rounded-lg transition-all duration-200 text-sm"
+            >
+              <Coins className="w-4 h-4" />
+              <span>Pay-as-You-Go</span>
+            </button>
+          </div>
+        </div>
 
         <p className="text-center text-white/50 text-xs mt-4">
-          Starting at $19.99/month • Cancel anytime
+          Subscription from $19.99/month • Credits from $9.99 • Choose what works for you
         </p>
       </div>
     </div>
