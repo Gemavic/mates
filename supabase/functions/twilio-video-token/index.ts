@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
       'check_and_update_rate_limit',
       {
         p_user_id: user.id,
-        p_action_type: 'api_calls',
+        p_action_type: 'api',
         p_increment: true,
       }
     );

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Call Diagnostics</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .success {
+      border-left: 4px solid #10b981;
+    }
+    .error {
+      border-left: 4px solid #ef4444;
+    }
+    .warning {
+      border-left: 4px solid #f59e0b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Video Call Diagnostics</h1>
+  <p>This tool will test the video calling functionality and show you exactly what's happening.</p>
+
+  <div>
+    <button onclick="testVideoToken()">Test Video Token Generation</button>
+    <button onclick="checkAuth()">Check Authentication</button>
+    <button onclick="checkRateLimit()">Check Rate Limiting</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script type="module">
+    // Load environment variables
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+
+    window.SUPABASE_URL = SUPABASE_URL;
+    window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+
+    function addResult(title, content, type = 'success') {
+      const results = document.getElementById('results');
+      const div = document.createElement('div');
+      div.className = `result ${type}`;
+      div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+      results.appendChild(div);
+    }
+
+    window.checkAuth = async function() {
+      addResult('Checking Authentication...', 'Loading...', 'warning');
+
+      try {
+        // Get session from localStorage
+        const sessionData = localStorage.getItem('supabase.auth.token');
+        if (!sessionData) {
+          addResult('Authentication Check', '❌ No session found. Please sign in to your app first!', 'error');
+          return;
+        }
+
+        const session = JSON.parse(sessionData);
+        const accessToken = session?.currentSession?.access_token;
+
+        if (!accessToken) {
+          addResult('Authentication Check', '❌ No access token found. Please sign in again.', 'error');
+          return;
+        }
+
+        addResult('Authentication Check', `✅ Session found!\nUser ID: ${session.currentSession.user?.id || 'Unknown'}\nExpires: ${new Date(session.currentSession.expires_at * 1000).toLocaleString()}`, 'success');
+      } catch (error) {
+        addResult('Authentication Check', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    window.testVideoToken = async function() {
+      addResult('Testing Video Token...', 'Requesting token from edge function...', 'warning');
+
+      try {
+        // Get session
+        const sessionData = localStorage.getItem('supabase.auth.token');
+        if (!sessionData) {
+          addResult('Video Token Test', '❌ Not authenticated. Please sign in first!', 'error');
+          return;
+        }
+
+        const session = JSON.parse(sessionData);
+        const accessToken = session?.currentSession?.access_token;
+
+        if (!accessToken) {
+          addResult('Video Token Test', '❌ No access token. Please sign in again.', 'error');
+          return;
+        }
+
+        const userId = session.currentSession.user?.id || 'test-user';
+        const roomName = `test_room_${Date.now()}`;
+
+        console.log('Making request to:', `${window.SUPABASE_URL}/functions/v1/twilio-video-token`);
+        console.log('Room name:', roomName);
+        console.log('User ID:', userId);
+
+        const response = await fetch(`${window.SUPABASE_URL}/functions/v1/twilio-video-token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ roomName, userId }),
+        });
+
+        const data = await response.json();
+
+        console.log('Response:', data);
+
+        if (data.success) {
+          addResult('Video Token Test', `✅ Token generated successfully!\n\nRoom: ${data.roomName}\nIdentity: ${data.identity}\nToken: ${data.token.substring(0, 50)}...`, 'success');
+        } else if (data.testMode) {
+          addResult('Video Token Test', `⚠️ TEST MODE - Twilio Not Configured\n\nError: ${data.error}\n\nThis means your Twilio credentials are not set up in Supabase.\n\nYou need to add these secrets in your Supabase dashboard:\n- TWILIO_ACCOUNT_SID\n- TWILIO_API_KEY\n- TWILIO_API_SECRET`, 'warning');
+        } else {
+          addResult('Video Token Test', `❌ Failed to generate token\n\nError: ${data.error}\nDetails: ${JSON.stringify(data, null, 2)}`, 'error');
+        }
+      } catch (error) {
+        addResult('Video Token Test', `❌ Request failed\n\nError: ${error.message}\n\nStack: ${error.stack}`, 'error');
+      }
+    }
+
+    window.checkRateLimit = async function() {
+      addResult('Checking Rate Limit...', 'Testing rate limit function...', 'warning');
+
+      try {
+        const sessionData = localStorage.getItem('supabase.auth.token');
+        if (!sessionData) {
+          addResult('Rate Limit Check', '❌ Not authenticated', 'error');
+          return;
+        }
+
+        const session = JSON.parse(sessionData);
+        const userId = session.currentSession.user?.id;
+
+        if (!userId) {
+          addResult('Rate Limit Check', '❌ No user ID found', 'error');
+          return;
+        }
+
+        addResult('Rate Limit Check', `✅ User ID: ${userId}\n\nNote: Rate limiting is checked by the edge function automatically.`, 'success');
+      } catch (error) {
+        addResult('Rate Limit Check', `❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-check auth on load
+    setTimeout(() => {
+      checkAuth();
+    }, 500);
+  </script>
+</body>
+</html>
