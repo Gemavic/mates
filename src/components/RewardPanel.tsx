@@ -167,54 +167,50 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
       <div className="grid grid-cols-4 gap-3">
         <button
           onClick={() => setRewardType('bonus_credits')}
-          className={`p-4 rounded-lg border-2 transition-all ${
+          className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
             rewardType === 'bonus_credits'
               ? 'border-yellow-500 bg-yellow-500/10'
               : 'border-gray-700 hover:border-gray-600'
           }`}
         >
-          <Gift className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-          <p className="text-white text-sm font-medium">Bonus Credits</p>
-          <p className="text-gray-400 text-xs">Free credits</p>
+          <Gift className="w-7 h-7 text-yellow-500 mb-2" />
+          <p className="text-white text-xs font-semibold">Bonus</p>
         </button>
 
         <button
           onClick={() => setRewardType('purchased_credits')}
-          className={`p-4 rounded-lg border-2 transition-all ${
+          className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
             rewardType === 'purchased_credits'
               ? 'border-blue-500 bg-blue-500/10'
               : 'border-gray-700 hover:border-gray-600'
           }`}
         >
-          <TrendingUp className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-          <p className="text-white text-sm font-medium">Purchased</p>
-          <p className="text-gray-400 text-xs">Paid credits</p>
+          <TrendingUp className="w-7 h-7 text-blue-500 mb-2" />
+          <p className="text-white text-xs font-semibold">Paid</p>
         </button>
 
         <button
           onClick={() => setRewardType('kobos')}
-          className={`p-4 rounded-lg border-2 transition-all ${
+          className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
             rewardType === 'kobos'
               ? 'border-purple-500 bg-purple-500/10'
               : 'border-gray-700 hover:border-gray-600'
           }`}
         >
-          <Coins className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-          <p className="text-white text-sm font-medium">Kobos</p>
-          <p className="text-gray-400 text-xs">Currency</p>
+          <Coins className="w-7 h-7 text-purple-500 mb-2" />
+          <p className="text-white text-xs font-semibold">Kobos</p>
         </button>
 
         <button
           onClick={() => setRewardType('combo')}
-          className={`p-4 rounded-lg border-2 transition-all ${
+          className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center justify-center ${
             rewardType === 'combo'
               ? 'border-pink-500 bg-pink-500/10'
               : 'border-gray-700 hover:border-gray-600'
           }`}
         >
-          <Award className="w-6 h-6 text-pink-500 mx-auto mb-2" />
-          <p className="text-white text-sm font-medium">Combo</p>
-          <p className="text-gray-400 text-xs">Both</p>
+          <Award className="w-7 h-7 text-pink-500 mb-2" />
+          <p className="text-white text-xs font-semibold">Both</p>
         </button>
       </div>
 
