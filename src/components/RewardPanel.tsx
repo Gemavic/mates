@@ -49,10 +49,7 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
       // Check if input is an email (contains @)
       if (targetUserInput.includes('@')) {
         const { data: userData, error: userError } = await supabaseClient
-          .from('user_profiles')
-          .select('user_id')
-          .eq('email', targetUserInput)
-          .maybeSingle();
+          .rpc('staff_lookup_user_by_email', { p_email: targetUserInput });
 
         if (userError) {
           onError('Error looking up user: ' + userError.message);
@@ -60,13 +57,13 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
           return;
         }
 
-        if (!userData) {
+        if (!userData || userData.length === 0) {
           onError('No user found with that email address');
           setIsProcessing(false);
           return;
         }
 
-        targetUserId = userData.user_id;
+        targetUserId = userData[0].user_id;
       }
 
       let result: any;
