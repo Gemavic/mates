@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Shield, 
-  Lock, 
-  User, 
-  AlertTriangle, 
-  CreditCard, 
-  Users, 
+import {
+  Shield,
+  Lock,
+  User,
+  AlertTriangle,
+  CreditCard,
+  Users,
   Settings,
   BarChart3,
   LogOut,
@@ -16,11 +16,17 @@ import {
   EyeOff,
   RefreshCw,
   CheckCircle,
-  Search
+  Search,
+  Gift,
+  History,
+  Zap
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { creditManager } from '@/lib/creditSystem';
 import { getCurrentStaffSession, changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPermission } from '@/lib/staffManager';
+import { RewardPanel } from '@/components/RewardPanel';
+import { AutomatedRulesPanel } from '@/components/AutomatedRulesPanel';
+import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
 
 interface StaffPanelProps {
   onLogout: () => void;
@@ -28,11 +34,13 @@ interface StaffPanelProps {
 }
 
 export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) => {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'credits' | 'password'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password'>('overview');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Password management state
   const [passwordForm, setPasswordForm] = useState({
@@ -71,6 +79,16 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
       console.error('Logout error:', error);
       onLogout();
     }
+  };
+
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(''), 5000);
+  };
+
+  const showError = (message: string) => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(''), 5000);
   };
 
   const awardCredits = async () => {
@@ -252,13 +270,34 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
           </div>
         </div>
 
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="bg-green-500/20 border border-green-500 rounded-xl p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <p className="text-green-300">{successMessage}</p>
+            </div>
+          </div>
+        )}
+        {errorMessage && (
+          <div className="bg-red-500/20 border border-red-500 rounded-xl p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+              <p className="text-red-300">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Tab Navigation */}
         <div className="flex bg-white/10 backdrop-blur-sm rounded-2xl p-1 mb-6 overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'users', label: 'Users', icon: Users },
             { id: 'credits', label: 'Credits', icon: CreditCard },
-            ...((staffAuth?.permissions?.includes('change_staff_passwords') || staffAuth?.permissions?.includes('all')) ? 
+            { id: 'rewards', label: 'Rewards', icon: Gift },
+            { id: 'rules', label: 'Auto Rules', icon: Zap },
+            { id: 'history', label: 'History', icon: History },
+            ...((staffAuth?.permissions?.includes('change_staff_passwords') || staffAuth?.permissions?.includes('all')) ?
               [{ id: 'password', label: 'Passwords', icon: Key }] : [])
           ].map((tab) => {
             const Icon = tab.icon;
@@ -270,15 +309,15 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
                   e.stopPropagation();
                   setSelectedTab(tab.id as any);
                 }}
-                className={`flex-1 flex items-center justify-center py-3 px-2 sm:px-4 rounded-xl transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
-                  selectedTab === tab.id 
-                    ? 'bg-white text-gray-900 shadow-lg' 
+                className={`flex-1 flex items-center justify-center py-3 px-2 sm:px-4 rounded-xl transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 whitespace-nowrap ${
+                  selectedTab === tab.id
+                    ? 'bg-white text-gray-900 shadow-lg'
                     : 'text-white hover:bg-white/10'
                 }`}
                 type="button"
               >
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-                <span className="font-medium text-sm sm:text-base">{tab.label}</span>
+                <span className="font-medium text-xs sm:text-sm">{tab.label}</span>
               </button>
             );
           })}
@@ -630,6 +669,30 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
                 </div>
               </div>
             </div>
+          )}
+
+          {selectedTab === 'rewards' && (
+            <RewardPanel
+              selectedUserId={selectedUserId}
+              staffId={staffAuth?.staffId}
+              onSuccess={showSuccess}
+              onError={showError}
+            />
+          )}
+
+          {selectedTab === 'rules' && (
+            <AutomatedRulesPanel
+              staffId={staffAuth?.staffId}
+              onSuccess={showSuccess}
+              onError={showError}
+            />
+          )}
+
+          {selectedTab === 'history' && (
+            <RewardHistoryViewer
+              selectedUserId={selectedUserId}
+              onError={showError}
+            />
           )}
         </div>
 
