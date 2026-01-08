@@ -7,7 +7,6 @@ import { SignIn } from '@/screens/Auth/SignIn';
 import { SignUp } from '@/screens/Auth/SignUp';
 import { Discovery } from '@/screens/Discovery/Discovery';
 import { ModernDiscovery } from '@/screens/Discovery/ModernDiscovery';
-import BrowseProfiles from '@/screens/Discovery/BrowseProfiles';
 import { Matches } from '@/screens/Matches/Matches';
 import { Likes } from '@/screens/Likes/Likes';
 import { ModernCredits } from '@/screens/Credits/ModernCredits';
@@ -315,9 +314,6 @@ const App: React.FC = () => {
 
       case 'discovery':
         return <ModernDiscovery onNavigate={handleNavigate} />;
-
-      case 'browse-profiles':
-        return <BrowseProfiles onNavigate={handleNavigate} />;
 
       case 'matches':
         return <Matches onNavigate={handleNavigate} onSelectChatUser={setSelectedChatUser} />;
