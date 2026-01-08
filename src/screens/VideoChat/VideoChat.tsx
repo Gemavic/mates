@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, Phone, Camera, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabaseClient } from '@/lib/supabase';
 import { twilioVideoManager } from '@/lib/twilioVideo';
 import type { RemoteParticipant, RemoteTrack, RemoteVideoTrack, RemoteAudioTrack } from 'twilio-video';
@@ -29,7 +31,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const [callDuration, setCallDuration] = useState(0);
   const [currentMatchName, setCurrentMatchName] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
   const { user } = useAuth();
+  const { checkAccess, recordUpgradePrompt, daysRemaining } = useSubscription();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
   const localVideoRef = useRef<HTMLDivElement>(null);
@@ -78,6 +83,14 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const startVideoCall = async (matchId: string, matchName: string) => {
     if (!user) {
       alert('Please sign in to make video calls');
+      return;
+    }
+
+    const accessResult = await checkAccess('video_call');
+    if (!accessResult.allowed) {
+      setUpgradePromptData(accessResult);
+      setShowUpgradePrompt(true);
+      await recordUpgradePrompt();
       return;
     }
 
@@ -537,6 +550,21 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {showUpgradePrompt && upgradePromptData && (
+        <UpgradePrompt
+          reason={upgradePromptData.reason || 'Upgrade to access video calls'}
+          feature={upgradePromptData.feature}
+          currentTier={upgradePromptData.current_tier}
+          gracePeriodExpired={upgradePromptData.grace_period_expired}
+          daysRemaining={daysRemaining}
+          onUpgrade={() => {
+            setShowUpgradePrompt(false);
+            onNavigate('credits');
+          }}
+          onClose={() => setShowUpgradePrompt(false)}
+        />
+      )}
     </Layout>
   );
 };
