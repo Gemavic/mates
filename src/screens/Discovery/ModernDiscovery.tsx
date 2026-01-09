@@ -7,6 +7,7 @@ import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { CategoryNavigation } from '@/components/CategoryNavigation';
+import { QuickNavBar } from '@/components/QuickNavBar';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { FeatureLimitBanner, GracePeriodBanner } from '@/components/FeatureLimitBanner';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -381,6 +382,12 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           onNotifications={() => console.log('Notifications clicked')}
         />
       </div>
+
+      {/* Quick Navigation Bar */}
+      <QuickNavBar
+        onNavigate={onNavigate}
+        activeScreen="discovery"
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden min-h-screen">
