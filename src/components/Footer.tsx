@@ -109,34 +109,34 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Comprehensive Footer - Mobile */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-4 sm:py-5 px-3 sm:px-4 border-t border-gray-200 lg:hidden">
           <div className="max-w-md mx-auto space-y-4">
-            {/* Grouped Navigation Links */}
-            <div className="space-y-3">
+            {/* Grouped Navigation Links - Horizontal Layout */}
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <h4 className="text-xs font-bold text-gray-800 mb-2">Features</h4>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('credits'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Buy Credits</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('gift-shop'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Gift Shop</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('relationship-services'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Services</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Help & FAQs</button>
+                <div className="space-y-1.5 text-xs">
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('credits'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Buy Credits</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('gift-shop'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Gift Shop</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('relationship-services'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Services</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Help & FAQs</button>
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-3">
+              <div>
                 <h4 className="text-xs font-bold text-gray-800 mb-2">Education</h4>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('education'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Tips & Advice</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Blog</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('quizzes'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Quizzes</button>
+                <div className="space-y-1.5 text-xs">
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('education'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Tips & Advice</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Blog</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('quizzes'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Quizzes</button>
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-3">
+              <div>
                 <h4 className="text-xs font-bold text-gray-800 mb-2">About Us</h4>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('terms'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Terms</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Privacy</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Disclaimer</button>
-                  <button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Contact Us</button>
+                <div className="space-y-1.5 text-xs">
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('terms'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Terms</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Privacy</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Disclaimer</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left block" type="button">Contact Us</button>
                 </div>
               </div>
             </div>
