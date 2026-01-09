@@ -51,7 +51,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
           }
 
           .animate-scroll {
-            animation: slideRightToLeft 40s linear infinite;
+            animation: slideRightToLeft 15s linear infinite;
           }
 
           .animate-scroll:hover {
