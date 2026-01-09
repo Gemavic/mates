@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twilio Configuration Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #333;
+      font-size: 18px;
+    }
+    .status {
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-weight: 500;
+    }
+    .status.loading {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .status.warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .details {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .required-vars {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      border-left: 4px solid #2196F3;
+    }
+    .required-vars h3 {
+      margin-top: 0;
+      color: #1976D2;
+      font-size: 14px;
+    }
+    .required-vars ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .required-vars li {
+      margin: 5px 0;
+      color: #333;
+    }
+    .summary {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+    .summary h2 {
+      margin-top: 0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Twilio Configuration Test</h1>
+    <p class="subtitle">This tool checks if your Twilio credentials are properly configured in Supabase Edge Functions.</p>
+
+    <div class="required-vars">
+      <h3>📋 Required Environment Variables</h3>
+      <p>The following environment variables must be set in your Supabase project secrets:</p>
+      <ul>
+        <li><strong>TWILIO_ACCOUNT_SID</strong> - Your Twilio Account SID</li>
+        <li><strong>TWILIO_API_KEY</strong> - Your Twilio API Key SID</li>
+        <li><strong>TWILIO_API_SECRET</strong> - Your Twilio API Secret</li>
+        <li><strong>TWILIO_TWIML_APP_SID</strong> - Your TwiML App SID (for voice calls)</li>
+      </ul>
+      <p style="margin-top: 10px; font-size: 12px; color: #666;">
+        To set these: Supabase Dashboard → Project Settings → Edge Functions → Secrets
+      </p>
+    </div>
+
+    <button onclick="runTests()" id="testBtn">Run Configuration Tests</button>
+
+    <div id="results"></div>
+
+    <div class="summary" id="summary" style="display: none;">
+      <h2>Summary</h2>
+      <div id="summaryContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://zdkxonufiuagkrhprnbd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpka3hvbnVmaXVhZ2tyaHBybmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMjQ0NzQsImV4cCI6MjA2OTkwMDQ3NH0.auHwnh0siI7u95WN-4Fh0aESjge2S6Yks7MNSnivo-k';
+
+    const results = {
+      video: null,
+      voice: null
+    };
+
+    async function testVideoToken() {
+      const section = document.getElementById('videoTest');
+      const status = section.querySelector('.status');
+      const details = section.querySelector('.details');
+
+      status.textContent = '⏳ Testing video token generation...';
+      status.className = 'status loading';
+      details.textContent = '';
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/twilio-video-token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            roomName: 'test-room',
+            userId: 'test-user-123'
+          })
+        });
+
+        const data = await response.json();
+        details.textContent = JSON.stringify(data, null, 2);
+
+        if (data.testMode) {
+          status.textContent = '⚠️ Video Token: Credentials NOT configured';
+          status.className = 'status warning';
+          results.video = false;
+          return false;
+        }
+
+        if (data.success && data.token) {
+          status.textContent = '✅ Video Token: Credentials properly configured!';
+          status.className = 'status success';
+          results.video = true;
+          return true;
+        }
+
+        if (data.error) {
+          status.textContent = `❌ Video Token: ${data.error}`;
+          status.className = 'status error';
+          results.video = false;
+          return false;
+        }
+
+        status.textContent = '❌ Video Token: Unexpected response';
+        status.className = 'status error';
+        results.video = false;
+        return false;
+      } catch (error) {
+        status.textContent = `❌ Video Token: ${error.message}`;
+        status.className = 'status error';
+        details.textContent = error.stack;
+        results.video = false;
+        return false;
+      }
+    }
+
+    async function testVoiceToken() {
+      const section = document.getElementById('voiceTest');
+      const status = section.querySelector('.status');
+      const details = section.querySelector('.details');
+
+      status.textContent = '⏳ Testing voice token generation...';
+      status.className = 'status loading';
+      details.textContent = '';
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/twilio-voice-token`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: 'test-user-123'
+          })
+        });
+
+        const data = await response.json();
+        details.textContent = JSON.stringify(data, null, 2);
+
+        if (data.testMode) {
+          status.textContent = '⚠️ Voice Token: Credentials NOT configured';
+          status.className = 'status warning';
+          results.voice = false;
+          return false;
+        }
+
+        if (data.success && data.token) {
+          status.textContent = '✅ Voice Token: Credentials properly configured!';
+          status.className = 'status success';
+          results.voice = true;
+          return true;
+        }
+
+        if (data.error) {
+          status.textContent = `❌ Voice Token: ${data.error}`;
+          status.className = 'status error';
+          results.voice = false;
+          return false;
+        }
+
+        status.textContent = '❌ Voice Token: Unexpected response';
+        status.className = 'status error';
+        results.voice = false;
+        return false;
+      } catch (error) {
+        status.textContent = `❌ Voice Token: ${error.message}`;
+        status.className = 'status error';
+        details.textContent = error.stack;
+        results.voice = false;
+        return false;
+      }
+    }
+
+    async function runTests() {
+      const btn = document.getElementById('testBtn');
+      const resultsDiv = document.getElementById('results');
+      const summaryDiv = document.getElementById('summary');
+      const summaryContent = document.getElementById('summaryContent');
+
+      btn.disabled = true;
+
+      resultsDiv.innerHTML = `
+        <div class="test-section" id="videoTest">
+          <h2>📹 Video Chat Configuration</h2>
+          <div class="status loading">Starting test...</div>
+          <div class="details"></div>
+        </div>
+        <div class="test-section" id="voiceTest">
+          <h2>📞 Voice Call Configuration</h2>
+          <div class="status loading">Starting test...</div>
+          <div class="details"></div>
+        </div>
+      `;
+
+      await testVideoToken();
+      await testVoiceToken();
+
+      // Show summary
+      summaryDiv.style.display = 'block';
+
+      const allConfigured = results.video && results.voice;
+      const noneConfigured = !results.video && !results.voice;
+      const partiallyConfigured = !allConfigured && !noneConfigured;
+
+      if (allConfigured) {
+        summaryContent.innerHTML = `
+          <div style="color: #155724; background: #d4edda; padding: 15px; border-radius: 6px; border: 1px solid #c3e6cb;">
+            <strong>✅ All Configured!</strong><br>
+            Your Twilio credentials are properly configured. Video and voice calls should work correctly.
+          </div>
+        `;
+      } else if (noneConfigured) {
+        summaryContent.innerHTML = `
+          <div style="color: #856404; background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeeba;">
+            <strong>⚠️ Not Configured</strong><br>
+            No Twilio credentials detected. Please add the required environment variables to your Supabase project:
+            <ul style="margin-top: 10px;">
+              <li>TWILIO_ACCOUNT_SID</li>
+              <li>TWILIO_API_KEY</li>
+              <li>TWILIO_API_SECRET</li>
+              <li>TWILIO_TWIML_APP_SID (for voice)</li>
+            </ul>
+          </div>
+        `;
+      } else {
+        summaryContent.innerHTML = `
+          <div style="color: #856404; background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeeba;">
+            <strong>⚠️ Partial Configuration</strong><br>
+            Some features are configured, but not all. Please check the test results above and ensure all required environment variables are set.
+          </div>
+        `;
+      }
+
+      btn.disabled = false;
+    }
+
+    // Auto-run tests on page load
+    window.addEventListener('load', () => {
+      setTimeout(runTests, 500);
+    });
+  </script>
+</body>
+</html>
