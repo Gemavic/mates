@@ -1,6 +1,7 @@
 import React from 'react';
 import { Heart, Search, User, Settings, Newspaper, Mail, Users, MessageCircle, MessageSquare, CreditCard, BookOpen, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { MessageChatBox } from './MessageChatBox';
+import { CategoryNavigation } from './CategoryNavigation';
 import { cn } from '@/lib/utils';
 
 interface FooterProps {
@@ -55,9 +56,30 @@ export const Footer: React.FC<FooterProps> = ({
         "safe-area-inset-bottom",
         className
       )}>
+        <style>
+          {`
+            @keyframes slideRightToLeft {
+              0% {
+                transform: translateX(0%);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+
+            .animate-scroll-tabs {
+              animation: slideRightToLeft 10s linear infinite;
+            }
+
+            .animate-scroll-tabs:hover {
+              animation-play-state: paused;
+            }
+          `}
+        </style>
         <div className="w-full max-w-md mx-auto lg:max-w-full px-1 sm:px-2 lg:px-4">
-          <div className="flex justify-around py-1.5 sm:py-2 md:py-3 px-1 sm:px-2 md:px-4">
-          {tabs.map((tab) => {
+          <div className="overflow-hidden">
+            <div className="flex gap-2 py-1.5 sm:py-2 md:py-3 px-1 sm:px-2 md:px-4 animate-scroll-tabs">
+          {[...tabs, ...tabs].map((tab, index) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
             
@@ -72,17 +94,17 @@ export const Footer: React.FC<FooterProps> = ({
             
             return (
               <button
-                key={tab.id}
+                key={`${tab.id}-${index}`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   handleTabClick(tab);
                 }}
                 className={cn(
-                  "flex flex-col items-center py-1 sm:py-2 px-1 sm:px-2 md:px-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation min-w-0",
+                  "flex-shrink-0 flex flex-col items-center py-1 sm:py-2 px-1 sm:px-2 md:px-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation min-w-0",
                   "cursor-pointer select-none user-select-none",
-                  isActive 
-                    ? 'text-white bg-pink-500 shadow-lg transform scale-105' 
+                  isActive
+                    ? 'text-white bg-pink-500 shadow-lg transform scale-105'
                     : 'text-gray-600 hover:text-pink-600 hover:bg-pink-50/80'
                 )}
                 type="button"
@@ -104,8 +126,14 @@ export const Footer: React.FC<FooterProps> = ({
             );
           })}
           </div>
+          </div>
         </div>
-        
+
+        {/* Category Navigation - All Screens */}
+        <div className="bg-gradient-to-br from-pink-50 to-purple-50 py-3 px-3 sm:px-4 border-t border-gray-200">
+          <CategoryNavigation onNavigate={onNavigate} />
+        </div>
+
         {/* Comprehensive Footer - Mobile */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-4 sm:py-5 px-3 sm:px-4 border-t border-gray-200 lg:hidden">
           <div className="max-w-md mx-auto space-y-4">
