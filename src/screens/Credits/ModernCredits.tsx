@@ -269,7 +269,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
               </div>
 
               {/* Subscription Tier Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                 {subscriptionTiers.map((tier) => {
                   const Icon = getTierIcon(tier.tier_name);
                   const gradient = getTierGradient(tier.tier_name);
@@ -305,14 +305,14 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                           <Icon className="w-8 h-8 text-white" />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-1">{tier.display_name}</h3>
-                        <p className="text-gray-600 text-sm mb-3">{tier.description}</p>
-                        <div className="flex items-center justify-center space-x-2">
-                          <span className="text-3xl font-bold text-gray-900">${formatPrice(price)}</span>
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{tier.description}</p>
+                        <div className="flex items-center justify-center space-x-1">
+                          <span className="text-3xl font-bold text-gray-900">{formatPrice(price)}</span>
                           <span className="text-sm text-gray-600">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
                         </div>
                         {billingPeriod === 'annual' && (
                           <p className="text-sm text-green-600 font-medium mt-1">
-                            Save ${(parseFloat(tier.monthly_price_usd) * 12 - price).toFixed(2)}/year
+                            Save {formatPrice(parseFloat(tier.monthly_price_usd) * 12 - price)}/year
                           </p>
                         )}
                       </div>
@@ -344,7 +344,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                         ) : (
                           <>
                             <ShoppingCart className="w-4 h-4 mr-2" />
-                            Subscribe ${formatPrice(price)}
+                            Subscribe {formatPrice(price)}
                           </>
                         )}
                       </Button>
@@ -430,7 +430,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                         type="button"
                       >
                         <ShoppingCart className="w-4 h-4 mr-2" />
-                        Buy ${formatPrice(pkg.price_usd)}
+                        Buy {formatPrice(pkg.price_usd)}
                       </Button>
                     </ModernCard>
                   );
