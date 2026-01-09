@@ -6,7 +6,7 @@ import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
-import { QuickActionCTA } from '@/components/QuickActionCTA';
+import { QuickNavigation } from '@/components/QuickNavigation';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { FeatureLimitBanner, GracePeriodBanner } from '@/components/FeatureLimitBanner';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -387,8 +387,8 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         {/* Mobile View */}
         <div className="lg:hidden">
           <div className="p-2 sm:p-4 space-y-3 sm:space-y-4 pt-16 pb-20">
-            {/* Quick Action CTAs */}
-            <QuickActionCTA onNavigate={onNavigate} />
+            {/* Quick Navigation */}
+            <QuickNavigation onNavigate={onNavigate} />
 
             {/* Subscription Banners */}
             {isFreeTier && daysRemaining > 0 && (
@@ -461,9 +461,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         {/* Desktop View */}
         <div className="hidden lg:block">
           <div className="p-4 lg:p-6 pt-20">
-            {/* Quick Action CTAs - Desktop */}
+            {/* Quick Navigation - Desktop */}
             <div className="mb-6">
-              <QuickActionCTA onNavigate={onNavigate} />
+              <QuickNavigation onNavigate={onNavigate} />
             </div>
 
             {/* View Mode Toggle */}

@@ -109,50 +109,36 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Comprehensive Footer - Mobile */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-4 sm:py-5 px-3 sm:px-4 border-t border-gray-200 lg:hidden">
           <div className="max-w-md mx-auto space-y-4">
-            {/* Key Navigation Links */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-              <button
-                onClick={(e) => { e.preventDefault(); onNavigate('welcome'); }}
-                className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
-                type="button"
-              >
-                About
-              </button>
-              <button
-                onClick={(e) => { e.preventDefault(); onNavigate('help'); }}
-                className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
-                type="button"
-              >
-                Contact
-              </button>
-              <button
-                onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }}
-                className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
-                type="button"
-              >
-                Blog
-              </button>
-              <button
-                onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }}
-                className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
-                type="button"
-              >
-                Privacy Policy
-              </button>
-              <button
-                onClick={(e) => { e.preventDefault(); onNavigate('terms'); }}
-                className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
-                type="button"
-              >
-                Terms of Service
-              </button>
-              <button
-                onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }}
-                className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left"
-                type="button"
-              >
-                Disclaimer
-              </button>
+            {/* Grouped Navigation Links */}
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xs font-bold text-gray-800 mb-2">Features</h4>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('credits'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Buy Credits</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('gift-shop'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Gift Shop</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('relationship-services'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Services</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Help & FAQs</button>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="text-xs font-bold text-gray-800 mb-2">Education</h4>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('education'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Tips & Advice</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Blog</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('quizzes'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Quizzes</button>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="text-xs font-bold text-gray-800 mb-2">About Us</h4>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('terms'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Terms</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Privacy</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Disclaimer</button>
+                  <button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-gray-700 hover:text-pink-600 font-medium transition-colors text-left" type="button">Contact Us</button>
+                </div>
+              </div>
             </div>
 
             {/* Social Media Links */}
@@ -194,124 +180,70 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Comprehensive Footer - Desktop */}
         <div className="hidden lg:block bg-gradient-to-br from-gray-50 to-gray-100 py-6 px-6 border-t border-gray-200">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-4 gap-8 mb-6">
-              {/* Company */}
+            <div className="grid grid-cols-5 gap-6 mb-6">
+              {/* User Profile */}
               <div>
                 <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                  <Heart className="w-4 h-4 mr-2 text-pink-600" fill="currentColor" />
-                  Company
+                  <Users className="w-4 h-4 mr-2 text-pink-600" />
+                  User Profile
                 </h4>
                 <ul className="space-y-2">
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('welcome'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      About Us
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Blog
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('help'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Contact Us
-                    </button>
-                  </li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('browse-profiles'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Browse All</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('matches'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">My Matches</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('likes'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Likes</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('match-suitor'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">VIP Matching</button></li>
                 </ul>
               </div>
 
-              {/* Legal */}
+              {/* Media & Calls */}
               <div>
-                <h4 className="font-bold text-gray-800 mb-3">Legal</h4>
+                <h4 className="font-bold text-gray-800 mb-3">Media & Calls</h4>
                 <ul className="space-y-2">
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Privacy Policy
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('terms'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Terms of Service
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Disclaimer
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('dispute'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Dispute Resolution
-                    </button>
-                  </li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('matches'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Chat</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('mail'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Messages</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('audio-chat'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Audio</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('video-chat'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Video</button></li>
                 </ul>
               </div>
 
-              {/* Support */}
+              {/* Education */}
               <div>
-                <h4 className="font-bold text-gray-800 mb-3">Support</h4>
+                <h4 className="font-bold text-gray-800 mb-3">Education</h4>
                 <ul className="space-y-2">
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('help'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Help Center
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onNavigate('feedback'); }}
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                      type="button"
-                    >
-                      Feedback
-                    </button>
-                  </li>
-                  <li>
-                    <a
-                      href="tel:+1-289-270-9919"
-                      className="text-sm text-gray-600 hover:text-pink-600 transition-colors"
-                    >
-                      Phone Support
-                    </a>
-                  </li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('education'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Tips & Advice</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('care-blog'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Blog</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('quizzes'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Quizzes</button></li>
                 </ul>
               </div>
 
-              {/* Connect */}
+              {/* Features */}
               <div>
-                <h4 className="font-bold text-gray-800 mb-3">Connect With Us</h4>
-                <div className="flex space-x-3 mb-4">
+                <h4 className="font-bold text-gray-800 mb-3">Features</h4>
+                <ul className="space-y-2">
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('credits'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Buy Credits</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('gift-shop'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Gift Shop</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('relationship-services'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Services</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Help & FAQs</button></li>
+                </ul>
+              </div>
+
+              {/* About Us */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-3">About Us</h4>
+                <ul className="space-y-2">
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('terms'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Terms</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('privacy'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Privacy</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('disclaimer'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Disclaimer</button></li>
+                  <li><button onClick={(e) => { e.preventDefault(); onNavigate('help'); }} className="text-sm text-gray-600 hover:text-pink-600 transition-colors" type="button">Contact Us</button></li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Social & Support */}
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
                   {socialLinks.map((social) => {
                     const Icon = social.icon;
                     return (
@@ -326,21 +258,23 @@ export const Footer: React.FC<FooterProps> = ({
                     );
                   })}
                 </div>
-                <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg px-4 py-3 mt-2">
-                  <p className="text-xs text-white/90 mb-1">Need Help?</p>
-                  <a
-                    href="tel:+1-289-270-9919"
-                    className="flex items-center space-x-1 text-white hover:text-white/80 transition-colors"
-                  >
-                    <span className="text-sm">📞</span>
-                    <span className="text-sm font-bold">1-289-270-9919</span>
-                  </a>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="text-xs text-gray-600 mb-1">Need Help?</p>
+                    <a
+                      href="tel:+1-289-270-9919"
+                      className="flex items-center space-x-1 text-pink-600 hover:text-pink-700 transition-colors"
+                    >
+                      <span className="text-sm">📞</span>
+                      <span className="text-sm font-bold">1-289-270-9919</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Bottom Bar */}
-            <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="pt-4 border-t border-gray-200 mt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">© 2025 Dates. All rights reserved.</p>
               <div className="flex items-center space-x-2">
                 <Heart className="w-3 h-3 text-pink-600" fill="currentColor" />
