@@ -386,7 +386,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       <div className="flex-1 overflow-hidden min-h-screen">
         {/* Mobile View */}
         <div className="lg:hidden">
-          <div className="p-2 sm:p-3 space-y-2 pt-16 pb-20">
+          <div className="p-2 sm:p-3 space-y-2 pt-2 pb-20">
             {/* Category Navigation - Top Position */}
             <CategoryNavigation onNavigate={onNavigate} />
 
