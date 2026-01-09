@@ -388,11 +388,11 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         {/* Mobile View */}
         <div className="lg:hidden">
           <div className="p-2 sm:p-4 space-y-3 sm:space-y-4 pt-16 pb-20">
+            {/* Category Navigation - Top Position */}
+            <CategoryNavigation onNavigate={onNavigate} />
+
             {/* Quick Navigation */}
             <QuickNavigation onNavigate={onNavigate} />
-
-            {/* Category Navigation - 5 Groups */}
-            <CategoryNavigation onNavigate={onNavigate} />
 
             {/* Subscription Banners */}
             {isFreeTier && daysRemaining > 0 && (
@@ -465,14 +465,14 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         {/* Desktop View */}
         <div className="hidden lg:block">
           <div className="p-4 lg:p-6 pt-20">
+            {/* Category Navigation - Top Position */}
+            <div className="mb-6 max-w-full">
+              <CategoryNavigation onNavigate={onNavigate} />
+            </div>
+
             {/* Quick Navigation - Desktop */}
             <div className="mb-6">
               <QuickNavigation onNavigate={onNavigate} />
-            </div>
-
-            {/* Category Navigation - 5 Groups */}
-            <div className="mb-6 max-w-2xl mx-auto">
-              <CategoryNavigation onNavigate={onNavigate} />
             </div>
 
             {/* View Mode Toggle */}
