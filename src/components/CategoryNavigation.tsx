@@ -35,33 +35,32 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
     { label: 'Contact Us', route: 'help', icon: Mail, color: 'bg-zinc-500', hoverColor: 'hover:bg-zinc-600' },
   ];
 
+  const duplicatedButtons = [...navigationButtons, ...navigationButtons];
+
   return (
     <div className={cn('w-full overflow-hidden', className)}>
       <style>
         {`
-          @keyframes slideBackAndForth {
+          @keyframes slideRightToLeft {
             0% {
               transform: translateX(0%);
             }
-            50% {
-              transform: translateX(-30%);
-            }
             100% {
-              transform: translateX(0%);
+              transform: translateX(-50%);
             }
           }
 
-          .animate-slide {
-            animation: slideBackAndForth 20s ease-in-out infinite;
+          .animate-scroll {
+            animation: slideRightToLeft 40s linear infinite;
           }
 
-          .animate-slide:hover {
+          .animate-scroll:hover {
             animation-play-state: paused;
           }
         `}
       </style>
-      <div className="flex gap-3 pb-4 animate-slide">
-        {navigationButtons.map((button, index) => {
+      <div className="flex gap-3 pb-4 animate-scroll">
+        {duplicatedButtons.map((button, index) => {
           const Icon = button.icon;
           return (
             <button
