@@ -6,7 +6,6 @@ import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
-import { QuickNavigation } from '@/components/QuickNavigation';
 import { CategoryNavigation } from '@/components/CategoryNavigation';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { FeatureLimitBanner, GracePeriodBanner } from '@/components/FeatureLimitBanner';
@@ -391,9 +390,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
             {/* Category Navigation - Top Position */}
             <CategoryNavigation onNavigate={onNavigate} />
 
-            {/* Quick Navigation */}
-            <QuickNavigation onNavigate={onNavigate} />
-
             {/* Subscription Banners */}
             {isFreeTier && daysRemaining > 0 && (
               <GracePeriodBanner
@@ -468,11 +464,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
             {/* Category Navigation - Top Position */}
             <div className="mb-6 max-w-full">
               <CategoryNavigation onNavigate={onNavigate} />
-            </div>
-
-            {/* Quick Navigation - Desktop */}
-            <div className="mb-6">
-              <QuickNavigation onNavigate={onNavigate} />
             </div>
 
             {/* View Mode Toggle */}
