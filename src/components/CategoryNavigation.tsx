@@ -36,8 +36,31 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
   ];
 
   return (
-    <div className={cn('w-full', className)}>
-      <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
+    <div className={cn('w-full overflow-hidden', className)}>
+      <style>
+        {`
+          @keyframes slideBackAndForth {
+            0% {
+              transform: translateX(0%);
+            }
+            50% {
+              transform: translateX(-30%);
+            }
+            100% {
+              transform: translateX(0%);
+            }
+          }
+
+          .animate-slide {
+            animation: slideBackAndForth 20s ease-in-out infinite;
+          }
+
+          .animate-slide:hover {
+            animation-play-state: paused;
+          }
+        `}
+      </style>
+      <div className="flex gap-3 pb-4 animate-slide">
         {navigationButtons.map((button, index) => {
           const Icon = button.icon;
           return (
@@ -45,7 +68,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
               key={index}
               onClick={() => onNavigate(button.route)}
               className={cn(
-                'flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl text-white font-semibold shadow-lg transition-all duration-200 snap-start',
+                'flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl text-white font-semibold shadow-lg transition-all duration-200',
                 button.color,
                 button.hoverColor,
                 'hover:scale-105 active:scale-95'
