@@ -386,9 +386,28 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       <div className="flex-1 overflow-hidden min-h-screen">
         {/* Mobile View */}
         <div className="lg:hidden">
-          <div className="p-2 sm:p-4 space-y-3 sm:space-y-4 pt-16 pb-20">
+          <div className="p-2 sm:p-3 space-y-2 pt-16 pb-20">
             {/* Category Navigation - Top Position */}
             <CategoryNavigation onNavigate={onNavigate} />
+
+            {/* Compact Balance Display */}
+            <div className="flex items-center justify-between bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 text-white">
+              <div className="flex items-center gap-2">
+                <p className="text-xs opacity-90">Balance:</p>
+                <p className="text-sm font-bold">{formatCredits(userBalance)}</p>
+              </div>
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('credits');
+                }}
+                className="bg-white/20 text-white hover:bg-white/30 text-xs px-3 py-1 h-auto cursor-pointer touch-manipulation active:scale-95 transition-all duration-200"
+                type="button"
+              >
+                <CreditCard className="w-3 h-3 mr-1 flex-shrink-0" />
+                Buy
+              </Button>
+            </div>
 
             {/* Subscription Banners */}
             {isFreeTier && daysRemaining > 0 && (
@@ -411,25 +430,8 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               </>
             )}
 
-            {/* Balance Display */}
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 sm:p-4 text-white text-center">
-              <p className="text-xs sm:text-sm opacity-90">Your Balance</p>
-              <p className="text-lg sm:text-xl font-bold">{formatCredits(userBalance)}</p>
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigate('credits');
-                }}
-                className="mt-2 bg-white/20 text-white hover:bg-white/30 text-xs sm:text-sm px-3 sm:px-4 py-1 cursor-pointer touch-manipulation active:scale-95 transition-all duration-200"
-                type="button"
-              >
-                <CreditCard className="w-3 h-3 mr-1 flex-shrink-0" />
-                Buy More
-              </Button>
-            </div>
-
             {/* Swipe Card */}
-            <div className="flex justify-center px-1 sm:px-2">
+            <div className="flex justify-center px-1 sm:px-2 pt-2">
               {profiles.length === 0 && !loading ? (
                 <EmptyState
                   message="No profiles available at the moment"

@@ -26,8 +26,8 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
   ];
 
   return (
-    <div className={cn('w-full overflow-x-auto', className)}>
-      <div className="flex gap-3 pb-4">
+    <div className={cn('w-full overflow-x-auto scrollbar-hide', className)}>
+      <div className="flex gap-2 pb-2">
         {navigationButtons.map((button, index) => {
           const Icon = button.icon;
           return (
@@ -35,14 +35,14 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
               key={index}
               onClick={() => onNavigate(button.route)}
               className={cn(
-                'flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl text-white font-semibold shadow-lg transition-all duration-200',
+                'flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-sm font-semibold shadow-md transition-all duration-200',
                 button.color,
                 button.hoverColor,
                 'hover:scale-105 active:scale-95'
               )}
               type="button"
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
               <span className="whitespace-nowrap">{button.label}</span>
             </button>
           );
