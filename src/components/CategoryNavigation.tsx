@@ -14,6 +14,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
       title: 'User Profile',
       icon: Users,
       color: 'from-blue-500 to-blue-600',
+      headerRoute: 'browse-profiles',
       items: [
         { label: 'Browse ALL', route: 'browse-profiles' },
         { label: 'My Matches', route: 'matches' },
@@ -26,6 +27,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
       title: 'Media/Calls',
       icon: Phone,
       color: 'from-purple-500 to-purple-600',
+      headerRoute: 'likes',
       items: [
         { label: 'Chat', route: 'matches' },
         { label: 'Message', route: 'mail' },
@@ -38,6 +40,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
       title: 'Educators',
       icon: BookOpen,
       color: 'from-green-500 to-green-600',
+      headerRoute: 'education',
       items: [
         { label: 'Education', route: 'education' },
         { label: 'Blogs', route: 'care-blog' },
@@ -50,6 +53,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
       title: 'Features',
       icon: CreditCard,
       color: 'from-amber-500 to-amber-600',
+      headerRoute: 'credits',
       items: [
         { label: 'Buy Credits', route: 'credits' },
         { label: 'Gift Shop', route: 'gift-shop' },
@@ -62,6 +66,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
       title: 'About US',
       icon: Shield,
       color: 'from-slate-500 to-slate-600',
+      headerRoute: 'terms',
       items: [
         { label: 'Terms', route: 'terms' },
         { label: 'Privacy', route: 'privacy' },
@@ -83,13 +88,17 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
               key={category.id}
               className="flex-shrink-0 w-[160px] bg-white/10 backdrop-blur-sm rounded-xl p-3 snap-start"
             >
-              {/* Category Header */}
-              <div className="flex flex-col items-center mb-3">
+              {/* Category Header - Clickable */}
+              <button
+                onClick={() => onNavigate(category.headerRoute)}
+                className="flex flex-col items-center mb-3 w-full hover:scale-105 transition-transform cursor-pointer"
+                type="button"
+              >
                 <div className={cn('w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center mb-2', category.color)}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="text-white font-bold text-xs text-center">{category.title}</h3>
-              </div>
+              </button>
 
               {/* Category Items */}
               <div className="space-y-1">
@@ -124,13 +133,17 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
               key={category.id}
               className="bg-white/10 backdrop-blur-sm rounded-xl p-4"
             >
-              {/* Category Header */}
-              <div className="flex flex-col items-center mb-4">
+              {/* Category Header - Clickable */}
+              <button
+                onClick={() => onNavigate(category.headerRoute)}
+                className="flex flex-col items-center mb-4 w-full hover:scale-105 transition-transform cursor-pointer"
+                type="button"
+              >
                 <div className={cn('w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center mb-2', category.color)}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-white font-bold text-sm text-center">{category.title}</h3>
-              </div>
+              </button>
 
               {/* Category Items */}
               <div className="space-y-2">
