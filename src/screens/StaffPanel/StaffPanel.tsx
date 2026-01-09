@@ -109,10 +109,40 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
         return;
       }
 
-      // Award credits using database function
       const { supabaseClient } = await import('@/lib/supabase');
+
+      // Check if input is an email address or UUID
+      let userId = selectedUserId.trim();
+      const isEmail = userId.includes('@');
+
+      if (isEmail) {
+        // Look up user_id from email
+        const { data: userData, error: lookupError } = await supabaseClient
+          .from('user_profiles')
+          .select('user_id')
+          .eq('email', userId)
+          .maybeSingle();
+
+        if (lookupError || !userData) {
+          // Try auth.users table as fallback
+          const { data: authData, error: authError } = await supabaseClient.rpc('get_user_id_by_email', {
+            p_email: userId
+          });
+
+          if (authError || !authData) {
+            alert(`User not found with email: ${userId}`);
+            return;
+          }
+
+          userId = authData;
+        } else {
+          userId = userData.user_id;
+        }
+      }
+
+      // Award credits using database function
       const { data, error } = await supabaseClient.rpc('add_credits_atomic', {
-        p_user_id: selectedUserId,
+        p_user_id: userId,
         p_amount: amount,
         p_credit_type: 'complimentary',
         p_description: `Staff Award: ${creditReason}`,
@@ -121,7 +151,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
 
       if (error) {
         console.error('Error awarding credits:', error);
-        alert('Failed to award credits. Please try again.');
+        alert(`Failed to award credits: ${error.message || 'Please try again.'}`);
         return;
       }
 
@@ -131,15 +161,15 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
         return;
       }
 
-      alert(`✅ Awarded ${amount} credits to user ${selectedUserId}\nNew balance: ${result.new_balance} credits`);
+      alert(`✅ Awarded ${amount} credits!\nUser: ${isEmail ? selectedUserId : userId}\nNew balance: ${result.new_balance} credits`);
 
       // Reset form
       setSelectedUserId('');
       setCreditAmount('');
       setCreditReason('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error awarding credits:', error);
-      alert('Failed to award credits. Please try again.');
+      alert(`Failed to award credits: ${error.message || 'Please try again.'}`);
     }
   };
 
@@ -480,15 +510,15 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-white font-medium mb-2">User ID</label>
+                    <label className="block text-white font-medium mb-2">User ID or Email</label>
                     <Input
                       value={selectedUserId}
                       onChange={(e) => setSelectedUserId(e.target.value)}
-                      placeholder="Enter user ID (e.g., current-user)"
+                      placeholder="Enter email (e.g., user@example.com) or user ID"
                       className="bg-white/20 text-white placeholder-white/50 border-white/30"
                     />
                     <p className="text-white/60 text-xs mt-1">
-                      💡 Use the search in Users tab to quickly find and select users
+                      💡 You can enter either an email address or a user ID. Use the Users tab to search and select users.
                     </p>
                   </div>
                   
