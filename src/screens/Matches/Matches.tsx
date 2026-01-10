@@ -2,6 +2,8 @@ import React from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
+import { MessageChatBox } from '@/components/MessageChatBox';
+import { QuickNavBar } from '@/components/QuickNavBar';
 import { MessageCircle, Heart, Mail as MailIcon, User, Users, Newspaper, MessageSquare, CreditCard } from 'lucide-react';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +35,7 @@ interface MatchesProps {
 export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [matches, setMatches] = React.useState<Match[]>([]);
+  const [selectedUser, setSelectedUser] = React.useState<SelectedChatUser | null>(null);
   const { user } = useAuth();
 
   React.useEffect(() => {
@@ -174,12 +177,14 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
                     onClick={(e) => {
                       e.preventDefault();
                       // Select this user for chat
+                      const chatUser = {
+                        id: match.id,
+                        name: match.name,
+                        image: match.image
+                      };
+                      setSelectedUser(chatUser);
                       if (onSelectChatUser) {
-                        onSelectChatUser({
-                          id: match.id,
-                          name: match.name,
-                          image: match.image
-                        });
+                        onSelectChatUser(chatUser);
                       }
                     }}
                   >
@@ -217,7 +222,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Dates</h1>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Chat</h1>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="relative">
@@ -259,10 +264,26 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
           </div>
         </div>
 
+        {/* Quick Navigation Bar */}
+        <QuickNavBar
+          onNavigate={onNavigate}
+          activeScreen="matches"
+        />
+
         {/* Messages List */}
         <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 smooth-scroll">
           {renderContent()}
         </div>
+
+        {/* Message Chat Box */}
+        {selectedUser && (
+          <MessageChatBox
+            selectedUserId={selectedUser.id}
+            selectedUserName={selectedUser.name}
+            selectedUserImage={selectedUser.image}
+            onNavigate={onNavigate}
+          />
+        )}
 
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 w-full max-w-xs sm:max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-white/20 shadow-lg lg:max-w-2xl safe-area-inset-bottom">
