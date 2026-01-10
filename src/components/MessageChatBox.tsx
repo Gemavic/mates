@@ -812,9 +812,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     if (!thread) return null;
 
     return (
-      <div className="h-screen w-screen flex flex-col min-h-0 overflow-hidden">
+      <div className="h-full flex flex-col">
         {/* Chat Header */}
-        <div className="w-full p-3 sm:p-4 border-b border-pink-200 bg-gradient-to-r from-pink-500 to-pink-400 flex-shrink-0">
+        <div className="p-3 sm:p-4 border-b border-pink-200 bg-gradient-to-r from-pink-500 to-pink-400 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1">
               <button
@@ -875,7 +875,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         </div>
 
         {/* Messages */}
-        <div className="w-full flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-100 to-pink-200 min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-100 to-pink-200 min-h-0">
           {/* Today Label */}
           <div className="flex justify-center my-6">
             <div className="bg-pink-400/80 text-white px-6 py-2 rounded-full text-sm font-medium shadow-md">
@@ -968,7 +968,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         </div>
 
         {/* Input Area */}
-        <div className="w-full p-4 border-t border-pink-200 bg-pink-50 flex-shrink-0">
+        <div className="p-4 border-t border-pink-200 bg-pink-50 flex-shrink-0">
           {/* Emoji Picker */}
           {showEmojiPicker && (
             <div className="mb-3 bg-white rounded-lg p-3 border border-pink-300">
@@ -1044,7 +1044,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         </div>
 
         {/* Gift Bar - Bottom */}
-        <div className="w-full border-t border-pink-200 bg-pink-50 flex-shrink-0">
+        <div className="border-t border-pink-200 bg-pink-50 flex-shrink-0">
           <div className="flex items-center justify-between px-2 py-3 overflow-x-auto">
             <div className="flex items-center space-x-4">
               <button onClick={() => sendGift(quickGifts[0])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
@@ -1113,33 +1113,15 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
       {/* Chat Window */}
       {isOpen && (
-        <div
-          className={
-            activeThread
-              ? "fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999] bg-pink-50 shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
-              : cn(
-                  "fixed z-[9999]",
-                  "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px]",
-                  "left-1/2 transform -translate-x-1/2",
-                  "w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px] max-w-[600px]",
-                  "h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px]",
-                  "rounded-2xl border-2 border-pink-400",
-                  "bg-pink-50 shadow-2xl overflow-hidden flex flex-col",
-                  "animate-slide-up pointer-events-auto"
-                )
-          }
-          style={activeThread ? {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            maxWidth: '100vw',
-            maxHeight: '100vh'
-          } : undefined}
-        >
+        <div className={cn(
+          "fixed z-[9999]",
+          activeThread
+            ? "inset-0 w-full h-full"
+            : "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px] left-1/2 transform -translate-x-1/2 w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px] max-w-[600px] h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px] rounded-2xl",
+          "bg-pink-50 shadow-2xl overflow-hidden flex flex-col",
+          activeThread ? "border-0" : "border-2 border-pink-400",
+          "animate-slide-up pointer-events-auto"
+        )}>
           {activeThread ? renderChatView() : renderThreadList()}
         </div>
       )}
