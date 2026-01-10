@@ -281,7 +281,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
             selectedUserId={selectedUser.id}
             selectedUserName={selectedUser.name}
             selectedUserImage={selectedUser.image}
-            onNavigate={onNavigate}
           />
         )}
 
