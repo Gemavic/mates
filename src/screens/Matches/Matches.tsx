@@ -36,9 +36,14 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   const [isLoading, setIsLoading] = React.useState(true);
   const [matches, setMatches] = React.useState<Match[]>([]);
   const [selectedUser, setSelectedUser] = React.useState<SelectedChatUser | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
   const { user } = useAuth();
 
+  console.log('[Matches] Component rendering, user:', user?.id);
+
   React.useEffect(() => {
+    console.log('[Matches] useEffect running');
+
     const loadConversations = async () => {
       if (!user?.id) {
         setIsLoading(false);
@@ -110,6 +115,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         }
       } catch (error) {
         console.error('Error loading conversations:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load conversations');
       } finally {
         setIsLoading(false);
       }
@@ -119,6 +125,16 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   }, [user?.id]);
 
   const renderContent = () => {
+    if (error) {
+      return (
+        <div className="p-3 sm:p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 text-sm">Error: {error}</p>
+          </div>
+        </div>
+      );
+    }
+
     if (isLoading) {
       return (
         <div className="p-3 sm:p-4">
@@ -126,7 +142,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         </div>
       );
     }
-    
+
     if (matches.length === 0) {
       return (
         <EmptyState
