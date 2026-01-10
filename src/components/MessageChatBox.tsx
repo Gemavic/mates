@@ -213,7 +213,17 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   // Load messages when a thread is selected
   useEffect(() => {
     const loadMessages = async () => {
-      if (!activeThread || !user) return;
+      if (!activeThread || !user) {
+        console.log('⚠️ Cannot load messages - activeThread:', activeThread, 'user:', user?.id);
+        return;
+      }
+
+      // Skip loading for temporary threads
+      if (activeThread.startsWith('temp-')) {
+        console.log('📝 Temporary thread - no messages to load yet');
+        setMessages([]);
+        return;
+      }
 
       try {
         console.log('📨 Loading messages for thread:', activeThread);
@@ -225,7 +235,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           .eq('thread_id', activeThread)
           .order('created_at', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error fetching messages:', error);
+          throw error;
+        }
+
+        console.log('📬 Found', messagesData?.length || 0, 'messages in database for thread:', activeThread);
 
         // Get all unique sender IDs
         const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
@@ -308,15 +323,45 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
   // Update chat threads when selected user changes
   useEffect(() => {
-    if (selectedUserId && selectedUserName && selectedUserImage) {
-      setChatThreads(getInitialThreads());
-      setMessages(getInitialMessages());
-      setActiveThread(`thread-${selectedUserId}`);
-      setIsOpen(true);
-    } else if (defaultThreads.length > 0 && chatThreads.length === 0) {
-      setChatThreads(defaultThreads);
-    }
-  }, [selectedUserId, selectedUserName, selectedUserImage, defaultThreads]);
+    const loadSelectedUserThread = async () => {
+      if (selectedUserId && selectedUserName && selectedUserImage && user) {
+        console.log('🔍 Finding thread for selected user:', selectedUserId);
+
+        // Try to find existing thread with this user
+        const threads = await MessagingManager.getMailThreads(user.id);
+        const existingThread = threads?.find((t: any) =>
+          t.participant1_id === selectedUserId || t.participant2_id === selectedUserId
+        );
+
+        if (existingThread) {
+          console.log('✅ Found existing thread:', existingThread.id);
+          // Load this thread
+          setActiveThread(existingThread.id);
+          setIsOpen(true);
+        } else {
+          console.log('📝 No existing thread found, will create on first message');
+          // Create a temporary thread for UI
+          const tempThread: ChatThread = {
+            id: `temp-${selectedUserId}`,
+            participantId: selectedUserId,
+            participantName: selectedUserName,
+            participantImage: selectedUserImage,
+            unreadCount: 0,
+            isOnline: true,
+            isTyping: false
+          };
+          setChatThreads([tempThread]);
+          setActiveThread(tempThread.id);
+          setMessages([]);
+          setIsOpen(true);
+        }
+      } else if (defaultThreads.length > 0 && chatThreads.length === 0) {
+        setChatThreads(defaultThreads);
+      }
+    };
+
+    loadSelectedUserThread();
+  }, [selectedUserId, selectedUserName, selectedUserImage, user, defaultThreads]);
 
   // Quick gift items for chat
   const quickGifts: GiftItem[] = [
@@ -769,14 +814,18 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     return (
       <div className="h-full flex flex-col">
         {/* Chat Header */}
-        <div className="p-3 border-b border-pink-200 bg-gradient-to-r from-pink-100 to-pink-50">
+        <div className="p-3 sm:p-4 border-b border-pink-200 bg-gradient-to-r from-pink-500 to-pink-400">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1">
               <button
-                onClick={() => setActiveThread(null)}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                onClick={() => {
+                  setActiveThread(null);
+                  setIsOpen(false);
+                }}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors touch-manipulation active:scale-95"
+                aria-label="Close chat"
               >
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -784,32 +833,38 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 <img
                   src={thread.participantImage}
                   alt={thread.participantName}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white shadow-md"
                 />
                 <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
                   thread.isOnline ? 'bg-green-500' : 'bg-gray-400'
                 }`}></div>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 text-lg">{thread.participantName}</h3>
+                <h3 className="font-semibold text-white text-lg sm:text-xl">{thread.participantName}</h3>
+                <p className="text-white/80 text-sm">Active now</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowGiftPicker(!showGiftPicker)}
-                className="relative p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
+                className="relative p-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation active:scale-95"
+                aria-label="Send gift"
               >
-                <Gift className="w-6 h-6 text-orange-500 flex-shrink-0" />
-                <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white flex-shrink-0" />
+                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
               </button>
               <button
-                onClick={() => alert('Mail feature')}
-                className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
+                onClick={() => onNavigate('mail')}
+                className="p-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation active:scale-95"
+                aria-label="Send mail"
               >
-                <Mail className="w-6 h-6 text-orange-500 flex-shrink-0" />
+                <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-white flex-shrink-0" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+              <button
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation active:scale-95"
+                aria-label="More options"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <circle cx="12" cy="5" r="2"/>
                   <circle cx="12" cy="12" r="2"/>
                   <circle cx="12" cy="19" r="2"/>
@@ -828,36 +883,68 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             </div>
           </div>
 
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.senderId === (user?.id || 'demo-user') ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] ${msg.senderId === (user?.id || 'demo-user') ? 'order-2' : 'order-1'}`}>
-                <div className="flex flex-col space-y-1">
-                  <div className={`rounded-2xl p-4 shadow-md ${
-                    msg.senderId === (user?.id || 'demo-user')
-                      ? 'bg-gradient-to-br from-pink-200 to-pink-300 text-gray-800 border border-pink-400'
-                      : 'bg-white text-gray-800 border border-pink-200'
-                  }`}>
-                    <div className="flex items-center justify-center space-x-2">
-                      <span className="text-4xl">😉</span>
-                    </div>
-                    <p className="text-center text-base font-medium mt-2">{msg.message}</p>
-                  </div>
-                  <div className={`flex items-center space-x-2 px-2 ${
-                    msg.senderId === (user?.id || 'demo-user') ? 'justify-end' : 'justify-start'
-                  }`}>
-                    <p className="text-sm text-gray-600">
-                      {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                    </p>
-                    {msg.senderId === (user?.id || 'demo-user') && (
-                      <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                      </svg>
-                    )}
-                  </div>
-                </div>
-              </div>
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <MessageCircle className="w-16 h-16 text-pink-300 mb-4" />
+              <p className="text-gray-600 text-lg font-medium">No messages yet</p>
+              <p className="text-gray-500 text-sm mt-2">Start the conversation!</p>
             </div>
-          ))}
+          ) : (
+            messages.map((msg) => {
+              const isMe = msg.senderId === 'me' || msg.senderId === user?.id;
+              return (
+                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}>
+                  {/* Profile Avatar - Left side for received messages */}
+                  {!isMe && (
+                    <img
+                      src={msg.senderImage}
+                      alt={msg.senderName}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-md"
+                    />
+                  )}
+
+                  <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
+                    <div className="flex flex-col space-y-1">
+                      {/* Sender name */}
+                      <p className={`text-xs font-medium px-2 ${isMe ? 'text-right text-pink-700' : 'text-left text-gray-700'}`}>
+                        {msg.senderName}
+                      </p>
+
+                      {/* Message bubble */}
+                      <div className={`rounded-2xl p-3 sm:p-4 shadow-md ${
+                        isMe
+                          ? 'bg-gradient-to-br from-pink-400 to-pink-500 text-white'
+                          : 'bg-white text-gray-800 border border-gray-200'
+                      }`}>
+                        <p className="text-sm sm:text-base break-words">{msg.message}</p>
+                      </div>
+
+                      {/* Timestamp */}
+                      <div className={`flex items-center space-x-2 px-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <p className="text-xs text-gray-600">
+                          {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </p>
+                        {isMe && (
+                          <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profile Avatar - Right side for sent messages */}
+                  {isMe && (
+                    <img
+                      src={msg.senderImage}
+                      alt={msg.senderName}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0 border-2 border-pink-400 shadow-md"
+                    />
+                  )}
+                </div>
+              );
+            })
+          )}
           {/* Typing Indicator */}
           {thread.isTyping && (
             <div className="flex justify-start">
@@ -1028,12 +1115,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       {isOpen && (
         <div className={cn(
           "fixed z-[9999]",
-          "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px]",
-          "left-1/2 transform -translate-x-1/2",
-          "w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px]",
-          "max-w-[600px]",
-          "h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px]",
-          "bg-pink-50 rounded-2xl shadow-2xl border-2 border-pink-400 overflow-hidden",
+          activeThread
+            ? "inset-0 w-full h-full"
+            : "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px] left-1/2 transform -translate-x-1/2 w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px] max-w-[600px] h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px] rounded-2xl",
+          "bg-pink-50 shadow-2xl border-2 border-pink-400 overflow-hidden",
           "animate-slide-up pointer-events-auto"
         )}>
           {activeThread ? renderChatView() : renderThreadList()}
