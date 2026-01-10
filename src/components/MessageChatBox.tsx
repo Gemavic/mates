@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Smile, Paperclip, Image, Video, Phone, Users, Clock, Gift, Mail } from 'lucide-react';
+import { MessageCircle, X, Send, Smile, Paperclip, Image, Video, Phone, Users, Clock, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -21,7 +21,6 @@ interface MessageChatBoxProps {
   selectedUserId?: string;
   selectedUserName?: string;
   selectedUserImage?: string;
-  onNavigate?: (screen: string) => void;
 }
 
 interface ChatMessage {
@@ -51,8 +50,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   className = "",
   selectedUserId,
   selectedUserName,
-  selectedUserImage,
-  onNavigate = () => {}
+  selectedUserImage
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeThread, setActiveThread] = useState<string | null>(null);
@@ -852,13 +850,6 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               >
                 <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white flex-shrink-0" />
                 <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-              </button>
-              <button
-                onClick={() => onNavigate('mail')}
-                className="p-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation active:scale-95"
-                aria-label="Send mail"
-              >
-                <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-white flex-shrink-0" />
               </button>
               <button
                 className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors touch-manipulation active:scale-95"
