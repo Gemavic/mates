@@ -312,6 +312,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       setChatThreads(getInitialThreads());
       setMessages(getInitialMessages());
       setActiveThread(`thread-${selectedUserId}`);
+      setIsOpen(true);
     } else if (defaultThreads.length > 0 && chatThreads.length === 0) {
       setChatThreads(defaultThreads);
     }
