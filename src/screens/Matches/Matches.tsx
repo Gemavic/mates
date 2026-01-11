@@ -230,10 +230,10 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 w-full">
-      <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative">
+    <div className="fixed inset-0 bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-hidden">
+      <div className="h-full w-full max-w-xs sm:max-w-md mx-auto flex flex-col relative">
         {/* Header */}
-        <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
+        <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Chat</h1>
@@ -279,13 +279,15 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         </div>
 
         {/* Quick Navigation Bar */}
-        <QuickNavBar
-          onNavigate={onNavigate}
-          activeScreen="matches"
-        />
+        <div className="flex-shrink-0">
+          <QuickNavBar
+            onNavigate={onNavigate}
+            activeScreen="matches"
+          />
+        </div>
 
         {/* Messages List */}
-        <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 smooth-scroll">
+        <div className="flex-1 overflow-y-auto">
           {renderContent()}
         </div>
 
@@ -299,7 +301,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         )}
 
         {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 w-full max-w-xs sm:max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-white/20 shadow-lg lg:max-w-2xl safe-area-inset-bottom">
+        <div className="flex-shrink-0 w-full bg-white/95 backdrop-blur-sm border-t border-white/20 shadow-lg safe-area-inset-bottom">
           <div className="flex justify-around py-1.5 sm:py-2 px-1 sm:px-2">
             {[
               { id: 'search', icon: Users, label: 'Search', count: 0, color: 'text-gray-600' },
@@ -376,9 +378,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
               );
             })}
           </div>
-          
-          {/* Safe area padding */}
-          <div className="pb-safe-bottom"></div>
         </div>
       </div>
     </div>
