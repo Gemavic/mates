@@ -231,15 +231,10 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 relative z-0">
-      {/* TEST ELEMENT */}
-      <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-black text-center py-4 z-10">
-        MATCHES PAGE LOADED - User: {user?.id ? 'YES' : 'NO'} - Loading: {isLoading ? 'YES' : 'NO'}
-      </div>
-
-      <div className="w-full max-w-md mx-auto min-h-screen bg-transparent flex flex-col relative z-1">
+    <div className="min-h-screen w-full bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+      <div className="w-full h-full flex flex-col">
         {/* Header */}
-        <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top flex-shrink-0 mt-16">
+        <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Chat</h1>
