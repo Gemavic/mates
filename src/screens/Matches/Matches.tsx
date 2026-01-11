@@ -1,6 +1,7 @@
 import React from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { PageTransition } from '@/components/PageTransition';
 import { MessageChatBox } from '@/components/MessageChatBox';
 import { QuickNavBar } from '@/components/QuickNavBar';
 import { MessageCircle, Heart, Mail as MailIcon, User, Users, Newspaper, MessageSquare, CreditCard } from 'lucide-react';
@@ -35,15 +36,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   const [isLoading, setIsLoading] = React.useState(true);
   const [matches, setMatches] = React.useState<Match[]>([]);
   const [selectedUser, setSelectedUser] = React.useState<SelectedChatUser | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
   const { user } = useAuth();
 
-  console.log('[Matches] Component rendering, user:', user?.id);
-  console.log('[Matches] isLoading:', isLoading, 'matches:', matches.length, 'error:', error);
-
   React.useEffect(() => {
-    console.log('[Matches] useEffect running');
-
     const loadConversations = async () => {
       if (!user?.id) {
         setIsLoading(false);
@@ -115,7 +110,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         }
       } catch (error) {
         console.error('Error loading conversations:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load conversations');
       } finally {
         setIsLoading(false);
       }
@@ -125,16 +119,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   }, [user?.id]);
 
   const renderContent = () => {
-    if (error) {
-      return (
-        <div className="p-3 sm:p-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 text-sm">Error: {error}</p>
-          </div>
-        </div>
-      );
-    }
-
     if (isLoading) {
       return (
         <div className="p-3 sm:p-4">
@@ -142,7 +126,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         </div>
       );
     }
-
+    
     if (matches.length === 0) {
       return (
         <EmptyState
@@ -231,10 +215,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
-      <div className="w-full h-full flex flex-col">
+    <PageTransition direction="slide-left">
+    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-x-hidden">
+      <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative">
         {/* Header */}
-        <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top flex-shrink-0">
+        <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Chat</h1>
@@ -280,15 +265,13 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         </div>
 
         {/* Quick Navigation Bar */}
-        <div className="flex-shrink-0">
-          <QuickNavBar
-            onNavigate={onNavigate}
-            activeScreen="matches"
-          />
-        </div>
+        <QuickNavBar
+          onNavigate={onNavigate}
+          activeScreen="matches"
+        />
 
         {/* Messages List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 smooth-scroll">
           {renderContent()}
         </div>
 
@@ -298,11 +281,12 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
             selectedUserId={selectedUser.id}
             selectedUserName={selectedUser.name}
             selectedUserImage={selectedUser.image}
+            onNavigate={onNavigate}
           />
         )}
 
         {/* Bottom Navigation */}
-        <div className="flex-shrink-0 w-full bg-white/95 backdrop-blur-sm border-t border-white/20 shadow-lg safe-area-inset-bottom">
+        <div className="fixed bottom-0 left-0 right-0 w-full max-w-xs sm:max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-white/20 shadow-lg lg:max-w-2xl safe-area-inset-bottom">
           <div className="flex justify-around py-1.5 sm:py-2 px-1 sm:px-2">
             {[
               { id: 'search', icon: Users, label: 'Search', count: 0, color: 'text-gray-600' },
@@ -379,8 +363,12 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
               );
             })}
           </div>
+          
+          {/* Safe area padding */}
+          <div className="pb-safe-bottom"></div>
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 };
