@@ -1,7 +1,6 @@
 import React from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
-import { PageTransition } from '@/components/PageTransition';
 import { MessageChatBox } from '@/components/MessageChatBox';
 import { QuickNavBar } from '@/components/QuickNavBar';
 import { MessageCircle, Heart, Mail as MailIcon, User, Users, Newspaper, MessageSquare, CreditCard } from 'lucide-react';
@@ -231,8 +230,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
   };
 
   return (
-    <PageTransition direction="slide-left">
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 w-full">
       <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative">
         {/* Header */}
         <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
@@ -384,6 +382,5 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, onSelectChatUser }
         </div>
       </div>
     </div>
-    </PageTransition>
   );
 };
