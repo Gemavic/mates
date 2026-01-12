@@ -502,263 +502,283 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
   if (selectedThread && activeThreadData) {
     return (
       <PageTransition direction="slide-left">
-        <div className="min-h-screen bg-gray-50">
-          <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-            <div className="px-4 py-3 flex items-center gap-3">
-              <button
-                onClick={() => setSelectedThread(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
-              </button>
+        <Layout
+          title={activeThreadData.participantName}
+          onBack={() => setSelectedThread(null)}
+          showClose={false}
+          showFooter={false}
+          showQuickNav={false}
+          activeTab="mail"
+          onNavigate={onNavigate}
+        >
+          <div className="min-h-screen bg-gray-50">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+              <div className="px-4 py-3 flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedThread(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-700" />
+                </button>
 
-              <div className="relative">
-                <img
-                  src={activeThreadData.participantImage}
-                  alt={activeThreadData.participantName}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                {activeThreadData.isOnline && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                )}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-gray-900">{activeThreadData.participantName}</h2>
-                  {activeThreadData.isVerified && (
-                    <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
+                <div className="relative">
+                  <img
+                    src={activeThreadData.participantImage}
+                    alt={activeThreadData.participantName}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  {activeThreadData.isOnline && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                   )}
                 </div>
-                <p className="text-xs text-gray-500">{activeThreadData.isOnline ? 'Online' : `Age ${activeThreadData.participantAge}`}</p>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900">{activeThreadData.participantName}</h2>
+                    {activeThreadData.isVerified && (
+                      <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">{activeThreadData.isOnline ? 'Online' : `Age ${activeThreadData.participantAge}`}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="px-4 py-6 space-y-4 pb-32">
-            {currentMessages.map((message) => {
-              const isMe = message.senderId === user?.id;
-              return (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex gap-2",
-                    isMe ? 'justify-end' : 'justify-start'
-                  )}
-                >
-                  {!isMe && (
-                    <img
-                      src={message.senderImage}
-                      alt={message.senderName}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  )}
-
-                  <div className={cn(
-                    "max-w-[70%] rounded-2xl px-4 py-2",
-                    isMe ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900'
-                  )}>
-                    <p className="text-sm">{message.message}</p>
-                    {message.hasPhotos && (
-                      <div className="mt-2 flex items-center gap-1 text-xs opacity-70">
-                        <Image className="w-3 h-3" />
-                        <span>Photo</span>
-                      </div>
+            <div className="px-4 py-6 space-y-4 pb-32">
+              {currentMessages.map((message) => {
+                const isMe = message.senderId === user?.id;
+                return (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex gap-2",
+                      isMe ? 'justify-end' : 'justify-start'
                     )}
+                  >
+                    {!isMe && (
+                      <img
+                        src={message.senderImage}
+                        alt={message.senderName}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    )}
+
+                    <div className={cn(
+                      "max-w-[70%] rounded-2xl px-4 py-2",
+                      isMe ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900'
+                    )}>
+                      <p className="text-sm">{message.message}</p>
+                      {message.hasPhotos && (
+                        <div className="mt-2 flex items-center gap-1 text-xs opacity-70">
+                          <Image className="w-3 h-3" />
+                          <span>Photo</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-20">
+              {attachedFiles.length > 0 && (
+                <div className="mb-3 flex gap-2 overflow-x-auto">
+                  {attachedFiles.map((file) => (
+                    <div key={file.id} className="relative">
+                      {file.preview ? (
+                        <img src={file.preview} alt={file.name} className="w-16 h-16 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <File className="w-6 h-6 text-gray-500" />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => removeAttachment(file.id)}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
+              )}
+
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleFileUpload('image')}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+
+                <Textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+                  rows={1}
+                />
+
+                <Button
+                  type="submit"
+                  disabled={!messageText.trim() && attachedFiles.length === 0}
+                  className="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-10 h-10 p-0"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </form>
+            </div>
           </div>
-
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-            {attachedFiles.length > 0 && (
-              <div className="mb-3 flex gap-2 overflow-x-auto">
-                {attachedFiles.map((file) => (
-                  <div key={file.id} className="relative">
-                    {file.preview ? (
-                      <img src={file.preview} alt={file.name} className="w-16 h-16 rounded-lg object-cover" />
-                    ) : (
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <File className="w-6 h-6 text-gray-500" />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => removeAttachment(file.id)}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleFileUpload('image')}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
-              >
-                <Paperclip className="w-5 h-5" />
-              </button>
-
-              <Textarea
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-                rows={1}
-              />
-
-              <Button
-                type="submit"
-                disabled={!messageText.trim() && attachedFiles.length === 0}
-                className="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-10 h-10 p-0"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </form>
-          </div>
-        </div>
+        </Layout>
       </PageTransition>
     );
   }
 
   return (
     <PageTransition direction="slide-left">
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">La-Date</h1>
-              <button
-                onClick={() => onNavigate('profile')}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 mb-4">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
-                  activeTab === 'all'
-                    ? 'text-gray-900 border-b-2 border-orange-500'
-                    : 'text-gray-600'
-                )}
-              >
-                All chats
-              </button>
-              <button
-                onClick={() => setActiveTab('active')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
-                  activeTab === 'active'
-                    ? 'text-gray-900 border-b-2 border-orange-500'
-                    : 'text-gray-600'
-                )}
-              >
-                Active
-                {activeThreadCount > 0 && (
-                  <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {activeThreadCount}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
-                  activeTab === 'requests'
-                    ? 'text-gray-900 border-b-2 border-orange-500'
-                    : 'text-gray-600'
-                )}
-              >
-                Requests
-                {requestsCount > 0 && (
-                  <span className="bg-gray-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {requestsCount}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-100 border-0"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="px-4 py-2">
-          {isLoading ? (
-            <LoadingSkeleton type="mail-thread" count={5} />
-          ) : filteredThreads.length === 0 ? (
-            <EmptyState
-              icon={MailIcon}
-              title="No conversations yet"
-              description="Start chatting with someone special"
-              actionText="Browse Profiles"
-              onAction={() => onNavigate('discovery')}
-            />
-          ) : (
-            <div className="space-y-0">
-              {filteredThreads.map((thread) => (
+      <Layout
+        title="Messages"
+        onBack={() => onNavigate('discovery')}
+        showClose={false}
+        showFooter={true}
+        showQuickNav={true}
+        activeTab="mail"
+        onNavigate={onNavigate}
+      >
+        <div className="min-h-screen bg-gray-50">
+          <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold text-gray-900">La-Date</h1>
                 <button
-                  key={thread.id}
-                  onClick={() => handleThreadSelect(thread.id)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3 border-b border-gray-100"
+                  onClick={() => onNavigate('profile')}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
                 >
-                  <div className="relative">
-                    <img
-                      src={thread.participantImage}
-                      alt={thread.participantName}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    {thread.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                    )}
-                  </div>
+                  <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900 text-sm">{thread.participantName}</h3>
-                        {thread.isVerified && (
-                          <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">{formatTimestamp(thread.timestamp)}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate">{thread.lastMessage}</p>
-                  </div>
-
-                  {thread.unreadCount > 0 && (
-                    <div className="bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                      {thread.unreadCount}
-                    </div>
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                    activeTab === 'all'
+                      ? 'text-gray-900 border-b-2 border-orange-500'
+                      : 'text-gray-600'
+                  )}
+                >
+                  All chats
+                </button>
+                <button
+                  onClick={() => setActiveTab('active')}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
+                    activeTab === 'active'
+                      ? 'text-gray-900 border-b-2 border-orange-500'
+                      : 'text-gray-600'
+                  )}
+                >
+                  Active
+                  {activeThreadCount > 0 && (
+                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {activeThreadCount}
+                    </span>
                   )}
                 </button>
-              ))}
+                <button
+                  onClick={() => setActiveTab('requests')}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
+                    activeTab === 'requests'
+                      ? 'text-gray-900 border-b-2 border-orange-500'
+                      : 'text-gray-600'
+                  )}
+                >
+                  Requests
+                  {requestsCount > 0 && (
+                    <span className="bg-gray-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {requestsCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-gray-100 border-0"
+                />
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className="px-4 py-2 pb-24">
+            {isLoading ? (
+              <LoadingSkeleton type="mail-thread" count={5} />
+            ) : filteredThreads.length === 0 ? (
+              <EmptyState
+                icon={MailIcon}
+                title="No conversations yet"
+                description="Start chatting with someone special"
+                actionText="Browse Profiles"
+                onAction={() => onNavigate('discovery')}
+              />
+            ) : (
+              <div className="space-y-0">
+                {filteredThreads.map((thread) => (
+                  <button
+                    key={thread.id}
+                    onClick={() => handleThreadSelect(thread.id)}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3 border-b border-gray-100"
+                  >
+                    <div className="relative">
+                      <img
+                        src={thread.participantImage}
+                        alt={thread.participantName}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      {thread.isOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 text-sm">{thread.participantName}</h3>
+                          {thread.isVerified && (
+                            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">{formatTimestamp(thread.timestamp)}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">{thread.lastMessage}</p>
+                    </div>
+
+                    {thread.unreadCount > 0 && (
+                      <div className="bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                        {thread.unreadCount}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </Layout>
     </PageTransition>
   );
 };
