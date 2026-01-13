@@ -61,6 +61,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [userBalance, setUserBalance] = useState(0);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState('');
@@ -344,6 +346,24 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           );
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'typing_indicators',
+          filter: `thread_id=eq.${activeThread}`
+        },
+        (payload) => {
+          console.log('⌨️ Typing indicator update:', payload);
+          const typingData = payload.new;
+
+          // Only show typing if it's the other user
+          if (typingData.user_id !== user.id) {
+            setOtherUserTyping(typingData.is_typing ?? false);
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -473,6 +493,46 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     scrollToBottom();
   }, [messages]);
 
+  // Function to update typing status
+  const updateTypingStatus = async (typing: boolean) => {
+    if (!activeThread || !user) return;
+
+    try {
+      await supabaseClient
+        .from('typing_indicators')
+        .upsert({
+          user_id: user.id,
+          thread_id: activeThread,
+          is_typing: typing,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,thread_id'
+        });
+    } catch (error) {
+      console.error('Failed to update typing status:', error);
+    }
+  };
+
+  // Handle typing with debounce
+  const handleTyping = () => {
+    // Update typing indicator to true
+    if (!isTyping) {
+      setIsTyping(true);
+      updateTypingStatus(true);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to clear typing status after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      updateTypingStatus(false);
+    }, 3000);
+  };
+
   const handleSendMessage = async () => {
     try {
       if (!message.trim()) return;
@@ -509,6 +569,13 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       const messageToSend = message.trim();
       setMessage('');
       setShowEmojiPicker(false);
+
+      // Clear typing indicator
+      setIsTyping(false);
+      updateTypingStatus(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
       // Save to database
       const { data: savedMessage, error: messageError } = await supabaseClient
@@ -970,21 +1037,21 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                       {isCurrentUser && (
                         <div className="flex items-center">
                           {msg.isRead ? (
-                            // 2 ticks - Read
-                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M1.5 12.5l5 5 10-10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M5.5 12.5l5 5 10-10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                            // 2 ticks - Read (Blue Double Checkmark)
+                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="none">
+                              <path d="M1 10l3 3 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M6 10l3 3 9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           ) : msg.isDelivered ? (
-                            // 1 tick - Delivered
-                            <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M5 12l5 5L20 7"/>
+                            // 1 tick - Delivered (Gray Single Checkmark)
+                            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="none">
+                              <path d="M3 10l4 4 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           ) : (
                             // Clock - Sending
-                            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="10"/>
-                              <path d="M12 6v6l4 2"/>
+                            <svg className="w-4 h-4 text-gray-300" viewBox="0 0 20 20" fill="none">
+                              <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2"/>
+                              <path d="M10 5v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                             </svg>
                           )}
                         </div>
@@ -996,19 +1063,19 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             );
           })}
           {/* Typing Indicator */}
-          {thread.isTyping && (
+          {otherUserTyping && (
             <div className="flex justify-start">
               <div className="flex items-end space-x-2">
                 <img
                   src={thread.participantImage}
                   alt={thread.participantName}
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-md"
                 />
-                <div className="bg-white border border-gray-200 rounded-2xl p-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                <div className="bg-white border border-pink-200 rounded-2xl p-4 shadow-md">
+                  <div className="flex space-x-1.5">
+                    <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -1060,7 +1127,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <div className="flex-1 relative flex items-center">
               <textarea
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  handleTyping();
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
