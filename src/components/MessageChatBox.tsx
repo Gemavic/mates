@@ -277,7 +277,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
             return {
               id: msg.id,
-              senderId: isCurrentUser ? 'me' : msg.sender_id,
+              senderId: msg.sender_id,
               senderName,
               senderImage,
               message: msg.message_text,
@@ -308,15 +308,62 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
   // Update chat threads when selected user changes
   useEffect(() => {
-    if (selectedUserId && selectedUserName && selectedUserImage) {
-      setChatThreads(getInitialThreads());
-      setMessages(getInitialMessages());
-      setActiveThread(`thread-${selectedUserId}`);
-      setIsOpen(true);
-    } else if (defaultThreads.length > 0 && chatThreads.length === 0) {
-      setChatThreads(defaultThreads);
-    }
-  }, [selectedUserId, selectedUserName, selectedUserImage, defaultThreads]);
+    const initializeThread = async () => {
+      if (selectedUserId && selectedUserName && selectedUserImage && user) {
+        try {
+          // Check if a thread exists with this user
+          const { data: existingThreads } = await supabaseClient
+            .from('mail_threads')
+            .select('id')
+            .or(`and(participant1_id.eq.${user.id},participant2_id.eq.${selectedUserId}),and(participant1_id.eq.${selectedUserId},participant2_id.eq.${user.id})`)
+            .maybeSingle();
+
+          let threadId: string;
+
+          if (existingThreads) {
+            // Use existing thread
+            threadId = existingThreads.id;
+            console.log('✅ Found existing thread:', threadId);
+          } else {
+            // Create new thread
+            const { data: newThread, error } = await supabaseClient
+              .from('mail_threads')
+              .insert({
+                participant1_id: user.id,
+                participant2_id: selectedUserId
+              })
+              .select()
+              .single();
+
+            if (error) throw error;
+            threadId = newThread.id;
+            console.log('✅ Created new thread:', threadId);
+          }
+
+          // Create thread object for UI
+          const newThreadObj: ChatThread = {
+            id: threadId,
+            participantId: selectedUserId,
+            participantName: selectedUserName,
+            participantImage: selectedUserImage,
+            unreadCount: 0,
+            isOnline: true,
+            isTyping: false
+          };
+
+          setChatThreads([newThreadObj]);
+          setActiveThread(threadId);
+          setIsOpen(true);
+        } catch (error) {
+          console.error('Error initializing thread:', error);
+        }
+      } else if (defaultThreads.length > 0 && chatThreads.length === 0) {
+        setChatThreads(defaultThreads);
+      }
+    };
+
+    initializeThread();
+  }, [selectedUserId, selectedUserName, selectedUserImage, defaultThreads, user]);
 
   // Quick gift items for chat
   const quickGifts: GiftItem[] = [
@@ -399,33 +446,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       // TODO: Implement timer-based charging (2 credits/min or 1 kobo/min)
       // For now, messages are sent without per-message cost
 
-      // Check if recipient exists in database
-      const { data: recipientProfile } = await supabaseClient
-        .from('user_profiles')
-        .select('user_id')
-        .eq('user_id', activeThreadData.participantId)
-        .maybeSingle();
-
-      let savedMessage = null;
-
-      // Only save to database if recipient is a real user
-      if (recipientProfile) {
-        const { data, error: messageError } = await MessagingManager.sendMessage(
-          user.id,
-          activeThreadData.participantId,
-          message.trim()
-        );
-
-        if (messageError) {
-          console.warn('Database save error (demo profile?):', messageError);
-        } else {
-          savedMessage = data;
-        }
-      }
-
-      // Create message object for UI
-      const newMessage: ChatMessage = {
-        id: savedMessage?.id || Date.now().toString(),
+      // Create optimistic message for immediate UI update
+      const optimisticMessage: ChatMessage = {
+        id: `temp-${Date.now()}`,
         senderId: user.id,
         senderName: 'You',
         senderImage: userProfileImage,
@@ -434,40 +457,77 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         type: 'text'
       };
 
-      // Add message to chat
-      setMessages(prev => [...prev, newMessage]);
+      // Add message to UI immediately
+      setMessages(prev => [...prev, optimisticMessage]);
+      const messageToSend = message.trim();
       setMessage('');
       setShowEmojiPicker(false);
+
+      // Save to database
+      const { data: savedMessage, error: messageError } = await supabaseClient
+        .from('mail_messages')
+        .insert({
+          thread_id: activeThread,
+          sender_id: user.id,
+          subject: 'Chat Message',
+          message_text: messageToSend,
+          credits_spent: 0,
+          has_photos: false
+        })
+        .select()
+        .single();
+
+      if (messageError) {
+        console.error('Failed to save message:', messageError);
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+        alert('Failed to send message. Please try again.');
+        return;
+      }
+
+      // Update with real message ID
+      const finalMessage: ChatMessage = {
+        ...optimisticMessage,
+        id: savedMessage.id
+      };
+
+      setMessages(prev =>
+        prev.map(m => m.id === optimisticMessage.id ? finalMessage : m)
+      );
 
       // Update thread with new message
       setChatThreads(prev => prev.map(thread =>
         thread.id === activeThread
-          ? { ...thread, lastMessage: newMessage, unreadCount: 0 }
+          ? { ...thread, lastMessage: finalMessage, unreadCount: 0 }
           : thread
       ));
 
+      // Update thread timestamp
+      await supabaseClient
+        .from('mail_threads')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeThread);
+
       // Show success feedback
-      const successMessage = document.createElement('div');
-      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = '💬 Message sent! (Chat charges 2 credits/min)';
-      document.body.appendChild(successMessage);
+      const successToast = document.createElement('div');
+      successToast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successToast.textContent = '💬 Message sent!';
+      document.body.appendChild(successToast);
       setTimeout(() => {
-        if (document.body.contains(successMessage)) {
-          document.body.removeChild(successMessage);
+        if (document.body.contains(successToast)) {
+          document.body.removeChild(successToast);
         }
       }, 2000);
 
-      // Try to send email notification (non-blocking, only for real users)
-      if (recipientProfile) {
-        try {
-          sendMessageNotification(activeThreadData.participantId, {
-            name: 'You',
-            image: userProfileImage,
-            id: user.id
-          });
-        } catch (notificationError) {
-          console.log('Notification skipped:', notificationError);
-        }
+      // Try to send email notification (non-blocking)
+      try {
+        sendMessageNotification(activeThreadData.participantId, {
+          name: 'You',
+          image: userProfileImage,
+          id: user.id
+        });
+      } catch (notificationError) {
+        console.log('Notification skipped:', notificationError);
       }
 
     } catch (error) {
