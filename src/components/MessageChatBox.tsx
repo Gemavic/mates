@@ -34,6 +34,8 @@ interface ChatMessage {
   type: 'text' | 'emoji' | 'image' | 'video';
   edited?: boolean;
   editedAt?: Date;
+  isDelivered?: boolean;
+  isRead?: boolean;
 }
 
 interface ChatThread {
@@ -221,7 +223,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         // Fetch messages from database
         const { data: messagesData, error } = await supabaseClient
           .from('mail_messages')
-          .select('*')
+          .select('id, sender_id, message_text, created_at, is_read, is_delivered, thread_id')
           .eq('thread_id', activeThread)
           .order('created_at', { ascending: true });
 
@@ -282,7 +284,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               senderImage,
               message: msg.message_text,
               timestamp: new Date(msg.created_at),
-              type: 'text' as const
+              type: 'text' as const,
+              isDelivered: msg.is_delivered ?? true,
+              isRead: msg.is_read ?? false
             };
           })
           .filter((msg): msg is ChatMessage => msg !== null);
@@ -290,11 +294,15 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         setMessages(loadedMessages);
         console.log('✅ Loaded', loadedMessages.length, 'messages with correct sender profiles');
 
-        // Mark messages as read
+        // Mark messages as read with timestamp
         await supabaseClient
           .from('mail_messages')
-          .update({ is_read: true })
+          .update({
+            is_read: true,
+            read_at: new Date().toISOString()
+          })
           .eq('thread_id', activeThread)
+          .eq('is_read', false)
           .neq('sender_id', user.id);
 
       } catch (error) {
@@ -304,6 +312,43 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     };
 
     loadMessages();
+
+    // Set up real-time subscription for read receipts
+    if (!activeThread || !user) return;
+
+    const channel = supabaseClient
+      .channel(`messages-${activeThread}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'mail_messages',
+          filter: `thread_id=eq.${activeThread}`
+        },
+        (payload) => {
+          const updatedMessage = payload.new;
+          console.log('📬 Message updated:', updatedMessage);
+
+          // Update message read status in state
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === updatedMessage.id
+                ? {
+                    ...msg,
+                    isRead: updatedMessage.is_read,
+                    isDelivered: updatedMessage.is_delivered
+                  }
+                : msg
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
   }, [activeThread, user, chatThreads, userProfileImage]);
 
   // Update chat threads when selected user changes
@@ -454,7 +499,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         senderImage: userProfileImage,
         message: message.trim(),
         timestamp: new Date(),
-        type: 'text'
+        type: 'text',
+        isDelivered: false,
+        isRead: false
       };
 
       // Add message to UI immediately
@@ -472,7 +519,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           subject: 'Chat Message',
           message_text: messageToSend,
           credits_spent: 0,
-          has_photos: false
+          has_photos: false,
+          is_delivered: true,
+          delivered_at: new Date().toISOString(),
+          is_read: false
         })
         .select()
         .single();
@@ -485,10 +535,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         return;
       }
 
-      // Update with real message ID
+      // Update with real message ID and mark as delivered
       const finalMessage: ChatMessage = {
         ...optimisticMessage,
-        id: savedMessage.id
+        id: savedMessage.id,
+        isDelivered: true,
+        isRead: false
       };
 
       setMessages(prev =>
@@ -916,9 +968,26 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                         {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </p>
                       {isCurrentUser && (
-                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                        </svg>
+                        <div className="flex items-center">
+                          {msg.isRead ? (
+                            // 2 ticks - Read
+                            <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M1.5 12.5l5 5 10-10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M5.5 12.5l5 5 10-10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : msg.isDelivered ? (
+                            // 1 tick - Delivered
+                            <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M5 12l5 5L20 7"/>
+                            </svg>
+                          ) : (
+                            // Clock - Sending
+                            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"/>
+                              <path d="M12 6v6l4 2"/>
+                            </svg>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
