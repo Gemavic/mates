@@ -231,31 +231,40 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
         if (error) throw error;
 
-        // Get all unique sender IDs
-        const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
+        // Get unique sender IDs (exclude current user for optimization)
+        const otherSenderIds = [...new Set(
+          (messagesData?.map(m => m.sender_id) || []).filter(id => id !== user.id)
+        )];
 
-        // Fetch sender profiles and photos
-        const { data: senderProfiles } = await supabaseClient
-          .from('user_profiles')
-          .select('user_id, first_name, full_name, photo_url')
-          .in('user_id', senderIds);
+        // Only fetch data for other users (we have current user's data)
+        let profileLookup: Record<string, any> = {};
+        let photoLookup: Record<string, string> = {};
 
-        const { data: senderPhotos } = await supabaseClient
-          .from('user_photos')
-          .select('user_id, photo_url')
-          .in('user_id', senderIds)
-          .eq('is_primary', true);
+        if (otherSenderIds.length > 0) {
+          // Parallel fetch for better performance
+          const [profilesResult, photosResult] = await Promise.all([
+            supabaseClient
+              .from('user_profiles')
+              .select('user_id, first_name, full_name, photo_url')
+              .in('user_id', otherSenderIds),
+            supabaseClient
+              .from('user_photos')
+              .select('user_id, photo_url')
+              .in('user_id', otherSenderIds)
+              .eq('is_primary', true)
+          ]);
 
-        // Create lookup maps
-        const profileLookup = (senderProfiles || []).reduce((acc, p) => {
-          acc[p.user_id] = p;
-          return acc;
-        }, {} as Record<string, any>);
+          // Create lookup maps
+          profileLookup = (profilesResult.data || []).reduce((acc, p) => {
+            acc[p.user_id] = p;
+            return acc;
+          }, {} as Record<string, any>);
 
-        const photoLookup = (senderPhotos || []).reduce((acc, p) => {
-          acc[p.user_id] = p.photo_url;
-          return acc;
-        }, {} as Record<string, string>);
+          photoLookup = (photosResult.data || []).reduce((acc, p) => {
+            acc[p.user_id] = p.photo_url;
+            return acc;
+          }, {} as Record<string, string>);
+        }
 
         // Convert to ChatMessage format with real sender data
         const loadedMessages: ChatMessage[] = (messagesData || [])
@@ -294,10 +303,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           .filter((msg): msg is ChatMessage => msg !== null);
 
         setMessages(loadedMessages);
-        console.log('✅ Loaded', loadedMessages.length, 'messages with correct sender profiles');
+        console.log('✅ Loaded', loadedMessages.length, 'messages');
 
-        // Mark messages as read with timestamp
-        await supabaseClient
+        // Mark messages as read (non-blocking for faster UI)
+        supabaseClient
           .from('mail_messages')
           .update({
             is_read: true,
@@ -305,7 +314,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           })
           .eq('thread_id', activeThread)
           .eq('is_read', false)
-          .neq('sender_id', user.id);
+          .neq('sender_id', user.id)
+          .then(() => console.log('Messages marked as read'))
+          .catch(err => console.error('Failed to mark as read:', err));
 
       } catch (error) {
         console.error('Failed to load messages:', error);
@@ -319,7 +330,41 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     if (!activeThread || !user) return;
 
     const channel = supabaseClient
-      .channel(`messages-${activeThread}`)
+      .channel(`chat-${activeThread}`, {
+        config: {
+          broadcast: { self: false },
+          presence: { key: user.id }
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'mail_messages',
+          filter: `thread_id=eq.${activeThread}`
+        },
+        (payload) => {
+          const newMessage = payload.new;
+
+          // Only add if from other user (sender handles their own optimistically)
+          if (newMessage.sender_id !== user.id) {
+            const activeThreadData = chatThreads.find(t => t.id === activeThread);
+
+            setMessages(prev => [...prev, {
+              id: newMessage.id,
+              senderId: newMessage.sender_id,
+              senderName: activeThreadData?.participantName || 'User',
+              senderImage: activeThreadData?.participantImage || '',
+              message: newMessage.message_text,
+              timestamp: new Date(newMessage.created_at),
+              type: 'text',
+              isDelivered: true,
+              isRead: false
+            }]);
+          }
+        }
+      )
       .on(
         'postgres_changes',
         {
@@ -330,9 +375,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         },
         (payload) => {
           const updatedMessage = payload.new;
-          console.log('📬 Message updated:', updatedMessage);
 
-          // Update message read status in state
+          // Update message status in state
           setMessages(prev =>
             prev.map(msg =>
               msg.id === updatedMessage.id
@@ -355,11 +399,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           filter: `thread_id=eq.${activeThread}`
         },
         (payload) => {
-          console.log('⌨️ Typing indicator update:', payload);
           const typingData = payload.new;
 
           // Only show typing if it's the other user
-          if (typingData.user_id !== user.id) {
+          if (typingData && typingData.user_id !== user.id) {
             setOtherUserTyping(typingData.is_typing ?? false);
           }
         }
@@ -621,33 +664,26 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           : thread
       ));
 
-      // Update thread timestamp
-      await supabaseClient
+      // Update thread timestamp (non-blocking - don't await)
+      supabaseClient
         .from('mail_threads')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', activeThread);
+        .eq('id', activeThread)
+        .then(() => console.log('Thread updated'))
+        .catch(err => console.error('Thread update failed:', err));
 
-      // Show success feedback
-      const successToast = document.createElement('div');
-      successToast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successToast.textContent = '💬 Message sent!';
-      document.body.appendChild(successToast);
-      setTimeout(() => {
-        if (document.body.contains(successToast)) {
-          document.body.removeChild(successToast);
+      // Send email notification (non-blocking - fire and forget)
+      Promise.resolve().then(() => {
+        try {
+          sendMessageNotification(activeThreadData.participantId, {
+            name: 'You',
+            image: userProfileImage,
+            id: user.id
+          });
+        } catch (notificationError) {
+          console.log('Notification skipped:', notificationError);
         }
-      }, 2000);
-
-      // Try to send email notification (non-blocking)
-      try {
-        sendMessageNotification(activeThreadData.participantId, {
-          name: 'You',
-          image: userProfileImage,
-          id: user.id
-        });
-      } catch (notificationError) {
-        console.log('Notification skipped:', notificationError);
-      }
+      });
 
     } catch (error) {
       console.error('Message send error:', error);
