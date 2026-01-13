@@ -250,20 +250,16 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         const profile = profileMap[msg.sender_id];
         const photoUrl = photoMap[msg.sender_id];
 
-        if (!profile || !photoUrl) {
-          return null;
-        }
-
         return {
           id: msg.id,
           senderId: msg.sender_id,
-          senderName: profile.first_name || profile.full_name || 'User',
-          senderImage: photoUrl,
+          senderName: profile?.first_name || profile?.full_name || 'User',
+          senderImage: photoUrl || 'https://via.placeholder.com/150',
           message: msg.message_text,
           timestamp: new Date(msg.created_at).toLocaleString(),
           hasPhotos: msg.has_photos || false
         };
-      }).filter((msg): msg is Message => msg !== null);
+      });
 
       setCurrentMessages(formattedMessages);
 
@@ -342,21 +338,54 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         throw new Error('No thread selected');
       }
 
+      const { data: currentUserProfile } = await supabaseClient
+        .from('user_profiles')
+        .select('first_name, full_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: currentUserPhoto } = await supabaseClient
+        .from('user_photos')
+        .select('photo_url')
+        .eq('user_id', user.id)
+        .eq('is_primary', true)
+        .single();
+
+      const optimisticMessage: Message = {
+        id: `temp-${Date.now()}`,
+        senderId: user.id,
+        senderName: currentUserProfile?.first_name || currentUserProfile?.full_name || 'You',
+        senderImage: currentUserPhoto?.photo_url || 'https://via.placeholder.com/150',
+        message: messageText.trim() || 'Sent attachments',
+        timestamp: new Date().toLocaleString(),
+        hasPhotos: attachedFiles.length > 0
+      };
+
+      setCurrentMessages(prev => [...prev, optimisticMessage]);
+
+      const messageToSend = messageText.trim();
+      const filesToSend = [...attachedFiles];
+
+      setMessageText('');
+      setAttachedFiles([]);
+      setShowAttachmentMenu(false);
+
       const { data: savedMessage, error: messageError } = await supabaseClient
         .from('mail_messages')
         .insert({
           thread_id: selectedThread,
           sender_id: user.id,
           subject: 'Mail Message',
-          message_text: messageText.trim() || 'Sent attachments',
+          message_text: messageToSend || 'Sent attachments',
           credits_spent: totalCost,
-          has_photos: attachedFiles.length > 0
+          has_photos: filesToSend.length > 0
         })
         .select()
         .single();
 
       if (messageError) {
         console.error('Database save error:', messageError);
+        setCurrentMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
         alert(`Failed to save message`);
         throw new Error('Failed to save message');
       }
@@ -366,11 +395,14 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', selectedThread);
 
-      await loadThreadMessages(selectedThread);
+      setCurrentMessages(prev =>
+        prev.map(m => m.id === optimisticMessage.id ? {
+          ...m,
+          id: savedMessage.id
+        } : m)
+      );
 
-      setMessageText('');
-      setAttachedFiles([]);
-      setShowAttachmentMenu(false);
+      await loadMailThreads();
 
       const toast = document.createElement('div');
       toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg z-50';
