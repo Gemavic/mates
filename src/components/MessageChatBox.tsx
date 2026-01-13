@@ -888,36 +888,44 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             </div>
           </div>
 
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.senderId === (user?.id || 'demo-user') ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] ${msg.senderId === (user?.id || 'demo-user') ? 'order-2' : 'order-1'}`}>
-                <div className="flex flex-col space-y-1">
-                  <div className={`rounded-2xl p-4 shadow-md ${
-                    msg.senderId === (user?.id || 'demo-user')
-                      ? 'bg-gradient-to-br from-pink-200 to-pink-300 text-gray-800 border border-pink-400'
-                      : 'bg-white text-gray-800 border border-pink-200'
-                  }`}>
-                    <div className="flex items-center justify-center space-x-2">
-                      <span className="text-4xl">😉</span>
+          {messages.map((msg) => {
+            const isCurrentUser = msg.senderId === (user?.id || 'demo-user');
+            return (
+              <div key={msg.id} className={`flex items-end space-x-2 ${isCurrentUser ? 'justify-end flex-row-reverse space-x-reverse' : 'justify-start'}`}>
+                {/* Profile Photo */}
+                <img
+                  src={msg.senderImage}
+                  alt={msg.senderName}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-md"
+                />
+
+                {/* Message Bubble */}
+                <div className="max-w-[75%]">
+                  <div className="flex flex-col space-y-1">
+                    <div className={`rounded-2xl p-4 shadow-md ${
+                      isCurrentUser
+                        ? 'bg-gradient-to-br from-pink-200 to-pink-300 text-gray-800 border border-pink-400'
+                        : 'bg-white text-gray-800 border border-pink-200'
+                    }`}>
+                      <p className="text-base leading-relaxed">{msg.message}</p>
                     </div>
-                    <p className="text-center text-base font-medium mt-2">{msg.message}</p>
-                  </div>
-                  <div className={`flex items-center space-x-2 px-2 ${
-                    msg.senderId === (user?.id || 'demo-user') ? 'justify-end' : 'justify-start'
-                  }`}>
-                    <p className="text-sm text-gray-600">
-                      {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                    </p>
-                    {msg.senderId === (user?.id || 'demo-user') && (
-                      <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                      </svg>
-                    )}
+                    <div className={`flex items-center space-x-2 px-2 ${
+                      isCurrentUser ? 'justify-end' : 'justify-start'
+                    }`}>
+                      <p className="text-xs text-gray-600">
+                        {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                      {isCurrentUser && (
+                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                        </svg>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {/* Typing Indicator */}
           {thread.isTyping && (
             <div className="flex justify-start">
