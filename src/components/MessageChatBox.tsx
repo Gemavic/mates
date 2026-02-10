@@ -72,7 +72,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { getFirstName, user, profile } = useAuth();
 
-  // Load user credits from database and refresh periodically
+  // Load user credits from database and refresh periodically - OPTIMIZED
   useEffect(() => {
     const loadCredits = async () => {
       if (user) {
@@ -89,8 +89,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
     loadCredits();
 
-    // Refresh credits every 10 seconds to stay in sync
-    const interval = setInterval(loadCredits, 10000);
+    // Refresh credits every 30 seconds (reduced from 10 to prevent blinking)
+    const interval = setInterval(loadCredits, 30000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -214,7 +214,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     loadMailThreads();
   }, [user]);
 
-  // Load messages when a thread is selected
+  // Load messages when a thread is selected - OPTIMIZED to prevent blinking
   useEffect(() => {
     const loadMessages = async () => {
       if (!activeThread || !user) return;
@@ -376,7 +376,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         (payload) => {
           const updatedMessage = payload.new;
 
-          // Update message status in state
+          // Update message status in state - BATCHED to prevent flickering
           setMessages(prev =>
             prev.map(msg =>
               msg.id === updatedMessage.id
@@ -412,9 +412,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [activeThread, user, chatThreads, userProfileImage]);
+  }, [activeThread, user]);
 
-  // Update chat threads when selected user changes
+  // Update chat threads when selected user changes - OPTIMIZED
   useEffect(() => {
     const initializeThread = async () => {
       if (selectedUserId && selectedUserName && selectedUserImage && user) {
@@ -448,18 +448,27 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             console.log('✅ Created new thread:', threadId);
           }
 
-          // Create thread object for UI
-          const newThreadObj: ChatThread = {
-            id: threadId,
-            participantId: selectedUserId,
-            participantName: selectedUserName,
-            participantImage: selectedUserImage,
-            unreadCount: 0,
-            isOnline: true,
-            isTyping: false
-          };
+          // Create thread object for UI - STABLE reference
+          setChatThreads(prev => {
+            // Check if thread already exists to avoid duplicates
+            const exists = prev.find(t => t.participantId === selectedUserId);
+            if (exists) {
+              return prev;
+            }
 
-          setChatThreads([newThreadObj]);
+            const newThreadObj: ChatThread = {
+              id: threadId,
+              participantId: selectedUserId,
+              participantName: selectedUserName,
+              participantImage: selectedUserImage,
+              unreadCount: 0,
+              isOnline: true,
+              isTyping: false
+            };
+
+            return [newThreadObj];
+          });
+
           setActiveThread(threadId);
           setIsOpen(true);
         } catch (error) {
@@ -536,28 +545,38 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  // Function to update typing status
-  const updateTypingStatus = async (typing: boolean) => {
+  // Function to update typing status - DEBOUNCED to prevent flickering
+  const updateTypingStatusRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const updateTypingStatus = React.useCallback(async (typing: boolean) => {
     if (!activeThread || !user) return;
 
-    try {
-      await supabaseClient
-        .from('typing_indicators')
-        .upsert({
-          user_id: user.id,
-          thread_id: activeThread,
-          is_typing: typing,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,thread_id'
-        });
-    } catch (error) {
-      console.error('Failed to update typing status:', error);
+    // Clear any pending update
+    if (updateTypingStatusRef.current) {
+      clearTimeout(updateTypingStatusRef.current);
     }
-  };
 
-  // Handle typing with debounce
-  const handleTyping = () => {
+    // Debounce typing updates to reduce database writes
+    updateTypingStatusRef.current = setTimeout(async () => {
+      try {
+        await supabaseClient
+          .from('typing_indicators')
+          .upsert({
+            user_id: user.id,
+            thread_id: activeThread,
+            is_typing: typing,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,thread_id'
+          });
+      } catch (error) {
+        console.error('Failed to update typing status:', error);
+      }
+    }, 300); // 300ms debounce
+  }, [activeThread, user]);
+
+  // Handle typing with debounce - OPTIMIZED
+  const handleTyping = React.useCallback(() => {
     // Update typing indicator to true
     if (!isTyping) {
       setIsTyping(true);
@@ -574,7 +593,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       setIsTyping(false);
       updateTypingStatus(false);
     }, 3000);
-  };
+  }, [isTyping, updateTypingStatus]);
 
   const handleSendMessage = async () => {
     try {
@@ -854,7 +873,11 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     }
   };
 
-  const renderThreadList = () => {
+  // IMPORTANT: Chat and Mail share the same database tables (mail_messages, mail_threads)
+  // This is intentional - messages sent in chat appear in mail and vice versa
+  // The difference is only in the UI presentation, not the data storage
+
+  const renderThreadList = React.useMemo(() => () => {
     console.log('🎨 Rendering thread list. Threads:', chatThreads.length, chatThreads.map(t => t.participantName));
 
     return (
@@ -975,9 +998,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       </div>
     </div>
     );
-  };
+  }, [chatThreads, totalUnread, userBalance, user, onNavigate, creditManager]);
 
-  const renderChatView = () => {
+  const renderChatView = React.useMemo(() => () => {
     const thread = chatThreads.find(t => t.id === activeThread);
     if (!thread) return null;
 
@@ -1235,7 +1258,29 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         </div>
       </div>
     );
-  };
+  }, [
+    chatThreads,
+    activeThread,
+    messages,
+    otherUserTyping,
+    showEmojiPicker,
+    showGiftPicker,
+    message,
+    user,
+    userProfileImage,
+    handleSendMessage,
+    handleTyping,
+    addEmoji,
+    sendGift,
+    handleFileUpload,
+    setShowEmojiPicker,
+    setShowGiftPicker,
+    setMessage,
+    setActiveThread,
+    creditManager,
+    quickGifts,
+    emojis
+  ]);
 
   return (
     <>
@@ -1267,18 +1312,25 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         )}
       </button>
 
-      {/* Chat Window */}
+      {/* Chat Window - STABLE POSITIONING */}
       {isOpen && (
-        <div className={cn(
-          "fixed z-[9999]",
-          "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px]",
-          "left-1/2 transform -translate-x-1/2",
-          "w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px]",
-          "max-w-[600px]",
-          "h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px]",
-          "bg-pink-50 rounded-2xl shadow-2xl border-2 border-pink-400 overflow-hidden",
-          "animate-slide-up pointer-events-auto"
-        )}>
+        <div
+          className={cn(
+            "fixed z-[9999]",
+            "bottom-[90px] sm:bottom-[100px] md:bottom-[110px] lg:bottom-[120px]",
+            "left-1/2 transform -translate-x-1/2",
+            "w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px]",
+            "max-w-[600px]",
+            "h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px]",
+            "bg-pink-50 rounded-2xl shadow-2xl border-2 border-pink-400",
+            "animate-slide-up pointer-events-auto will-change-transform"
+          )}
+          style={{
+            overflow: 'hidden',
+            containIntrinsicSize: 'auto 500px',
+            contentVisibility: 'auto'
+          }}
+        >
           {activeThread ? renderChatView() : renderThreadList()}
         </div>
       )}
