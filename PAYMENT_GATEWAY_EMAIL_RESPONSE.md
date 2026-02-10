@@ -34,11 +34,14 @@ While we respect user privacy, our Acceptable Use Policy now explicitly prohibit
 
 ### Strictly Prohibited Activities
 Our platform has **zero tolerance** and **immediate permanent ban** policies for:
+- **Terrorism and violent extremism** - Terrorist propaganda, recruitment, or support
+- **Cyber bullying** - Encouraging self-harm, suicide, or coordinated harassment
+- **Hate speech** - Discrimination based on race, religion, gender, sexual orientation, or protected characteristics
 - Prostitution and escort solicitation
 - Human trafficking
 - Child Sexual Abuse Material (CSAM)
 - Revenge porn / Non-consensual intimate images
-- Credible threats of violence
+- Credible threats of violence or mass harm
 - Fraud and romance scams
 
 **Policy Links:**
@@ -130,8 +133,8 @@ User Upload → AI Scan → Risk Score → Decision
 ```
 
 ### Response Times
-- Critical violations (CSAM, trafficking, violence): **Immediate** (< 2 hours)
-- High priority (nudity, solicitation, harassment): **< 12 hours**
+- Critical violations (terrorism, CSAM, trafficking, violence): **Immediate** (< 2 hours)
+- High priority (hate speech, cyber bullying, nudity, solicitation, harassment): **< 12 hours**
 - Medium priority (spam, fraud): **< 24 hours**
 - Low priority: **< 48 hours**
 
@@ -142,10 +145,13 @@ User Upload → AI Scan → Risk Score → Decision
 3. Third violation: 30-day suspension or permanent ban
 
 **Immediate Permanent Ban for:**
+- Terrorism or extremist content
 - CSAM (Child Sexual Abuse Material)
 - Human trafficking
-- Revenge porn
-- Credible threats of violence
+- Revenge porn / Non-consensual intimate images
+- Credible threats of violence or mass harm
+- Cyber bullying encouraging suicide or self-harm
+- Repeated hate speech violations
 - Repeated prostitution solicitation
 
 ### Trust & Safety Team

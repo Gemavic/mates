@@ -108,23 +108,64 @@ export class ContentModerationService {
       'trafficking', 'underage', 'minor'
     ];
 
+    const terrorismKeywords = [
+      'bomb', 'terrorist attack', 'jihad', 'isis', 'al qaeda',
+      'suicide bomber', 'mass shooting', 'radicalize', 'extremist',
+      'blow up', 'detonate', 'explosive device', 'massacre'
+    ];
+
+    const hateSpeechKeywords = [
+      'nazi', 'kkk', 'white supremacy', 'ethnic cleansing',
+      'racial slur', 'hate crime', 'supremacist', 'holocaust denial',
+      'genocide', 'swastika', 'lynch', 'racial purity'
+    ];
+
+    const cyberBullyingKeywords = [
+      'kill yourself', 'kys', 'worthless', 'nobody likes you',
+      'everyone hates you', 'go die', 'end it all', 'commit suicide',
+      'ugly loser', 'piece of trash', 'waste of space', 'pathetic loser',
+      'no one will miss you', 'world would be better without you'
+    ];
+
+    const violenceKeywords = [
+      'rape', 'assault', 'murder', 'stalk', 'hurt you',
+      'find you', 'track you down', 'beat you', 'torture'
+    ];
+
     const hasExplicitContent = explicitKeywords.some(keyword => lowerText.includes(keyword));
+    const hasTerrorism = terrorismKeywords.some(keyword => lowerText.includes(keyword));
+    const hasHateSpeech = hateSpeechKeywords.some(keyword => lowerText.includes(keyword));
+    const hasCyberBullying = cyberBullyingKeywords.some(keyword => lowerText.includes(keyword));
+    const hasViolence = violenceKeywords.some(keyword => lowerText.includes(keyword));
 
-    const harassmentKeywords = ['kill yourself', 'die', 'rape', 'assault'];
-    const hasViolence = harassmentKeywords.some(keyword => lowerText.includes(keyword));
+    let riskScore = 0;
+    if (hasTerrorism) riskScore = 1.0;
+    else if (hasViolence) riskScore = 0.95;
+    else if (hasCyberBullying) riskScore = 0.9;
+    else if (hasHateSpeech) riskScore = 0.85;
+    else if (hasExplicitContent) riskScore = 0.8;
 
-    const riskScore = (hasExplicitContent ? 0.8 : 0) + (hasViolence ? 0.9 : 0);
+    const violationTypes = [];
+    if (hasTerrorism) violationTypes.push('terrorism');
+    if (hasHateSpeech) violationTypes.push('hate_speech');
+    if (hasCyberBullying) violationTypes.push('cyber_bullying');
+    if (hasViolence) violationTypes.push('violence');
+    if (hasExplicitContent) violationTypes.push('explicit_content');
 
     return {
       safe: riskScore < MODERATION_THRESHOLDS.RISK_SCORE_MAX,
       riskScore: Math.min(riskScore, 1),
       hasNudity: false,
-      hasViolence,
+      hasViolence: hasViolence || hasTerrorism,
       hasExplicitContent,
       details: {
         scanner: 'text_analyzer',
         timestamp: new Date().toISOString(),
-        textLength: text.length
+        textLength: text.length,
+        violationTypes,
+        hasTerrorism,
+        hasHateSpeech,
+        hasCyberBullying
       }
     };
   }
@@ -267,8 +308,8 @@ export class ContentModerationService {
   }
 
   private calculateReportPriority(reportType: string): string {
-    const criticalTypes = ['underage', 'trafficking', 'violence'];
-    const highTypes = ['nudity', 'solicitation', 'harassment'];
+    const criticalTypes = ['underage', 'trafficking', 'violence', 'terrorism'];
+    const highTypes = ['nudity', 'solicitation', 'harassment', 'hate_speech', 'cyber_bullying'];
 
     if (criticalTypes.includes(reportType)) return 'critical';
     if (highTypes.includes(reportType)) return 'high';

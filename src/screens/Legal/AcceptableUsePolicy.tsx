@@ -110,15 +110,55 @@ export const AcceptableUsePolicy: React.FC = () => {
                 </div>
 
                 <div className="border-l-4 border-red-600 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">4.5 Hate Speech</h3>
-                  <p className="text-gray-700">
-                    Content attacking individuals or groups based on race, ethnicity, national origin, religion,
-                    gender, gender identity, sexual orientation, disability, or age is prohibited.
+                  <h3 className="font-bold text-gray-900 mb-2">4.5 Terrorism & Extremism</h3>
+                  <p className="text-gray-700 mb-2">
+                    Any content promoting, supporting, or glorifying terrorism, terrorist organizations, or
+                    violent extremism is strictly prohibited and will result in immediate ban and law enforcement reporting.
                   </p>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Terrorist propaganda or recruitment</li>
+                    <li>Violent extremist ideology</li>
+                    <li>Instructions for weapons or explosives</li>
+                    <li>Threats of mass violence or attacks</li>
+                    <li>Support for designated terrorist organizations</li>
+                  </ul>
                 </div>
 
                 <div className="border-l-4 border-red-600 pl-4">
-                  <h3 className="font-bold text-gray-900 mb-2">4.6 Fraud & Scams</h3>
+                  <h3 className="font-bold text-gray-900 mb-2">4.6 Hate Speech & Discrimination</h3>
+                  <p className="text-gray-700 mb-2">
+                    Content attacking individuals or groups based on protected characteristics is strictly prohibited.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Attacks based on race, ethnicity, or national origin</li>
+                    <li>Religious discrimination or hate</li>
+                    <li>Gender or gender identity discrimination</li>
+                    <li>Sexual orientation attacks</li>
+                    <li>Disability discrimination</li>
+                    <li>Age discrimination</li>
+                    <li>Hate symbols, slurs, or derogatory language</li>
+                    <li>Holocaust denial or genocide glorification</li>
+                    <li>White supremacy or supremacist content</li>
+                  </ul>
+                </div>
+
+                <div className="border-l-4 border-red-600 pl-4">
+                  <h3 className="font-bold text-gray-900 mb-2">4.7 Cyber Bullying</h3>
+                  <p className="text-gray-700 mb-2">
+                    Repeated, targeted harassment intended to demean, intimidate, or harm another user.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Encouraging self-harm or suicide</li>
+                    <li>Persistent insults and degradation</li>
+                    <li>Targeted campaigns to humiliate or shame</li>
+                    <li>Threats of doxxing (revealing personal information)</li>
+                    <li>Coordinated harassment from multiple accounts</li>
+                    <li>Creating fake profiles to harass someone</li>
+                  </ul>
+                </div>
+
+                <div className="border-l-4 border-red-600 pl-4">
+                  <h3 className="font-bold text-gray-900 mb-2">4.8 Fraud & Scams</h3>
                   <p className="text-gray-700">
                     Catfishing, romance scams, financial fraud, or any deceptive practices to obtain money
                     or personal information are strictly prohibited.
@@ -160,10 +200,16 @@ export const AcceptableUsePolicy: React.FC = () => {
                 When a user reports content or behavior:
               </p>
               <ol className="list-decimal pl-6 space-y-2 text-gray-700 mb-4">
-                <li>The report is immediately logged and prioritized</li>
+                <li>The report is immediately logged and prioritized based on severity</li>
                 <li>Our Trust & Safety team reviews the specific reported content</li>
                 <li>For encrypted messages, the reporting mechanism grants review access to that specific conversation</li>
-                <li>Appropriate action is taken within 24-48 hours</li>
+                <li>Appropriate action is taken based on priority:
+                  <ul className="list-disc pl-6 mt-2 space-y-1">
+                    <li><strong>Critical</strong> (terrorism, underage, violence): Immediate review (within 2 hours)</li>
+                    <li><strong>High</strong> (hate speech, cyber bullying, harassment): Within 12 hours</li>
+                    <li><strong>Medium</strong> (fraud, spam): Within 24-48 hours</li>
+                  </ul>
+                </li>
                 <li>The reporter is notified of the outcome (without detailed user info for privacy)</li>
               </ol>
 
@@ -200,10 +246,13 @@ export const AcceptableUsePolicy: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded p-3">
                   <h3 className="font-semibold text-red-900">Immediate Permanent Ban for:</h3>
                   <ul className="list-disc pl-6 space-y-1 text-red-800 mt-2">
+                    <li>Terrorism or extremist content</li>
                     <li>Child exploitation (CSAM)</li>
                     <li>Human trafficking</li>
                     <li>Revenge porn / Non-consensual intimate images</li>
-                    <li>Threats of violence</li>
+                    <li>Credible threats of violence or mass harm</li>
+                    <li>Cyber bullying encouraging suicide or self-harm</li>
+                    <li>Repeated hate speech violations</li>
                     <li>Repeated solicitation for prostitution</li>
                   </ul>
                 </div>

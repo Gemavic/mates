@@ -278,10 +278,13 @@ const updateBio = async (userId, bioText) => {
 3. **Third violation**: 30-day suspension or permanent ban
 
 ### Zero-Tolerance Violations (Immediate Ban)
+- Terrorism or extremist content
 - Child exploitation (CSAM)
 - Human trafficking
-- Revenge porn
-- Credible violence threats
+- Revenge porn / Non-consensual intimate images
+- Credible threats of violence or mass harm
+- Cyber bullying encouraging suicide or self-harm
+- Repeated hate speech violations
 - Repeated prostitution solicitation
 
 ---

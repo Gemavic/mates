@@ -26,13 +26,15 @@ export const ReportAbuseModal: React.FC<ReportAbuseModalProps> = ({
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const reportTypes = [
-    { value: 'harassment', label: 'Harassment or Bullying', critical: false },
+    { value: 'terrorism', label: 'Terrorism or Extremism', critical: true },
+    { value: 'cyber_bullying', label: 'Cyber Bullying', critical: true },
+    { value: 'hate_speech', label: 'Hate Speech or Discrimination', critical: true },
+    { value: 'violence', label: 'Threats or Violence', critical: true },
+    { value: 'underage', label: 'Underage User', critical: true },
+    { value: 'harassment', label: 'Harassment', critical: false },
     { value: 'nudity', label: 'Nudity or Sexual Content', critical: true },
     { value: 'solicitation', label: 'Solicitation (Prostitution/Escort)', critical: true },
     { value: 'fraud', label: 'Scam or Fraud', critical: false },
-    { value: 'underage', label: 'Underage User', critical: true },
-    { value: 'violence', label: 'Threats or Violence', critical: true },
-    { value: 'hate_speech', label: 'Hate Speech', critical: false },
     { value: 'spam', label: 'Spam', critical: false },
     { value: 'other', label: 'Other', critical: false }
   ];

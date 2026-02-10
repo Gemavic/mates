@@ -46,34 +46,57 @@ While respecting user privacy, we prohibit:
 
 **Zero-tolerance violations (immediate ban + law enforcement reporting):**
 
-1. **Prostitution & Solicitation**
+1. **Terrorism & Extremism**
+   - Terrorist propaganda or recruitment
+   - Violent extremist ideology
+   - Instructions for weapons or explosives
+   - Threats of mass violence or attacks
+   - Support for designated terrorist organizations
+
+2. **Cyber Bullying**
+   - Encouraging self-harm or suicide
+   - Persistent targeted harassment and degradation
+   - Coordinated harassment campaigns
+   - Doxxing threats (revealing personal information)
+   - Creating fake profiles to harass
+
+3. **Hate Speech & Discrimination**
+   - Attacks based on race, ethnicity, national origin
+   - Religious hate or discrimination
+   - Gender/gender identity discrimination
+   - Sexual orientation attacks
+   - Hate symbols, slurs, or derogatory language
+   - Holocaust denial or genocide glorification
+   - White supremacy or supremacist content
+
+4. **Prostitution & Solicitation**
    - Escort services
    - "Sugar dating" arrangements
    - Any transactional sexual relationships
    - Selling sexual content or services
 
-2. **Human Trafficking**
+5. **Human Trafficking**
    - Forced labor
    - Sexual exploitation
    - Recruitment for illegal activities
 
-3. **Child Safety Violations**
+6. **Child Safety Violations**
    - CSAM (Child Sexual Abuse Material)
    - Users under 18 years old
    - Grooming or predatory behavior
    - Any sexualization of minors
 
-4. **Non-Consensual Content**
+7. **Non-Consensual Content**
    - Revenge porn
    - Intimate images shared without consent
    - Hidden camera content
 
-5. **Violence & Threats**
+8. **Violence & Threats**
    - Threats of physical harm
    - Graphic violence
    - Promotion of self-harm
 
-6. **Fraud & Scams**
+9. **Fraud & Scams**
    - Catfishing
    - Romance scams
    - Financial fraud
@@ -120,6 +143,9 @@ User Upload → AI Scan → Risk Analysis → Decision
 - Nudity detection (genitals, buttocks, female nipples)
 - Sexually explicit content
 - Violence and gore
+- Terrorism and extremism keywords
+- Hate speech and discriminatory language
+- Cyber bullying patterns (suicide encouragement, persistent harassment)
 - Hate symbols
 - Prohibited keyword matching
 - Solicitation language patterns
@@ -245,8 +271,8 @@ Reporter Notified
 ```
 
 **Priority Levels:**
-- **Critical:** Underage, trafficking, violence (immediate review)
-- **High:** Nudity, solicitation, harassment (< 12 hours)
+- **Critical:** Terrorism, underage, trafficking, violence (immediate review < 2 hours)
+- **High:** Hate speech, cyber bullying, nudity, solicitation, harassment (< 12 hours)
 - **Medium:** Spam, fraud (< 24 hours)
 - **Low:** Other violations (< 48 hours)
 
@@ -258,10 +284,13 @@ Reporter Notified
 3. **Third Violation:** 30-day suspension or permanent ban
 
 **Immediate Permanent Ban:**
+- Terrorism or extremist content
 - CSAM (child exploitation)
 - Human trafficking
 - Revenge porn
-- Credible threats of violence
+- Credible threats of violence or mass harm
+- Cyber bullying encouraging suicide or self-harm
+- Repeated hate speech violations
 - Repeated solicitation
 
 **Ban Appeals:**
