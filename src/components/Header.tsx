@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChevronLeftIcon, XIcon, Settings, User, Heart } from 'lucide-react';
-import { MessageChatBox } from './MessageChatBox';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {

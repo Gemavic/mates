@@ -1,6 +1,5 @@
 import React from 'react';
 import { Heart, Search, User, Settings, Newspaper, Mail, Users, MessageCircle, MessageSquare, CreditCard, BookOpen, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
-import { MessageChatBox } from './MessageChatBox';
 import { cn } from '@/lib/utils';
 
 interface FooterProps {
@@ -16,7 +15,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const tabs = [
     { id: 'discovery', icon: Search, label: 'Search', onClick: () => onNavigate('discovery') },
-    { id: 'chat', icon: MessageCircle, label: 'Chat', isChat: true, onClick: () => onNavigate('matches') },
+    { id: 'chat', icon: MessageCircle, label: 'Chat', onClick: () => onNavigate('matches') },
     { id: 'profile', icon: User, label: 'Profile', onClick: () => onNavigate('profile') },
     { id: 'credits', icon: CreditCard, label: 'Credits', onClick: () => onNavigate('credits') },
     { id: 'mail', icon: Mail, label: 'Mail', onClick: () => onNavigate('mail') },
@@ -36,9 +35,7 @@ export const Footer: React.FC<FooterProps> = ({
     }
     
     try {
-      if (tab.isChat) {
-        onNavigate('matches');
-      } else if (tab.onClick) {
+      if (tab.onClick) {
         tab.onClick();
       } else {
         onNavigate(tab.id);
@@ -61,14 +58,6 @@ export const Footer: React.FC<FooterProps> = ({
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
             
-            if (tab.isChat) {
-              return (
-                <div key={tab.id} className="flex flex-col items-center py-1 sm:py-2 px-1 sm:px-2 md:px-3 min-w-0 z-50 relative">
-                  <MessageChatBox />
-                  <span className="text-xs font-medium text-gray-600 mt-0.5 sm:mt-1 truncate hidden sm:block">{tab.label}</span>
-                </div>
-              );
-            }
             
             return (
               <button

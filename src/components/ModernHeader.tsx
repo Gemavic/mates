@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, Settings, Bell, Search, Menu, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MessageChatBox } from './MessageChatBox';
 
 interface ModernHeaderProps {
   title?: string;

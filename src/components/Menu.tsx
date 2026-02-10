@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, MessageCircle, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, TriangleAlert as AlertTriangle, BookOpen, Sparkles } from 'lucide-react';
-import { MessageChatBox } from './MessageChatBox';
 import { cn } from '@/lib/utils';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
@@ -157,15 +156,6 @@ export const Menu: React.FC<MenuProps> = ({
         )}
       </button>
 
-      {/* Message Chat Box */}
-      <div className="fixed top-4 sm:top-6 right-2 sm:right-4 z-50 safe-area-inset-top">
-        <MessageChatBox
-          selectedUserId={selectedChatUser?.id}
-          selectedUserName={selectedChatUser?.name}
-          selectedUserImage={selectedChatUser?.image}
-          onNavigate={onNavigate}
-        />
-      </div>
       {/* Menu Overlay */}
       {isOpen && (
         <div 
