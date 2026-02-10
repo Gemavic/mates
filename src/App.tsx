@@ -24,6 +24,7 @@ import { Disclaimer } from '@/screens/Legal/Disclaimer';
 import { PaymentRefund } from '@/screens/Legal/PaymentRefund';
 import { MisconductPolicy } from '@/screens/Legal/MisconductPolicy';
 import { ConsentPolicy } from '@/screens/Legal/ConsentPolicy';
+import { AcceptableUsePolicy } from '@/screens/Legal/AcceptableUsePolicy';
 import { SuccessPage } from '@/screens/Success/SuccessPage';
 import { CancelPage } from '@/screens/Cancel/CancelPage';
 import { CheckoutPage } from '@/screens/Checkout/CheckoutPage';
@@ -265,6 +266,12 @@ const App: React.FC = () => {
           description: 'Understand your consent rights and how we protect your choices.',
           canonicalUrl: `${baseUrl}/#consent`
         };
+      case 'acceptable-use':
+        return {
+          title: 'Acceptable Use Policy - Dates Dating App',
+          description: 'Guidelines for acceptable behavior and content on Dates.care platform.',
+          canonicalUrl: `${baseUrl}/#acceptable-use`
+        };
       case 'help':
         return {
           title: 'Help & Support - Dates Dating App',
@@ -369,7 +376,10 @@ const App: React.FC = () => {
 
       case 'consent':
         return <ConsentPolicy onNavigate={handleNavigate} />;
-      
+
+      case 'acceptable-use':
+        return <AcceptableUsePolicy />;
+
       case 'success':
         return <SuccessPage onNavigate={handleNavigate} />;
       
