@@ -111,6 +111,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           .from('mail_messages')
           .select('thread_id, message_text, created_at, is_read, sender_id')
           .in('thread_id', threadIds)
+          .eq('subject', 'Chat Message')
           .order('created_at', { ascending: false })
       ]);
 
@@ -176,6 +177,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           .from('mail_messages')
           .select('id, sender_id, message_text, created_at, is_read, is_delivered')
           .eq('thread_id', selectedThread)
+          .eq('subject', 'Chat Message')
           .order('created_at', { ascending: true });
 
         if (error) throw error;

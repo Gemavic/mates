@@ -132,6 +132,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         supabaseClient.from('mail_messages')
           .select('thread_id, message_text, created_at, is_read, sender_id, subject')
           .in('thread_id', threadIds)
+          .neq('subject', 'Chat Message')
           .order('created_at', { ascending: false })
       ]);
 
@@ -186,6 +187,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
         .from('mail_messages')
         .select('*')
         .eq('thread_id', threadId)
+        .neq('subject', 'Chat Message')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
