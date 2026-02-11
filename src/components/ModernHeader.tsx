@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Settings, Bell, Search, Menu, Heart } from 'lucide-react';
+import { ChevronLeft, Settings, Bell, Search, Menu, Heart, LogOut, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ModernHeaderProps {
   title?: string;
@@ -33,19 +34,13 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   className = "",
   transparent = false
 }) => {
-  // Get user subscription status
-  const [subscriptionPlan, setSubscriptionPlan] = useState<string>('Free');
-  
-  React.useEffect(() => {
-    // Check for active subscription
-    const checkSubscription = async () => {
-      // In a real app, this would query the database
-      // For now, show demo subscription status
-      setSubscriptionPlan('Premium');
-    };
-    
-    checkSubscription();
-  }, []);
+  const { user, getFirstName, signOut, isAnonymous } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/';
+  };
 
   return (
     <div className={cn(
@@ -114,11 +109,8 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
         {/* Right Section */}
         <div className="flex items-center space-x-0.5 sm:space-x-1 md:space-x-2 flex-shrink-0">
-              <span className="text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full font-bold">
-                {subscriptionPlan}
-              </span>
           {showSearch && (
-            <button 
+            <button
               onClick={onSearch}
               className="p-1.5 sm:p-2 md:p-3 hover:bg-gray-100 rounded-full transition-colors touch-manipulation active:scale-95 cursor-pointer"
               type="button"
@@ -129,7 +121,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
           )}
 
           {showNotifications && (
-            <button 
+            <button
               onClick={onNotifications}
               className="p-1.5 sm:p-2 md:p-3 hover:bg-gray-100 rounded-full transition-colors touch-manipulation active:scale-95 cursor-pointer relative"
               type="button"
@@ -141,7 +133,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
           )}
 
           {showSettings && (
-            <button 
+            <button
               onClick={onSettings}
               className="p-1.5 sm:p-2 md:p-3 hover:bg-gray-100 rounded-full transition-colors touch-manipulation active:scale-95 cursor-pointer"
               type="button"
@@ -149,6 +141,51 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
             >
               <Settings className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-700 flex-shrink-0" />
             </button>
+          )}
+
+          {user && !isAnonymous && (
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-1 sm:space-x-2 p-1 sm:p-1.5 md:p-2 hover:bg-gray-100 rounded-full transition-colors touch-manipulation active:scale-95 cursor-pointer"
+                type="button"
+                aria-label="User menu"
+              >
+                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <span className="hidden sm:block text-xs md:text-sm font-medium text-gray-700 max-w-[80px] md:max-w-[120px] truncate">
+                  Hi, {getFirstName()}
+                </span>
+              </button>
+
+              {showUserMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {getFirstName()}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      type="button"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
