@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, Users, MessageCircle, Sparkles, Shield, Star, TrendingUp, CircleCheck as CheckCircle, LogOut, UserPlus } from 'lucide-react';
+import { Heart, Users, MessageCircle, Sparkles, Shield, Star, TrendingUp, CircleCheck as CheckCircle, LogOut } from 'lucide-react';
 import { NewsletterSignup } from '@/components/NewsletterSignup';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -9,8 +9,7 @@ interface WelcomeProps {
 }
 
 export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
-  const { user, signOut, getFirstName, signInAnonymously, isAnonymous } = useAuth();
-  const [anonymousLoading, setAnonymousLoading] = useState(false);
+  const { user, signOut, getFirstName } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -27,25 +26,6 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
     } catch (error) {
       console.error('Logout error:', error);
       alert('Failed to logout. Please try again.');
-    }
-  };
-
-  const handleBrowseAsGuest = async () => {
-    setAnonymousLoading(true);
-    try {
-      const { error } = await signInAnonymously();
-
-      if (error) {
-        alert('Failed to sign in as guest. Please try again.');
-        return;
-      }
-
-      onNavigate('discovery');
-    } catch (error) {
-      console.error('Anonymous sign in error:', error);
-      alert('Failed to sign in as guest. Please try again.');
-    } finally {
-      setAnonymousLoading(false);
     }
   };
 
@@ -267,16 +247,6 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               >
                 <Heart className="w-5 h-5 mr-2" fill="currentColor" />
                 Start Your Love Story
-              </Button>
-
-              <Button
-                onClick={handleBrowseAsGuest}
-                disabled={anonymousLoading}
-                className="w-full bg-white/20 text-white border-2 border-white/40 hover:bg-white/30 font-semibold text-base py-4 rounded-2xl shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                size="lg"
-              >
-                <UserPlus className="w-5 h-5 mr-2" />
-                {anonymousLoading ? 'Loading...' : 'Browse as Guest'}
               </Button>
 
               <button
