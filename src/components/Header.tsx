@@ -28,12 +28,17 @@ export const Header: React.FC<HeaderProps> = ({
   onSettings,
   className = ""
 }) => {
-  const { user, getFirstName, signOut, isAnonymous } = useAuth();
+  const { user, getFirstName, signOut, isAnonymous, loading } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
-    window.location.href = '/';
+    try {
+      await signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/';
+    }
   };
 
   return (
@@ -117,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {user && !isAnonymous && (
+        {!loading && user && !isAnonymous && (
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
