@@ -24,6 +24,23 @@ const EMOJIS = [
   '☕', '🍕', '🍔', '🍷', '🎉', '🎊', '🎈', '🎁'
 ];
 
+const QUICK_MESSAGES = [
+  'Do you like sports?',
+  'Do you collect anything?',
+  'Do you like black tea?',
+  'Cable TV or Netflix? :)',
+  'What is your life credo?',
+  'Are you a family person?',
+  'Words have power. Do you agree?',
+  'Are you happy here?',
+  'What do you do for fun?',
+  'Do you have any hobbies?',
+  'What kind of music do you like?',
+  'Are you a morning or night person?',
+  'What\'s your favorite cuisine?',
+  'Do you like traveling?'
+];
+
 interface SelectedChatUser {
   id: string;
   name: string;
@@ -66,6 +83,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showQuickMessages, setShowQuickMessages] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -432,8 +450,21 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             </div>
           )}
 
+          {showQuickMessages && (
+            <div className="bg-white border-t border-pink-200 px-3 py-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
+              <div className="flex flex-wrap gap-2">
+                {QUICK_MESSAGES.map((msg, i) => (
+                  <button key={i} onClick={() => { setMessageText(msg); setShowQuickMessages(false); inputRef.current?.focus(); }}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full text-sm transition-colors active:scale-95">
+                    {msg}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-pink-50 border-t border-pink-200 px-3 py-3 flex items-center gap-2 safe-area-inset-bottom flex-shrink-0">
-            <button onClick={() => setMessageText('Hi')}
+            <button onClick={() => { setShowQuickMessages(!showQuickMessages); setShowEmojiPicker(false); }}
               className="bg-white text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
               Hi
             </button>
@@ -444,7 +475,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 placeholder="Type your message..."
                 className="w-full h-[44px] py-2 px-4 pr-10 rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-sm bg-white"
                 autoComplete="off" />
-              <button onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowQuickMessages(false); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
                 <Smile className="w-5 h-5" />
               </button>
