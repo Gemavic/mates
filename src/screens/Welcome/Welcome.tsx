@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart, Users, MessageCircle, Sparkles, Shield, Star, TrendingUp, CircleCheck as CheckCircle, LogOut } from 'lucide-react';
-import { NewsletterSignup } from '@/components/NewsletterSignup';
 import { useAuth } from '@/hooks/useAuth';
 
 interface WelcomeProps {
@@ -257,11 +256,6 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               </button>
             </>
           )}
-        </div>
-
-        {/* Newsletter Signup - Prominent Placement */}
-        <div className="px-3 sm:px-4 md:px-6 pb-6 relative z-10">
-          <NewsletterSignup variant="full" />
         </div>
 
         {/* About Section - Moved to Bottom */}
