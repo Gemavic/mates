@@ -12,11 +12,11 @@ export interface CheckoutResult {
   error?: string;
 }
 
-/** Map a credit package (credits incl. bonus) to its catalog id. */
-export function resolveCreditPackageId(totalCredits: number): string | null {
-  if (totalCredits === 60) return 'starter';
-  if (totalCredits === 125) return 'popular';
-  if (totalCredits === 500) return 'premium';
+/** Map a credit package to its catalog id (accepts base or bonus-inclusive counts). */
+export function resolveCreditPackageId(credits: number): string | null {
+  if (credits === 50 || credits === 60) return 'starter';
+  if (credits === 100 || credits === 125) return 'popular';
+  if (credits === 450 || credits === 500) return 'premium';
   return null;
 }
 
