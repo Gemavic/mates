@@ -37,6 +37,8 @@ interface CachedAccount {
   totalCredits: number;
   kobos: number; // legacy alias for totalCredits, kept for UI compatibility
   isStaff: boolean;
+  tier: 'silver' | 'gold' | 'platinum' | 'elite' | null;
+  tierExpires: string | null;
   fetchedAt: number;
 }
 
@@ -70,6 +72,8 @@ export class CreditManager {
           totalCredits: row.total_credits ?? 0,
           kobos: row.total_credits ?? 0,
           isStaff: !!row.is_staff,
+          tier: row.tier ?? null,
+          tierExpires: row.tier_expires ?? null,
           fetchedAt: Date.now(),
         };
         this._cache.set(userId, account);
@@ -128,6 +132,8 @@ export class CreditManager {
         purchasedCredits: 0,
         totalCredits: 0,
         kobos: 0,
+        tier: null,
+        tierExpires: null,
         transactions: [],
       };
     }
@@ -161,6 +167,23 @@ export class CreditManager {
   /** Staff status comes from the server account row, not the user id string. */
   isStaffMember(userId: string): boolean {
     return this._cache.get(userId)?.isStaff ?? false;
+  }
+
+  /** Active subscription tier ('silver'|'gold'|'platinum'|'elite') or null. */
+  getTier(userId: string): 'silver' | 'gold' | 'platinum' | 'elite' | null {
+    return this._cache.get(userId)?.tier ?? null;
+  }
+
+  /** True if the user's subscription includes unlimited messaging. */
+  hasUnlimitedMessages(userId: string): boolean {
+    const tier = this.getTier(userId);
+    return tier === 'gold' || tier === 'platinum' || tier === 'elite';
+  }
+
+  /** True if video/audio features are included in the user's subscription. */
+  hasIncludedCalls(userId: string): boolean {
+    const tier = this.getTier(userId);
+    return tier === 'platinum' || tier === 'elite';
   }
 
   /**
