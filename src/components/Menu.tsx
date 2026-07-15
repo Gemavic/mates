@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, MessageCircle, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, TriangleAlert as AlertTriangle, BookOpen, Sparkles } from 'lucide-react';
+import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 
 interface SelectedChatUser {
@@ -31,93 +30,83 @@ export const Menu: React.FC<MenuProps> = ({
       await signOut();
       setIsOpen(false);
       onNavigate('welcome');
-
-      const successMessage = document.createElement('div');
-      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = '✅ Logged out successfully!';
-      document.body.appendChild(successMessage);
-      setTimeout(() => {
-        if (document.body.contains(successMessage)) {
-          document.body.removeChild(successMessage);
-        }
-      }, 2000);
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Failed to logout. Please try again.');
     }
   };
 
+  const [showMore, setShowMore] = useState(false);
+
+  // Core-first navigation: Discover → Match → Message is the product.
+  // Everything else lives behind "More" so the core loop stays obvious.
   const menuSections = [
     {
       title: user ? `Hi, ${getFirstName()}!` : 'Get Started',
       items: user ? [
         { id: 'profile', icon: User, label: 'My Profile', description: 'View & edit your profile' },
         { id: 'settings', icon: Settings, label: 'Settings', description: 'Preferences & privacy' },
-        { id: 'logout', icon: LogOut, label: 'Logout', description: 'Sign out of your account' },
       ] : [
-        { id: 'signup', icon: UserPlus, label: 'Sign Up', description: 'Create your profile' },
+        { id: 'signup', icon: UserPlus, label: 'Sign Up', description: 'Create your free profile' },
         { id: 'signin', icon: LogIn, label: 'Sign In', description: 'Access your account' },
       ]
     },
     {
-      title: 'Discover Matches',
+      title: 'Meet People',
       items: [
-        { id: 'discovery', icon: Home, label: 'Browse All', description: 'Discover perfect matches' },
-        { id: 'matches', icon: Heart, label: 'My Matches', description: 'Your mutual connections' },
-        { id: 'likes', icon: Star, label: 'Likes', description: 'Who likes you' },
+        { id: 'discovery', icon: Home, label: 'Discover', description: 'Browse compatible singles' },
+        { id: 'matches', icon: Heart, label: 'Matches', description: 'Your mutual connections' },
+        { id: 'likes', icon: Star, label: 'Likes You', description: 'See who liked you' },
+        { id: 'mail', icon: Mail, label: 'Messages', description: 'Your conversations' },
       ]
     },
     {
-      title: 'Messages & Calls',
+      title: 'Premium',
       items: [
-        { id: 'mail', icon: Mail, label: 'Messages', description: 'Private conversations' },
-        { id: 'video-chat', icon: Video, label: 'Video Chat', description: 'Face-to-face calls' },
-        { id: 'audio-chat', icon: Phone, label: 'Voice Call', description: 'Audio conversations' },
+        { id: 'credits', icon: CreditCard, label: 'Credits', description: 'Your balance & top-ups' },
+        { id: 'gift-shop', icon: Gift, label: 'Gift Shop', description: 'Send a virtual gift' },
       ]
     },
-    {
-      title: 'Premium Features',
-      items: [
-        { id: 'credits', icon: CreditCard, label: 'Buy Credits', description: 'Unlock premium features' },
-        { id: 'gift-shop', icon: Gift, label: 'Gift Shop', description: 'Send special gifts' },
-        { id: 'match-suitor', icon: Crown, label: 'VIP Matching', description: 'Elite matchmaking service' },
-      ]
-    },
-    {
-      title: 'Dating Advice & Fun',
-      items: [
-        { id: 'care-blog', icon: BookOpen, label: 'Dating Blog', description: 'Tips & relationship advice' },
-        { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Fun personality quizzes' },
-        { id: 'newsfeed', icon: Newspaper, label: 'Date Ideas', description: 'Creative date inspiration' },
-        { id: 'help', icon: HelpCircle, label: 'Help & FAQs', description: 'Expert guidance' },
-      ]
-    },
-    {
-      title: 'Support',
-      items: [
-        { id: 'relationship-services', icon: Users, label: 'Relationship Services', description: 'Counselling & therapy' },
-        { id: 'education', icon: BookOpen, label: 'Education', description: 'Relationship learning & resources' },
-        { id: 'feedback', icon: MessageCircle, label: 'Contact Us', description: 'Questions & feedback' },
-      ]
-    },
-    {
-      title: 'About',
-      items: [
-        { id: 'terms', icon: Shield, label: 'Terms', description: 'Terms of service' },
-        { id: 'privacy', icon: Shield, label: 'Privacy', description: 'Your data privacy' },
-      ]
-    }
   ];
 
-  // Add Staff Panel section with authentication requirement
-  if (true) { 
+  // Secondary features, collapsed by default
+  const moreSection = {
+    title: 'More',
+    items: [
+      { id: 'video-chat', icon: Video, label: 'Video Chat', description: 'Face-to-face calls' },
+      { id: 'audio-chat', icon: Phone, label: 'Voice Call', description: 'Audio conversations' },
+      { id: 'match-suitor', icon: Crown, label: 'VIP Matchmaking', description: 'Personalized matching' },
+      { id: 'care-blog', icon: BookOpen, label: 'Dating Advice', description: 'Tips & relationship guides' },
+      { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Personality & compatibility' },
+      { id: 'newsfeed', icon: Newspaper, label: 'Date Ideas', description: 'Creative date inspiration' },
+      { id: 'relationship-services', icon: Users, label: 'Counselling', description: 'Relationship services' },
+      { id: 'help', icon: HelpCircle, label: 'Help & Support', description: 'FAQs & contact us' },
+    ]
+  };
+
+  const footerSection = {
+    title: 'Legal',
+    items: [
+      { id: 'terms', icon: Shield, label: 'Terms of Service', description: 'Our terms & conditions' },
+      { id: 'privacy', icon: Shield, label: 'Privacy Policy', description: 'How we protect your data' },
+    ]
+  };
+
+  if (showMore) {
+    menuSections.push(moreSection);
+  }
+  menuSections.push(footerSection);
+
+  if (user) {
     menuSections.push({
-      title: 'Staff Access (Login Required)',
+      title: 'Account',
       items: [
-        { id: 'staff-panel', icon: Shield, label: 'Staff Login', description: 'Restricted access - staff authentication required' },
+        { id: 'logout', icon: LogOut, label: 'Log Out', description: 'Sign out of your account' },
       ]
     });
   }
+
+  // NOTE: Staff access is intentionally NOT in the public menu.
+  // Staff reach it directly at /#staff-panel (still protected by StaffLogin).
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -235,12 +224,27 @@ export const Menu: React.FC<MenuProps> = ({
                 </div>
               </div>
             ))}
+
+            {/* More / Less toggle */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowMore(!showMore);
+              }}
+              className="w-full flex items-center justify-center space-x-2 p-2 sm:p-3 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 text-xs sm:text-sm font-medium"
+              type="button"
+              aria-expanded={showMore}
+              aria-label={showMore ? 'Show fewer options' : 'Show more options'}
+            >
+              <span>{showMore ? 'Show less' : 'More features'}</span>
+            </button>
           </div>
 
           {/* Menu Footer */}
           <div className="mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t border-white/20">
             <div className="text-center text-white/60 text-xs sm:text-sm">
-              <p>© 2025 Dates</p>
+              <p>© 2026 Dates</p>
               <p className="mt-1 hidden sm:block">Made with ❤️ for finding love</p>
             </div>
           </div>

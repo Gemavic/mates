@@ -23,3 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Build artifacts
+vite.config.ts.timestamp-*.mjs
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Backups
+*.legacy.bak
