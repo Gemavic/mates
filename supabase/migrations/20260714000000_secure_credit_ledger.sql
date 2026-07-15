@@ -15,7 +15,7 @@
 -- 1. TABLES
 -- ---------------------------------------------------------------------------
 
-create table if not exists public.credit_accounts (
+create table if not exists public.app_credit_accounts (
   user_id              uuid primary key references auth.users(id) on delete cascade,
   complimentary_credits integer not null default 0 check (complimentary_credits >= 0),
   purchased_credits     integer not null default 0 check (purchased_credits >= 0),
@@ -24,7 +24,7 @@ create table if not exists public.credit_accounts (
   updated_at            timestamptz not null default now()
 );
 
-create table if not exists public.credit_transactions (
+create table if not exists public.app_credit_ledger (
   id          bigint generated always as identity primary key,
   user_id     uuid not null references auth.users(id) on delete cascade,
   amount      integer not null,                -- negative = spend, positive = grant
@@ -34,65 +34,65 @@ create table if not exists public.credit_transactions (
   created_at  timestamptz not null default now()
 );
 
-create index if not exists idx_credit_tx_user_created
-  on public.credit_transactions (user_id, created_at desc);
+create index if not exists idx_app_credit_ledger_user_created
+  on public.app_credit_ledger (user_id, created_at desc);
 
-create index if not exists idx_credit_tx_user_thread
-  on public.credit_transactions (user_id, thread_id)
+create index if not exists idx_app_credit_ledger_user_thread
+  on public.app_credit_ledger (user_id, thread_id)
   where thread_id is not null;
 
 -- ---------------------------------------------------------------------------
 -- 2. ROW LEVEL SECURITY — read own data only; NO client writes at all
 -- ---------------------------------------------------------------------------
 
-alter table public.credit_accounts     enable row level security;
-alter table public.credit_transactions enable row level security;
+alter table public.app_credit_accounts     enable row level security;
+alter table public.app_credit_ledger enable row level security;
 
-drop policy if exists "read own credit account" on public.credit_accounts;
+drop policy if exists "read own credit account" on public.app_credit_accounts;
 create policy "read own credit account"
-  on public.credit_accounts for select
+  on public.app_credit_accounts for select
   using (auth.uid() = user_id);
 
-drop policy if exists "read own transactions" on public.credit_transactions;
+drop policy if exists "read own transactions" on public.app_credit_ledger;
 create policy "read own transactions"
-  on public.credit_transactions for select
+  on public.app_credit_ledger for select
   using (auth.uid() = user_id);
 
 -- Deliberately NO insert/update/delete policies for authenticated users.
 -- Only SECURITY DEFINER functions below (and service_role) can mutate.
 
-revoke insert, update, delete on public.credit_accounts     from anon, authenticated;
-revoke insert, update, delete on public.credit_transactions from anon, authenticated;
+revoke insert, update, delete on public.app_credit_accounts     from anon, authenticated;
+revoke insert, update, delete on public.app_credit_ledger from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 3. WELCOME CREDITS — granted automatically when an account is created
 -- ---------------------------------------------------------------------------
 
-create or replace function public.handle_new_user_credits()
+create or replace function public.app_handle_new_user_credits()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  insert into public.credit_accounts (user_id, complimentary_credits)
+  insert into public.app_credit_accounts (user_id, complimentary_credits)
   values (new.id, 20)                       -- 20 welcome credits
   on conflict (user_id) do nothing;
 
-  insert into public.credit_transactions (user_id, amount, balance_after, reason)
+  insert into public.app_credit_ledger (user_id, amount, balance_after, reason)
   values (new.id, 20, 20, 'Welcome bonus');
 
   return new;
 end;
 $$;
 
-drop trigger if exists on_auth_user_created_credits on auth.users;
-create trigger on_auth_user_created_credits
+drop trigger if exists on_auth_user_created_app_credits on auth.users;
+create trigger on_auth_user_created_app_credits
   after insert on auth.users
-  for each row execute function public.handle_new_user_credits();
+  for each row execute function public.app_handle_new_user_credits();
 
 -- Backfill accounts for users that already exist
-insert into public.credit_accounts (user_id, complimentary_credits)
+insert into public.app_credit_accounts (user_id, complimentary_credits)
 select id, 20 from auth.users
 on conflict (user_id) do nothing;
 
@@ -100,6 +100,7 @@ on conflict (user_id) do nothing;
 -- 4. RPC: get_my_credits — the ONLY thing the client reads on load
 -- ---------------------------------------------------------------------------
 
+drop function if exists public.get_my_credits();
 create or replace function public.get_my_credits()
 returns table (
   complimentary_credits integer,
@@ -117,7 +118,7 @@ begin
          a.purchased_credits,
          a.complimentary_credits + a.purchased_credits as total_credits,
          a.is_staff
-  from public.credit_accounts a
+  from public.app_credit_accounts a
   where a.user_id = auth.uid();
 end;
 $$;
@@ -129,6 +130,7 @@ grant execute on function public.get_my_credits() to authenticated;
 --    Deducts complimentary credits first, then purchased.
 -- ---------------------------------------------------------------------------
 
+drop function if exists public.spend_credits(integer, text, text);
 create or replace function public.spend_credits(
   p_amount integer,
   p_reason text,
@@ -140,7 +142,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_account public.credit_accounts%rowtype;
+  v_account public.app_credit_accounts%rowtype;
   v_total   integer;
   v_from_comp integer;
   v_from_purch integer;
@@ -151,7 +153,7 @@ begin
 
   -- Lock the row so concurrent spends can't double-deduct
   select * into v_account
-  from public.credit_accounts
+  from public.app_credit_accounts
   where user_id = auth.uid()
   for update;
 
@@ -174,13 +176,13 @@ begin
   v_from_comp  := least(v_account.complimentary_credits, p_amount);
   v_from_purch := p_amount - v_from_comp;
 
-  update public.credit_accounts
+  update public.app_credit_accounts
   set complimentary_credits = complimentary_credits - v_from_comp,
       purchased_credits     = purchased_credits - v_from_purch,
       updated_at            = now()
   where user_id = auth.uid();
 
-  insert into public.credit_transactions (user_id, amount, balance_after, reason, thread_id)
+  insert into public.app_credit_ledger (user_id, amount, balance_after, reason, thread_id)
   values (auth.uid(), -p_amount, v_total - p_amount, coalesce(p_reason, 'spend'), p_thread_id);
 
   return jsonb_build_object('success', true, 'charged', p_amount,
@@ -194,6 +196,7 @@ grant execute on function public.spend_credits(integer, text, text) to authentic
 -- 6. RPC: spend_message — first message in a thread is FREE, then 10 credits
 -- ---------------------------------------------------------------------------
 
+drop function if exists public.spend_message(text);
 create or replace function public.spend_message(p_thread_id text)
 returns jsonb
 language plpgsql
@@ -208,7 +211,7 @@ begin
   end if;
 
   select exists (
-    select 1 from public.credit_transactions
+    select 1 from public.app_credit_ledger
     where user_id = auth.uid()
       and thread_id = p_thread_id
       and reason = 'message'
@@ -216,11 +219,11 @@ begin
 
   if not v_sent_before then
     -- Log a zero-cost transaction so the free message is only granted once
-    insert into public.credit_transactions (user_id, amount, balance_after, reason, thread_id)
+    insert into public.app_credit_ledger (user_id, amount, balance_after, reason, thread_id)
     select auth.uid(), 0,
            a.complimentary_credits + a.purchased_credits,
            'message', p_thread_id
-    from public.credit_accounts a where a.user_id = auth.uid();
+    from public.app_credit_accounts a where a.user_id = auth.uid();
 
     return jsonb_build_object('success', true, 'charged', 0, 'is_free', true);
   end if;
@@ -236,6 +239,7 @@ grant execute on function public.spend_message(text) to authenticated;
 --    (quiz rewards, profile completion, etc.) Max 50/day per user.
 -- ---------------------------------------------------------------------------
 
+drop function if exists public.claim_reward_credits(integer, text);
 create or replace function public.claim_reward_credits(
   p_amount integer,
   p_reason text
@@ -254,7 +258,7 @@ begin
   end if;
 
   select coalesce(sum(amount), 0) into v_today_total
-  from public.credit_transactions
+  from public.app_credit_ledger
   where user_id = auth.uid()
     and amount > 0
     and reason like 'reward:%'
@@ -264,7 +268,7 @@ begin
     return jsonb_build_object('success', false, 'error', 'daily_reward_cap');
   end if;
 
-  update public.credit_accounts
+  update public.app_credit_accounts
   set complimentary_credits = complimentary_credits + p_amount,
       updated_at = now()
   where user_id = auth.uid()
@@ -274,7 +278,7 @@ begin
     return jsonb_build_object('success', false, 'error', 'no_account');
   end if;
 
-  insert into public.credit_transactions (user_id, amount, balance_after, reason)
+  insert into public.app_credit_ledger (user_id, amount, balance_after, reason)
   values (auth.uid(), p_amount, v_new_balance, 'reward:' || coalesce(p_reason, 'unspecified'));
 
   return jsonb_build_object('success', true, 'total_credits', v_new_balance);
@@ -289,6 +293,7 @@ grant execute on function public.claim_reward_credits(integer, text) to authenti
 --      select public.credit_purchase('<user_id>', 125, 'stripe:pi_abc123');
 -- ---------------------------------------------------------------------------
 
+drop function if exists public.credit_purchase(uuid, integer, text);
 create or replace function public.credit_purchase(
   p_user_id uuid,
   p_credits integer,
@@ -313,13 +318,13 @@ begin
 
   -- Idempotency: never credit the same payment reference twice
   if exists (
-    select 1 from public.credit_transactions
+    select 1 from public.app_credit_ledger
     where reason = 'purchase:' || p_payment_ref
   ) then
     return jsonb_build_object('success', false, 'error', 'duplicate_payment_ref');
   end if;
 
-  update public.credit_accounts
+  update public.app_credit_accounts
   set purchased_credits = purchased_credits + p_credits,
       updated_at = now()
   where user_id = p_user_id
@@ -329,7 +334,7 @@ begin
     return jsonb_build_object('success', false, 'error', 'no_account');
   end if;
 
-  insert into public.credit_transactions (user_id, amount, balance_after, reason)
+  insert into public.app_credit_ledger (user_id, amount, balance_after, reason)
   values (p_user_id, p_credits, v_new_balance, 'purchase:' || p_payment_ref);
 
   return jsonb_build_object('success', true, 'total_credits', v_new_balance);
