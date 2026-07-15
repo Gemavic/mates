@@ -77,7 +77,7 @@ export const Menu: React.FC<MenuProps> = ({
       { id: 'match-suitor', icon: Crown, label: 'VIP Matchmaking', description: 'Personalized matching' },
       { id: 'care-blog', icon: BookOpen, label: 'Dating Advice', description: 'Tips & relationship guides' },
       { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Personality & compatibility' },
-      { id: 'newsfeed', icon: Newspaper, label: 'Date Ideas', description: 'Creative date inspiration' },
+      { id: 'newsfeed', icon: Newspaper, label: 'Community Feed', description: 'Photos & moments from members' },
       { id: 'relationship-services', icon: Users, label: 'Counselling', description: 'Relationship services' },
       { id: 'help', icon: HelpCircle, label: 'Help & Support', description: 'FAQs & contact us' },
     ]
