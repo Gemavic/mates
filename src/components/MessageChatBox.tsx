@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
 import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -879,7 +880,15 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                         ? 'bg-gradient-to-br from-pink-200 to-pink-300 text-gray-800 border border-pink-400'
                         : 'bg-white text-gray-800 border border-pink-200'
                     }`}>
-                      <p className="text-base leading-relaxed">{msg.message}</p>
+                      {looksLikeImage(msg.message) ? (
+                        <ProtectedMedia
+                          src={msg.message}
+                          isOwnMedia={isCurrentUser}
+                          senderName={msg.senderName}
+                        />
+                      ) : (
+                        <p className="text-base leading-relaxed">{msg.message}</p>
+                      )}
                     </div>
                     <div className={`flex items-center space-x-2 px-2 ${
                       isCurrentUser ? 'justify-end' : 'justify-start'
