@@ -7,11 +7,11 @@
 --   • Monthly subscription: silver / gold / platinum / elite
 --
 -- Entitlements enforced here:
---   silver   → 50 free messages per calendar month, then credits
---   gold     → unlimited free messages
---   platinum → gold + free video & audio (calls and messages)
---   elite    → same technical entitlements as platinum
---              (matchmaker etc. are human-delivered services)
+--   ALL paid tiers (silver/gold/platinum/elite) → unlimited free messages
+--   platinum/elite → video & audio (calls and messages) included
+--   elite          → matchmaker etc. are human-delivered services
+--   Tier prestige is differentiated by likes, visibility, included calls,
+--   bonus credits, and human services — never by metering conversation.
 --
 -- Subscriptions can ONLY be activated by your payment webhook using the
 -- service_role key — never from the browser.
@@ -100,8 +100,7 @@ grant execute on function public.get_my_credits() to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 4. spend_message honors subscription tiers
---    gold/platinum/elite: always free
---    silver: 50 free per calendar month, then normal credit pricing
+--    ANY active paid tier: always free (unlimited messaging)
 --    no subscription: first message per thread free, then 10 credits
 -- ---------------------------------------------------------------------------
 
@@ -114,7 +113,6 @@ set search_path = public
 as $$
 declare
   v_tier text;
-  v_month_count integer;
   v_sent_before boolean;
 begin
   if p_thread_id is null or length(p_thread_id) = 0 then
@@ -123,8 +121,8 @@ begin
 
   v_tier := public.app_active_tier(auth.uid());
 
-  -- Unlimited-message tiers
-  if v_tier in ('gold','platinum','elite') then
+  -- All paid tiers include unlimited messaging
+  if v_tier in ('silver','gold','platinum','elite') then
     insert into public.app_credit_ledger (user_id, amount, balance_after, reason, thread_id)
     select auth.uid(), 0,
            a.complimentary_credits + a.purchased_credits,
@@ -132,28 +130,6 @@ begin
     from public.app_credit_accounts a where a.user_id = auth.uid();
     return jsonb_build_object('success', true, 'charged', 0, 'is_free', true,
                               'free_reason', 'subscription');
-  end if;
-
-  -- Silver: 50 free messages per calendar month
-  if v_tier = 'silver' then
-    select count(*) into v_month_count
-    from public.app_credit_ledger
-    where user_id = auth.uid()
-      and reason = 'message'
-      and created_at >= date_trunc('month', now());
-
-    if v_month_count < 50 then
-      insert into public.app_credit_ledger (user_id, amount, balance_after, reason, thread_id)
-      select auth.uid(), 0,
-             a.complimentary_credits + a.purchased_credits,
-             'message', p_thread_id
-      from public.app_credit_accounts a where a.user_id = auth.uid();
-      return jsonb_build_object('success', true, 'charged', 0, 'is_free', true,
-                                'free_reason', 'silver_monthly',
-                                'monthly_used', v_month_count + 1,
-                                'monthly_limit', 50);
-    end if;
-    -- over the monthly allowance → fall through to pay-as-you-go pricing
   end if;
 
   -- Pay-as-you-go: first message per thread free, then 10 credits
