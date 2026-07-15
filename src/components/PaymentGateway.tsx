@@ -20,6 +20,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { DATES_CRYPTO_WALLETS, cryptoPaymentManager, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
+import { startCryptoCheckout, resolveCreditPackageId } from '@/lib/cryptoCheckout';
 import { securityManager, encryptSensitiveData } from '@/lib/encryption';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,45 +60,32 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
     }
   };
 
-  const handleCryptoPayment = () => {
+  const handleCryptoPayment = async () => {
     if (!user) {
       alert('Please sign in to make a payment');
       return;
     }
 
-    setIsProcessing(true);
+    const packageId = resolveCreditPackageId(credits);
+    if (!packageId) {
+      alert('This package is temporarily unavailable. Please choose another.');
+      return;
+    }
 
-    try {
-      const cryptoAmount = calculateCryptoAmount(amount, selectedCrypto);
-      const payment = cryptoPaymentManager.createPayment(
-        user.id,
-        amount,
-        selectedCrypto
-      );
-      
-      setCryptoPayment(payment);
-      setPaymentStep('payment');
+    setIsProcessing(true);
+    // Redirects to a hosted invoice with a unique payment address.
+    // Credits are added automatically after blockchain confirmation.
+    const result = await startCryptoCheckout('credits', packageId);
+    if (!result.ok) {
       setIsProcessing(false);
-    } catch (error) {
-      setIsProcessing(false);
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = 'Failed to create crypto payment. Please try again.';
-      document.body.appendChild(errorMessage);
-      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+      alert(result.error || 'Could not start checkout.');
     }
   };
 
   const confirmCryptoPayment = () => {
-    if (cryptoPayment) {
-      cryptoPaymentManager.simulateConfirmation(cryptoPayment.id);
-      setPaymentStep('confirmation');
-      
-      // Simulate confirmation process
-      setTimeout(() => {
-        onSuccess();
-      }, 10000); // 10 seconds for demo
-    }
+    // Legacy manual-confirmation flow removed: crediting only ever happens
+    // server-side via the payment webhook after real confirmation.
+    setPaymentStep('method');
   };
 
   const copyToClipboard = (text: string) => {
@@ -517,12 +505,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
                   <button
                     key={index}
                     onClick={() => {
-                      setIsProcessing(true);
-                      // Simulate mobile payment
-                      setTimeout(() => {
-                        setIsProcessing(false);
-                        onSuccess();
-                      }, 2000);
+                      alert(`${option.name} is coming soon. Please use crypto checkout for now.`);
                     }}
                     className="w-full flex items-center space-x-3 p-3 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                     disabled={isProcessing}
