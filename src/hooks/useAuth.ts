@@ -153,7 +153,7 @@ export const useAuth = () => {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, dateOfBirth?: string) => {
     console.log('useAuth.signUp called with:', { email, fullName });
 
     try {
@@ -163,6 +163,9 @@ export const useAuth = () => {
         options: {
           data: {
             full_name: fullName,
+            date_of_birth: dateOfBirth || null,
+            age_confirmed_18_plus: true,
+            age_confirmed_at: new Date().toISOString(),
           },
           emailRedirectTo: undefined,
         },

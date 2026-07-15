@@ -88,6 +88,7 @@ export const Menu: React.FC<MenuProps> = ({
     items: [
       { id: 'terms', icon: Shield, label: 'Terms of Service', description: 'Our terms & conditions' },
       { id: 'privacy', icon: Shield, label: 'Privacy Policy', description: 'How we protect your data' },
+      { id: 'payment-refund', icon: Shield, label: 'Refund Policy', description: 'Payments, refunds & cancellation' },
     ]
   };
 

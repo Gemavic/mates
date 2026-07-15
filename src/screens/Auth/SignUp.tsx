@@ -22,6 +22,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    dateOfBirth: '',
     password: '',
     confirmPassword: ''
   });
@@ -61,6 +62,28 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
     try {
       // Validate input
+      // Mandatory 18+ age gate (compliance requirement)
+      if (!formData.dateOfBirth) {
+        toast({ title: 'Date of birth required', description: 'You must confirm you are 18 or older to join.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+      const dob = new Date(formData.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+      if (isNaN(dob.getTime()) || age < 18) {
+        toast({ title: 'You must be 18 or older', description: 'Dates is strictly for adults aged 18 and over.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+      if (age > 100) {
+        toast({ title: 'Invalid date of birth', description: 'Please enter your real date of birth.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+
       if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
         toast({
           title: 'Error',
@@ -110,7 +133,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
       let signUpResult;
       try {
-        signUpResult = await signUp(formData.email, formData.password, formData.name);
+        signUpResult = await signUp(formData.email, formData.password, formData.name, formData.dateOfBirth);
       } catch (networkError: any) {
         console.error('Network error during signup:', networkError);
         toast({
@@ -285,6 +308,21 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
                 required
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-white font-medium mb-2">Date of Birth</label>
+            <div className="relative">
+              <Input
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                max={new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000).toISOString().split('T')[0]}
+                className="bg-white/90 h-11 sm:h-12"
+                required
+              />
+            </div>
+            <p className="text-white/60 text-xs mt-1">You must be 18 or older. Your age is verified; your birth date is never shown publicly.</p>
           </div>
 
           <div>
