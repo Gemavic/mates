@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TrafficAnalytics } from './TrafficAnalytics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -34,7 +35,7 @@ interface StaffPanelProps {
 }
 
 export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) => {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'traffic' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password'>('overview');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
@@ -322,6 +323,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
         <div className="flex bg-white/10 backdrop-blur-sm rounded-2xl p-1 mb-6 overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'traffic', label: 'Traffic & Ads', icon: BarChart3 },
             { id: 'users', label: 'Users', icon: Users },
             { id: 'credits', label: 'Credits', icon: CreditCard },
             { id: 'rewards', label: 'Rewards', icon: Gift },
@@ -355,6 +357,8 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
 
         {/* Tab Content */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6">
+          {selectedTab === 'traffic' && <TrafficAnalytics />}
+
           {selectedTab === 'overview' && (
             <div className="space-y-6">
               <h3 className="text-white font-semibold text-lg">System Overview</h3>

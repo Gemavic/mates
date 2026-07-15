@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { trackPageView } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import { Menu } from '@/components/Menu';
 import { SEO } from '@/components/SEO';
@@ -133,6 +134,8 @@ const App: React.FC = () => {
       setCurrentScreen(screen);
       setIsTransitioning(false);
     }, 150);
+
+    trackPageView(screen);
 
     // URL update
     try {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackSignup } from '@/lib/analytics';
 import { Layout } from '@/components/Layout';
 import { Menu } from '@/components/Menu';
 import { Button } from '@/components/ui/button';
@@ -173,6 +174,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       }
 
       console.log('Signup successful, user data:', data);
+      trackSignup();
 
       if (data?.user?.id) {
         creditManager.initializeUser(data.user.id);
