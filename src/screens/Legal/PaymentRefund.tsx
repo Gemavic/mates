@@ -49,7 +49,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
 
           {/* Paid Services */}
           <section>
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">2. Paid Services</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Paid Services</h3>
             <div className="space-y-3 text-gray-700">
               <p>
                 Datescare offers free and paid Services. You may use the free Services after registration.
@@ -198,7 +198,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
 
           {/* Kobos */}
           <section>
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">3-B. Kobos</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Kobos</h3>
             <div className="space-y-3 text-gray-700 text-sm">
               <p>
                 Kobos are a special method to use chat Service on our platform. Kobos may be used exclusively

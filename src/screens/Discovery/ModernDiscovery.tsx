@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { CategoryNavigation } from '@/components/CategoryNavigation';
 import { QuickNavBar } from '@/components/QuickNavBar';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
-import { FeatureLimitBanner, GracePeriodBanner } from '@/components/FeatureLimitBanner';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { ProfileManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
@@ -415,27 +414,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                 Buy
               </Button>
             </div>
-
-            {/* Subscription Banners */}
-            {isFreeTier && daysRemaining > 0 && (
-              <GracePeriodBanner
-                daysRemaining={daysRemaining}
-                onUpgrade={() => onNavigate('credits')}
-              />
-            )}
-
-            {usage && tier?.limits && (
-              <>
-                {tier.limits.likes_per_day && tier.limits.likes_per_day > 0 && (
-                  <FeatureLimitBanner
-                    currentUsage={usage.daily_likes}
-                    limit={tier.limits.likes_per_day}
-                    featureName="Like"
-                    onUpgrade={() => onNavigate('credits')}
-                  />
-                )}
-              </>
-            )}
 
             {/* Swipe Card */}
             <div className="flex justify-center px-1 sm:px-2 pt-2">
