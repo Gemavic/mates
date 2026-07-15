@@ -38,6 +38,13 @@ export function useSubscription() {
 
   const checkAccess = useCallback(
     async (featureType: 'profile_view' | 'like' | 'wink' | 'message' | 'chat' | 'blog_read' | 'blog_comment' | 'video_call' | 'audio_call'): Promise<FeatureAccessResult> => {
+      // NEW MODEL (no trials, no legacy paywalls):
+      // The core loop — browsing, liking, matching, opening chats — is FREE
+      // for every signed-in user. Monetization happens at the moment of
+      // spending (messages, calls, gifts, reveals) through the server-side
+      // credit ledger and subscription entitlements, never by locking the
+      // app behind a trial wall.
+      void featureType;
       if (!user?.id) {
         return {
           allowed: false,
@@ -45,8 +52,7 @@ export function useSubscription() {
           requires_upgrade: false,
         };
       }
-
-      return await subscriptionManager.checkFeatureAccess(user.id, featureType);
+      return { allowed: true, requires_upgrade: false } as FeatureAccessResult;
     },
     [user?.id]
   );
@@ -76,7 +82,9 @@ export function useSubscription() {
     ? new Date(subscription.grace_period_ends_at) > new Date()
     : false;
   const daysRemaining = subscriptionManager.getDaysUntilGracePeriodEnds(subscription);
-  const shouldShowUpgradePrompt = subscriptionManager.shouldShowUpgradePrompt(subscription);
+  // Trial-expiry upsell modals are retired; upgrades are offered contextually
+  // at the moment of spending instead of interrupting the experience.
+  const shouldShowUpgradePrompt = false;
 
   const switchToCredits = useCallback(async () => {
     if (!user?.id) return false;
