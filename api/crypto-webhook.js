@@ -30,6 +30,46 @@ function sortObject(obj) {
   return obj;
 }
 
+async function sendReceiptEmail(userId, subject, lines) {
+  // Optional: requires RESEND_API_KEY and RECEIPT_FROM_EMAIL env vars.
+  // Silently skipped when not configured — never blocks crediting.
+  const { RESEND_API_KEY, RECEIPT_FROM_EMAIL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!RESEND_API_KEY || !RECEIPT_FROM_EMAIL) return;
+  try {
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+    if (!userResp.ok) return;
+    const user = await userResp.json();
+    if (!user?.email) return;
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: RECEIPT_FROM_EMAIL,
+        to: user.email,
+        subject,
+        text:
+          lines.join('\n') +
+          '\n\nThis charge will appear from Dates (dates.care).' +
+          '\nRefund & cancellation policy: https://' +
+          (process.env.PUBLIC_HOST || 'dates.care') +
+          '/#payment-refund' +
+          '\nQuestions? Reply to this email or use Help & Support in the app.',
+      }),
+    });
+  } catch (err) {
+    console.error('Receipt email failed (non-fatal):', err);
+  }
+}
+
 async function callRpc(name, args) {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
@@ -106,6 +146,15 @@ module.exports = async (req, res) => {
         p_payment_ref: paymentRef,
       });
       console.log('credit_purchase:', ok, JSON.stringify(data));
+      if (data?.success === true) {
+        await sendReceiptEmail(userId, 'Your Dates purchase receipt', [
+          'Thank you for your purchase!',
+          '',
+          `Item: ${CREDIT_PACKAGES[itemId]} credits (${itemId} pack)`,
+          `Payment reference: ${paymentRef}`,
+          `New balance: ${data.total_credits} credits`,
+        ]);
+      }
       // duplicate_payment_ref on retries is expected and fine
       return res.status(200).json({ received: true, credited: data?.success === true });
     }
@@ -119,6 +168,17 @@ module.exports = async (req, res) => {
         p_payment_ref: paymentRef,
       });
       console.log('activate_subscription:', ok, JSON.stringify(data));
+      if (data?.success === true) {
+        await sendReceiptEmail(userId, `Your Dates ${itemId} subscription is active`, [
+          'Thank you for subscribing!',
+          '',
+          `Plan: ${itemId.charAt(0).toUpperCase() + itemId.slice(1)} (31 days)`,
+          `Active until: ${periodEnd}`,
+          `Payment reference: ${paymentRef}`,
+          '',
+          'Crypto subscriptions do not auto-renew — you are never charged automatically.',
+        ]);
+      }
       return res.status(200).json({ received: true, activated: data?.success === true });
     }
 
