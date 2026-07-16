@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabaseClient } from '@/lib/supabase';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,10 +40,27 @@ export const Dispute: React.FC<DisputeProps> = ({ onNavigate = () => {} }) => {
 
     setIsSubmitting(true);
 
-    // Simulate submission
-    setTimeout(() => {
-      const disputeId = 'DSP-' + Math.random().toString(36).substring(2).toUpperCase();
-      
+    (async () => {
+      const { data, error } = await supabaseClient.rpc('submit_dispute', {
+        p_dispute_type: disputeType,
+        p_name: formData.name,
+        p_email: formData.email,
+        p_description: formData.description,
+        p_phone: formData.phone || null,
+        p_incident_date: formData.incidentDate || null,
+        p_evidence: formData.evidence || null,
+        p_desired_resolution: formData.desiredResolution || null,
+      });
+
+      setIsSubmitting(false);
+
+      if (error || !data?.success) {
+        alert('We could not submit your dispute right now. Please try again or email support directly.');
+        return;
+      }
+
+      const disputeId: string = data.reference;
+
       // ⚠️ SECURITY FIX: Replaced innerHTML with textContent to prevent XSS
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
@@ -78,8 +96,7 @@ export const Dispute: React.FC<DisputeProps> = ({ onNavigate = () => {} }) => {
         incidentDate: '' 
       });
       setDisputeType('');
-      setIsSubmitting(false);
-    }, 2000);
+    })();
   };
 
   return (
