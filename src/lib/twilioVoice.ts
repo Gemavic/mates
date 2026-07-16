@@ -1,4 +1,4 @@
-import { Device } from '@twilio/voice-sdk';
+import { Device, Call } from '@twilio/voice-sdk';
 import { supabaseClient } from './supabase';
 
 export class TwilioVoiceManager {
@@ -45,8 +45,7 @@ export class TwilioVoiceManager {
       const token = await this.getToken(userId);
 
       this.device = new Device(token, {
-        codecPreferences: ['opus', 'pcmu'],
-        enableRingingState: true,
+        codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
         logLevel: 1,
       });
 

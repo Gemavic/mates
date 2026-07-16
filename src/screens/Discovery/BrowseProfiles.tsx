@@ -234,7 +234,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
             interests: parseArrayField(profile.interests, [])
           };
         })
-        .filter((profile): profile is Profile => profile !== null);
+        .filter((profile): profile is NonNullable<typeof profile> => profile !== null);
 
       const uniqueProfiles = Array.from(
         new Map(formattedProfiles.map(p => [p.id, p])).values()

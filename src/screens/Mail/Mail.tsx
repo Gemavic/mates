@@ -6,7 +6,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Mail as MailIcon, Send, Search, ArrowLeft, Image, Camera, File, X, Lock, Star, Paperclip, Eye, CheckCircle2 } from 'lucide-react';
+import { Mail as MailIcon, Send, Search, ArrowLeft, Image, Camera, File, X, Lock, Star, Paperclip, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { MessagingManager, CreditManager } from '@/lib/database';
@@ -64,7 +64,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [, setShowAttachmentMenu] = useState(false);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(0);
   const [mailThreads, setMailThreads] = useState<MailThread[]>([]);
@@ -339,14 +339,6 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
       if (f?.preview) URL.revokeObjectURL(f.preview);
       return prev.filter(x => x.id !== fileId);
     });
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const formatTimestamp = (ts: string) => {

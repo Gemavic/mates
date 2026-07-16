@@ -124,13 +124,15 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         setCallDuration(prev => {
           const newDuration = prev + 1;
           if (newDuration % 60 === 0) {
-            const success = creditManager.deductCredits(user.id, 50);
-            if (success) {
-              setUserBalance(creditManager.getTotalCredits(user.id));
-            } else if (!creditManager.isStaffMember(user.id)) {
-              endCall();
-              alert('Insufficient credits for audio call!');
-            }
+            void (async () => {
+              const success = await creditManager.deductCredits(user.id, 50);
+              if (success) {
+                setUserBalance(creditManager.getTotalCredits(user.id));
+              } else if (!creditManager.isStaffMember(user.id)) {
+                endCall();
+                alert('Insufficient credits for audio call!');
+              }
+            })();
           }
           return newDuration;
         });

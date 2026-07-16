@@ -54,25 +54,6 @@ class HighSecurityEncryption {
   private encryptedUsers: Map<string, EncryptedUserData> = new Map();
   private auditLogs: SecurityAuditLog[] = [];
   
-  // Generate cryptographically secure random bytes
-  private generateSecureRandom(length: number): Uint8Array {
-    return crypto.getRandomValues(new Uint8Array(length));
-  }
-  
-  // Generate salt for encryption
-  private generateSalt(): string {
-    return Array.from(this.generateSecureRandom(32), byte => 
-      byte.toString(16).padStart(2, '0')
-    ).join('');
-  }
-  
-  // Generate initialization vector
-  private generateIV(): string {
-    return Array.from(this.generateSecureRandom(16), byte => 
-      byte.toString(16).padStart(2, '0')
-    ).join('');
-  }
-  
   // ⚠️ SECURITY: This "encryption" system has been DISABLED
   // The previous implementation used weak cryptography (XOR + Caesar + Base64) which is trivially breakable
   //
@@ -111,54 +92,6 @@ class HighSecurityEncryption {
       // Return as-is if not JSON
       return encryptedData;
     }
-  }
-  
-  // XOR encryption
-  private xorEncrypt(data: string, key: string): string {
-    let result = '';
-    for (let i = 0; i < data.length; i++) {
-      const charCode = data.charCodeAt(i) ^ key.charCodeAt(i % key.length);
-      result += String.fromCharCode(charCode);
-    }
-    return result;
-  }
-  
-  // XOR decryption (same as encryption)
-  private xorDecrypt(data: string, key: string): string {
-    return this.xorEncrypt(data, key);
-  }
-  
-  // Caesar cipher
-  private caesarCipher(text: string, shift: number): string {
-    return text.split('').map(char => {
-      const code = char.charCodeAt(0);
-      return String.fromCharCode(((code + shift) % 256 + 256) % 256);
-    }).join('');
-  }
-  
-  // Base64 encoding
-  private base64Encode(data: string): string {
-    return btoa(unescape(encodeURIComponent(data)));
-  }
-  
-  // Base64 decoding
-  private base64Decode(data: string): string {
-    return decodeURIComponent(escape(atob(data)));
-  }
-  
-  // Reverse string
-  private reverseString(str: string): string {
-    return str.split('').reverse().join('');
-  }
-  
-  // Basic encryption for non-purchasers
-  private basicEncryption(data: string): string {
-    return btoa(data);
-  }
-  
-  // Basic decryption for non-purchasers
-  private basicDecryption(data: string): string {
-    return atob(data);
   }
   
   // Security audit logging

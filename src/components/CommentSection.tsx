@@ -131,9 +131,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     return date.toLocaleDateString();
   };
 
-  const getUserInitials = (email?: string) => {
-    if (!email) return '?';
-    return email.charAt(0).toUpperCase();
+  const getUserInitials = (name?: string) => {
+    if (!name) return '?';
+    return name.charAt(0).toUpperCase();
   };
 
   if (loading) {
@@ -203,14 +203,18 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               key={comment.id}
               className="flex gap-3 p-4 rounded-xl hover:bg-gray-50 transition-colors"
             >
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                {getUserInitials(comment.user?.email)}
+              <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                {comment.user?.photo_url ? (
+                  <img src={comment.user.photo_url} alt={comment.user.name} className="w-full h-full object-cover" />
+                ) : (
+                  getUserInitials(comment.user?.name)
+                )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-gray-900 text-sm">
-                    {comment.user?.email?.split('@')[0] || 'Anonymous'}
+                    {comment.user?.name || 'Member'}
                   </span>
                   <span className="text-xs text-gray-500">
                     {formatTimeAgo(comment.created_at)}

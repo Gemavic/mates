@@ -87,7 +87,7 @@ export const Counselling: React.FC<CounsellingProps> = ({ onNavigate }) => {
       rating: 4.9,
       image: 'https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$80/session',
-      nextAvailable: 'Today 3:00 PM'
+      availability: 'Today 3:00 PM'
     },
     {
       id: '2',
@@ -97,7 +97,7 @@ export const Counselling: React.FC<CounsellingProps> = ({ onNavigate }) => {
       rating: 4.8,
       image: 'https://images.pexels.com/photos/6560258/pexels-photo-6560258.jpeg?auto=compress&cs=tinysrgb&w=400',
       price: '$75/session',
-      nextAvailable: 'Tomorrow 10:00 AM'
+      availability: 'Tomorrow 10:00 AM'
     }
   ];
 
@@ -196,7 +196,7 @@ export const Counselling: React.FC<CounsellingProps> = ({ onNavigate }) => {
                     <p className="text-white/70 text-xs mb-2">{counsellor.experience} experience</p>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-medium text-sm">{counsellor.price}</span>
-                      <span className="text-green-400 text-xs">Next: {counsellor.nextAvailable}</span>
+                      <span className="text-green-400 text-xs">Next: {counsellor.availability}</span>
                     </div>
                     <Button
                       onClick={(e) => {

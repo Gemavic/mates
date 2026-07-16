@@ -14,7 +14,7 @@ export const handleSocialSignIn = async (provider: SocialProvider): Promise<Soci
 
     console.log(`Initiating ${provider} OAuth with redirect:`, redirectUrl);
 
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+    const { error } = await supabaseClient.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: redirectUrl,

@@ -72,9 +72,6 @@ export interface FeatureUsage {
 }
 
 class SubscriptionManager {
-  private userSubscription: UserSubscription | null = null;
-  private userTier: SubscriptionTier | null = null;
-  private featureUsage: FeatureUsage | null = null;
 
   async getUserSubscription(userId: string): Promise<UserSubscription | null> {
     try {
@@ -86,7 +83,6 @@ class SubscriptionManager {
 
       if (error) throw error;
 
-      this.userSubscription = data;
       return data;
     } catch (error) {
       console.error('Error fetching user subscription:', error);
@@ -107,7 +103,6 @@ class SubscriptionManager {
 
       if (error) throw error;
 
-      this.userTier = data;
       return data;
     } catch (error) {
       console.error('Error fetching user tier:', error);
@@ -141,7 +136,6 @@ class SubscriptionManager {
 
       if (error) throw error;
 
-      this.featureUsage = data;
       return data;
     } catch (error) {
       console.error('Error fetching feature usage:', error);
@@ -212,8 +206,6 @@ class SubscriptionManager {
 
       if (error) throw error;
 
-      this.userSubscription = null;
-      this.userTier = null;
 
       return true;
     } catch (error) {
@@ -294,9 +286,6 @@ class SubscriptionManager {
   }
 
   clearCache(): void {
-    this.userSubscription = null;
-    this.userTier = null;
-    this.featureUsage = null;
   }
 }
 

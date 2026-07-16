@@ -23,7 +23,7 @@ const clearStaleSession = async () => {
   }
 
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session: _session }, error } = await supabase.auth.getSession();
 
     // Only clear if there's a specific refresh token error
     if (error && error.message && error.message.includes('refresh_token_not_found')) {

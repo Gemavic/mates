@@ -13,11 +13,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
   const products = creditManager.getCreditPackages();
 
   const handlePurchase = async (product: any) => {
-    console.log('Purchase clicked for:', product.name);
+    console.log('Purchase clicked for:', product.package_name);
     setSelectedProduct(product.id);
 
     // Show payment gateway with crypto and other payment options
-    alert(`Selected ${product.name} for $${product.price}. Payment gateway will open.`);
+    alert(`Selected ${product.package_name} for $${product.price_usd}. Payment gateway will open.`);
     setSelectedProduct('');
   };
 
@@ -42,7 +42,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
   return (
     <Layout
       title="Purchase Credits"
-      onBack={() => onNavigate?.('discovery') || (window.location.href = '/app')}
+      onBack={() => (onNavigate ? onNavigate('discovery') : (window.location.href = '/app'))}
       showClose={false}
     >
       <div className="px-4 py-6">
@@ -77,10 +77,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
               <div
                 key={product.id}
                 className={`bg-white/10 backdrop-blur-sm rounded-2xl p-6 border-2 transition-all duration-300 ${
-                  product.popular ? 'border-yellow-400 shadow-lg' : 'border-white/20'
+                  product.is_popular ? 'border-yellow-400 shadow-lg' : 'border-white/20'
                 }`}
               >
-                {product.popular && (
+                {product.is_popular && (
                   <div className="flex justify-center mb-4">
                     <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                       ⭐ MOST POPULAR
@@ -94,12 +94,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-1">{product.name}</h3>
-                      <p className="text-white/80 text-sm">{product.description}</p>
+                      <h3 className="text-xl font-bold text-white mb-1">{product.package_name}</h3>
+                      <p className="text-white/80 text-sm">{product.features.join(" · ")}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-white">${product.price.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-white">${product.price_usd.toFixed(2)}</p>
                     {product.savings && (
                       <p className="text-green-400 text-sm font-medium">{product.savings}</p>
                     )}
@@ -123,7 +123,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
                   type="button"
                 >
                   <Lock className="w-4 h-4 mr-2" />
-                  Purchase ${product.price.toFixed(2)}
+                  Purchase ${product.price_usd.toFixed(2)}
                 </Button>
               </div>
             );

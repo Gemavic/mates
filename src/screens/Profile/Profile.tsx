@@ -190,7 +190,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
             const dataUrl = e.target?.result as string;
 
             // Save to database (using data URL as placeholder)
-            const { data, error } = await supabaseClient
+            const { error } = await supabaseClient
               .from('user_photos')
               .insert({
                 user_id: user.id,

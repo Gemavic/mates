@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 
 interface DiscoveryProps {
-  onNavigate: (screen: any) => void;
+  onNavigate: (screen: any, params?: { userId?: string }) => void;
 }
 
 interface UserProfile {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Shield, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { CreditCard, Shield, RefreshCw } from 'lucide-react';
 import { paymentGatewayManager, syncPayments, startPaymentSync } from '@/lib/paymentSync';
 import { useToast } from '@/components/ui/toast';
 
@@ -40,22 +40,6 @@ export const PaymentSetup: React.FC<PaymentSetupProps> = ({ onNavigate }) => {
       });
     } finally {
       setIsSyncing(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'connected': return 'text-green-600 bg-green-100';
-      case 'error': return 'text-red-600 bg-red-100';
-      default: return 'text-yellow-600 bg-yellow-100';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'connected': return CheckCircle;
-      case 'error': return AlertTriangle;
-      default: return RefreshCw;
     }
   };
 

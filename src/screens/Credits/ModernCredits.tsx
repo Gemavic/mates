@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, Coins, Heart as KoboIcon, Star, Crown, Gift, TrendingUp, Clock, MessageCircle, Mail, Video, Heart, ShoppingCart, Check, Sparkles } from 'lucide-react';
 import { creditManager, formatPrice } from '@/lib/creditSystem';
 import { getUserCredits, getCreditTransactions } from '@/lib/database';
-import { generateSecurityReport } from '@/lib/encryption';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PaymentGateway } from '@/components/PaymentGateway';
@@ -17,12 +16,10 @@ interface ModernCreditsProps {
 }
 
 export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [paymentModel, setPaymentModel] = useState<'subscription' | 'credits'>('subscription');
   const [activeTab, setActiveTab] = useState<'credits' | 'kobos' | 'combo'>('credits');
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [subscriptionTiers, setSubscriptionTiers] = useState<any[]>([]);
-  const [securityReport, setSecurityReport] = useState<any>(null);
   const [dbCredits, setDbCredits] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const { user } = useAuth();
@@ -79,11 +76,6 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
       console.error('Failed to load subscription tiers:', error);
     }
   };
-
-  React.useEffect(() => {
-    const report = generateSecurityReport(user?.id || 'demo-user');
-    setSecurityReport(report);
-  }, [user]);
 
   const handlePurchase = async (product: any) => {
     console.log('Purchase clicked:', product.name || product.display_name);
@@ -372,11 +364,11 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                   return (
                     <ModernCard
                       key={pkg.id}
-                      className={`relative ${pkg.popular ? 'ring-2 ring-yellow-400' : ''}`}
+                      className={`relative ${pkg.is_popular ? 'ring-2 ring-yellow-400' : ''}`}
                       background="white"
                       hover={true}
                     >
-                      {pkg.popular && (
+                      {pkg.is_popular && (
                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                           <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                             ⭐ MOST POPULAR
@@ -388,7 +380,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                         <div className={`w-16 h-16 mx-auto mb-3 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center`}>
                           <Icon className="w-8 h-8 text-white" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">{pkg.name}</h3>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">{pkg.package_name}</h3>
                         <div className="flex items-center justify-center space-x-2">
                           <span className="text-3xl font-bold text-gray-900">{formatPrice(pkg.price_usd)}</span>
                           {pkg.savings && (

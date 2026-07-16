@@ -25,8 +25,8 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState('');
-  const [verificationRequest, setVerificationRequest] = useState<any>(null);
-  const [sentOTP, setSentOTP] = useState<string>('');
+  const [, setVerificationRequest] = useState<any>(null);
+  const [, setSentOTP] = useState<string>('');
   const [isResendDisabled, setIsResendDisabled] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({
@@ -139,7 +139,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
 
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+        const { error: uploadError } = await supabaseClient.storage
           .from('verification-documents')
           .upload(fileName, file, {
             cacheControl: '3600',

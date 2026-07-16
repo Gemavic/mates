@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, TrendingUp, Lightbulb, Bug, Palette, Zap, BarChart3, Briefcase, CheckCircle, Clock, ThumbsUp, Search } from 'lucide-react';
+import { MessageSquare, Send, TrendingUp, CheckCircle, Clock, ThumbsUp, Search } from 'lucide-react';
 import { submitFeedback, getFeedbackCategories, getUserFeedbackHistory, getFeedbackStats, getTrendingFeedback } from '@/lib/feedbackSystem';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -21,7 +21,7 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { user, getFirstName, getFullName } = useAuth();
+  const { user, getFullName } = useAuth();
   const categories = getFeedbackCategories();
   const userFeedback = getUserFeedbackHistory(user?.id || 'demo-user');
   const stats = getFeedbackStats();
@@ -73,18 +73,6 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
     }
   };
 
-  const getCategoryIcon = (categoryId: string) => {
-    switch (categoryId) {
-      case 'feature_request': return Lightbulb;
-      case 'ui_improvement': return Palette;
-      case 'performance': return Zap;
-      case 'scaling': return BarChart3;
-      case 'bug_report': return Bug;
-      case 'business': return Briefcase;
-      default: return MessageSquare;
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return CheckCircle;
@@ -101,7 +89,6 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
         <h3 className="text-white font-semibold text-lg mb-4">Select Category</h3>
         <div className="grid grid-cols-2 gap-3">
           {categories.map((category) => {
-            const Icon = getCategoryIcon(category.id);
             return (
               <button
                 key={category.id}

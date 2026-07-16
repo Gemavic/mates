@@ -11,7 +11,7 @@ export const CancelPage: React.FC<CancelPageProps> = ({ onNavigate = () => {} })
   return (
     <Layout
       title="Payment Cancelled"
-      onBack={() => onNavigate?.('checkout') || (window.location.href = '/checkout')}
+      onBack={() => (onNavigate ? onNavigate('checkout') : (window.location.href = '/checkout'))}
       showClose={false}
     >
       <div className="px-4 py-6">
@@ -46,7 +46,7 @@ export const CancelPage: React.FC<CancelPageProps> = ({ onNavigate = () => {} })
         {/* Action Buttons */}
         <div className="space-y-4">
           <Button
-            onClick={() => onNavigate?.('checkout') || (window.location.href = '/checkout')}
+            onClick={() => (onNavigate ? onNavigate('checkout') : (window.location.href = '/checkout'))}
             className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold hover:scale-105 transition-all duration-300"
             type="button"
           >
@@ -55,7 +55,7 @@ export const CancelPage: React.FC<CancelPageProps> = ({ onNavigate = () => {} })
           </Button>
           
           <Button
-            onClick={() => onNavigate?.('discovery') || (window.location.href = '/app')}
+            onClick={() => (onNavigate ? onNavigate('discovery') : (window.location.href = '/app'))}
             className="w-full bg-white/20 text-white hover:bg-white/30 transition-colors"
             type="button"
           >

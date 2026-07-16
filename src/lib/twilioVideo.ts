@@ -1,4 +1,4 @@
-import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack, RemoteAudioTrack } from 'twilio-video';
+import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack, RemoteAudioTrack, createLocalVideoTrack, createLocalAudioTrack } from 'twilio-video';
 import { supabaseClient } from './supabase';
 
 export class TwilioVideoManager {
@@ -104,7 +104,7 @@ export class TwilioVideoManager {
 
   async startLocalVideo(): Promise<LocalVideoTrack> {
     try {
-      const track = await LocalVideoTrack.create({
+      const track = await createLocalVideoTrack({
         width: 640,
         height: 480,
         frameRate: 24,
@@ -119,7 +119,7 @@ export class TwilioVideoManager {
 
   async startLocalAudio(): Promise<LocalAudioTrack> {
     try {
-      const track = await LocalAudioTrack.create();
+      const track = await createLocalAudioTrack();
       this.localAudioTrack = track;
       return track;
     } catch (error) {
