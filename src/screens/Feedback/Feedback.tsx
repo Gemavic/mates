@@ -1,32 +1,9 @@
 import React, { useState } from 'react';
-import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  MessageSquare, 
-  Star, 
-  Send, 
-  TrendingUp, 
-  Lightbulb,
-  Bug,
-  Palette,
-  Zap,
-  BarChart3,
-  Briefcase,
-  CheckCircle,
-  Clock,
-  ThumbsUp,
-  Search
-} from 'lucide-react';
-import { 
-  feedbackManager, 
-  submitFeedback, 
-  getFeedbackCategories, 
-  getUserFeedbackHistory,
-  getFeedbackStats,
-  getTrendingFeedback
-} from '@/lib/feedbackSystem';
+import { MessageSquare, Send, TrendingUp, Lightbulb, Bug, Palette, Zap, BarChart3, Briefcase, CheckCircle, Clock, ThumbsUp, Search } from 'lucide-react';
+import { submitFeedback, getFeedbackCategories, getUserFeedbackHistory, getFeedbackStats, getTrendingFeedback } from '@/lib/feedbackSystem';
 import { useAuth } from '@/hooks/useAuth';
 
 interface FeedbackProps {

@@ -30,7 +30,7 @@ import { SuccessPage } from '@/screens/Success/SuccessPage';
 import { CancelPage } from '@/screens/Cancel/CancelPage';
 import { CheckoutPage } from '@/screens/Checkout/CheckoutPage';
 import { StaffPanel } from '@/screens/StaffPanel/StaffPanel';
-import { StaffLogin } from '@/screens/StaffPanel/StaffLogin';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
 import { MenuShowcase } from '@/screens/MenuShowcase/MenuShowcase';
 import { VideoChat } from '@/screens/VideoChat/VideoChat';
 import { AudioChat } from '@/screens/AudioChat/AudioChat';
@@ -62,60 +62,18 @@ interface SelectedChatUser {
 
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState('welcome');
-  const [staffAuth, setStaffAuth] = useState<any>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { user, loading } = useAuth();
-
-  // Check for existing staff authentication - simplified
-  React.useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem('staffAuth');
-      if (stored) {
-        const session = JSON.parse(stored);
-        if (session && session.isAuthenticated) {
-          setStaffAuth(session);
-        }
-      }
-    } catch (error) {
-      console.warn('Error checking existing staff session:', error);
-    }
-  }, []);
-
-  const handleStaffLogin = (staffId: string) => {
-    try {
-      const stored = sessionStorage.getItem('staffAuth');
-      if (stored) {
-        const session = JSON.parse(stored);
-        if (session && session.isAuthenticated) {
-          setStaffAuth(session);
-          setCurrentScreen('staff-panel');
-          console.log(`✅ Staff panel access granted: ${staffId} (${session.role})`);
-          return;
-        }
-      }
-      console.error('No valid staff session found');
-      setStaffAuth(null);
-    } catch (error) {
-      console.error('Staff login handler error:', error);
-      setStaffAuth(null);
-    }
-  };
+  const { staffAuth, isStaff, loading: staffLoading } = useStaffAccess();
 
   const handleStaffLogout = () => {
     try {
-      sessionStorage.removeItem('staffAuth');
-      setStaffAuth(null);
       setCurrentScreen('discovery');
-      console.log('✅ Staff logged out successfully');
+      console.log('✅ Left staff panel');
     } catch (error) {
       console.error('Staff logout error:', error);
-      // Ensure logout even on error
-      try {
-        sessionStorage.removeItem('staffAuth');
-      } catch {}
-      setStaffAuth(null);
       setCurrentScreen('discovery');
     }
   };
@@ -393,9 +351,36 @@ const App: React.FC = () => {
         return <CheckoutPage onNavigate={handleNavigate} />;
       
       case 'staff-panel':
-        return staffAuth 
-          ? <StaffPanel onLogout={handleStaffLogout} staffAuth={staffAuth} />
-          : <StaffLogin onNavigate={handleNavigate} onStaffLogin={handleStaffLogin} />;
+        if (loading || staffLoading) {
+          return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-600 to-purple-700">
+              <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          );
+        }
+        if (!user) {
+          return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-600 to-purple-700 text-white text-center px-6">
+              <p className="text-lg font-semibold mb-2">Sign in required</p>
+              <p className="text-white/80 text-sm mb-6">Sign in with your Dates account to access the staff panel.</p>
+              <button onClick={() => handleNavigate('signin')} className="bg-white text-rose-600 font-semibold px-6 py-3 rounded-xl">
+                Sign In
+              </button>
+            </div>
+          );
+        }
+        if (!isStaff) {
+          return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-600 to-purple-700 text-white text-center px-6">
+              <p className="text-lg font-semibold mb-2">Not authorized</p>
+              <p className="text-white/80 text-sm mb-6">Your account does not have staff access.</p>
+              <button onClick={() => handleNavigate('discovery')} className="bg-white text-rose-600 font-semibold px-6 py-3 rounded-xl">
+                Back to Discovery
+              </button>
+            </div>
+          );
+        }
+        return <StaffPanel onLogout={handleStaffLogout} staffAuth={staffAuth} />;
       
       case 'menu-showcase':
         return <MenuShowcase onNavigate={handleNavigate} />;

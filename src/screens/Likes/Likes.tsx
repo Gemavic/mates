@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { EmptyState } from '@/components/EmptyState';
-import { PageTransition } from '@/components/PageTransition';
 import { Heart, Star, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';

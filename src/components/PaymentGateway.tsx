@@ -1,28 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  CreditCard,
-  Bitcoin,
-  Smartphone,
-  Shield,
-  Lock,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  X,
-  Wallet,
-  DollarSign,
-  Copy,
-  QrCode,
-  Clock,
-  ExternalLink
-} from 'lucide-react';
-import { DATES_CRYPTO_WALLETS, cryptoPaymentManager, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
+import { CreditCard, Bitcoin, Smartphone, Shield, Lock, CheckCircle, Loader2, X, Wallet, Copy, QrCode, Clock } from 'lucide-react';
+import { DATES_CRYPTO_WALLETS, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
 import { startCryptoCheckout, resolveCreditPackageId } from '@/lib/cryptoCheckout';
 import { securityManager, encryptSensitiveData } from '@/lib/encryption';
-import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PaymentGatewayProps {
@@ -37,7 +19,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   amount,
   packageName,
   credits,
-  onSuccess,
+  onSuccess: _onSuccess,
   onCancel,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);

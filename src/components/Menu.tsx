@@ -19,8 +19,8 @@ interface MenuProps {
 export const Menu: React.FC<MenuProps> = ({
   onNavigate,
   currentScreen,
-  selectedChatUser,
-  onSelectChatUser
+  selectedChatUser: _selectedChatUser,
+  onSelectChatUser: _onSelectChatUser
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, getFirstName } = useAuth();
@@ -107,7 +107,7 @@ export const Menu: React.FC<MenuProps> = ({
   }
 
   // NOTE: Staff access is intentionally NOT in the public menu.
-  // Staff reach it directly at /#staff-panel (still protected by StaffLogin).
+  // Staff reach it directly at /#staff-panel (gated by is_staff on their real account).
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);

@@ -3,22 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  HelpCircle, 
-  MessageCircle, 
-  Phone, 
-  Mail, 
-  Shield, 
-  CreditCard, 
-  Users, 
-  Video,
-  Heart,
-  Search,
-  Book,
-  ExternalLink,
-  Clock,
-  CheckCircle
-} from 'lucide-react';
+import { HelpCircle, MessageCircle, Phone, Mail, Shield, CreditCard, Users, Video, Search, Book } from 'lucide-react';
 
 interface HelpProps {
   onNavigate: (screen: string) => void;

@@ -1,19 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  CreditCard, 
-  Shield, 
-  CheckCircle, 
-  AlertTriangle, 
-  RefreshCw, 
-  Key, 
-  Globe, 
-  Settings,
-  Copy,
-  ExternalLink
-} from 'lucide-react';
+import { CreditCard, Shield, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { paymentGatewayManager, syncPayments, startPaymentSync } from '@/lib/paymentSync';
 import { useToast } from '@/components/ui/toast';
 

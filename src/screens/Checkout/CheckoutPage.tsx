@@ -3,7 +3,6 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Shield, Lock, Crown, Coins, Heart, Gift, Star, Zap } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
-import { PaymentGateway } from '@/components/PaymentGateway';
 
 interface CheckoutPageProps {
   onNavigate?: (screen: string) => void;

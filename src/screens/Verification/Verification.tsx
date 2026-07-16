@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Upload, CheckCircle, AlertCircle, Shield, User, Phone, Mail } from 'lucide-react';
+import { Camera, Upload, CheckCircle, AlertCircle, Shield, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';

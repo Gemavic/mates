@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { HeartAnimation } from './HeartAnimation';
-import { Heart, X, Star, MapPin, Briefcase, GraduationCap, MoreVertical, Flag, Shield, Zap, MessageCircle, Send, Paperclip, Smile } from 'lucide-react';
+import { Heart, X, Star, MapPin, Briefcase, GraduationCap, MoreVertical, Flag, Shield, Zap, MessageCircle, Send, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendProfileViewNotification } from '@/lib/emailNotifications';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -161,6 +160,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
         document.body.removeChild(successMessage);
       }
     }, 3000);
+    const blinkElement = document.createElement('div');
     blinkElement.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl animate-ping pointer-events-none z-50';
     blinkElement.textContent = '👁️';
     document.body.appendChild(blinkElement);

@@ -362,7 +362,7 @@ class UserVerificationManager {
   }
 
   // Verify phone code
-  verifyPhoneCode(phoneNumber: string, code: string, expectedCode: string): boolean {
+  verifyPhoneCode(_phoneNumber: string, code: string, expectedCode: string): boolean {
     return code === expectedCode;
   }
 

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, Eye, CreditCard } from 'lucide-react';
+import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SecurityManager } from '@/lib/security';
 
 interface SettingsProps {
   onNavigate: (screen: string) => void;

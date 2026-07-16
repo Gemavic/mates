@@ -6,11 +6,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import {
-  Mail as MailIcon, Send, Search, ArrowLeft,
-  Image, Camera, File, X, Lock, Star,
-  Paperclip, Eye, Clock, CheckCircle2
-} from 'lucide-react';
+import { Mail as MailIcon, Send, Search, ArrowLeft, Image, Camera, File, X, Lock, Star, Paperclip, Eye, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { MessagingManager, CreditManager } from '@/lib/database';

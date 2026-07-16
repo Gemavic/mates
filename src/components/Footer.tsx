@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Search, User, Settings, Newspaper, Mail, Users, MessageCircle, MessageSquare, CreditCard, BookOpen, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Heart, Search, User, Mail, Users, MessageCircle, MessageSquare, CreditCard, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FooterProps {

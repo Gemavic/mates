@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, X, Star, MapPin, Briefcase, GraduationCap, MoreVertical, Flag, Shield, MessageCircle, Send, Paperclip, Smile } from 'lucide-react';
+import { X, Star, MapPin, Briefcase, GraduationCap, MoreVertical, Flag, Shield, MessageCircle, Send, Smile } from 'lucide-react';
 import { SecurityManager } from '@/lib/security';
 import { creditManager } from '@/lib/creditSystem';
 import { sendProfileViewNotification } from '@/lib/emailNotifications';
@@ -30,7 +30,7 @@ interface ProfileCardProps {
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({
   profile,
-  onLike,
+  onLike: _onLike,
   onPass,
   onSuperLike,
   onSendMessage,
