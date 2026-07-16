@@ -75,7 +75,7 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
   return (
     <Layout
       title="Payment Success"
-      onBack={() => onNavigate?.('discovery') || (window.location.href = '/app')}
+      onBack={() => (onNavigate ? onNavigate('discovery') : (window.location.href = '/app'))}
       showClose={false}
     >
       <div className="px-4 py-6">
@@ -133,7 +133,7 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
 
         <div className="space-y-3">
           <button
-            onClick={() => onNavigate?.('discovery') || (window.location.href = '/app')}
+            onClick={() => (onNavigate ? onNavigate('discovery') : (window.location.href = '/app'))}
             className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:scale-105 transition-all duration-300 flex items-center justify-center group cursor-pointer touch-manipulation active:scale-95"
           >
             Start Using Credits
@@ -141,7 +141,7 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
           </button>
           
           <button
-            onClick={() => onNavigate?.('credits') || (window.location.href = '/credits')}
+            onClick={() => (onNavigate ? onNavigate('credits') : (window.location.href = '/credits'))}
             className="w-full bg-white/20 text-white py-3 px-6 rounded-xl font-semibold hover:bg-white/30 transition-colors duration-300 flex items-center justify-center cursor-pointer touch-manipulation active:scale-95"
           >
             View Credit Balance

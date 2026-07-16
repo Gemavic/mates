@@ -146,13 +146,13 @@ class PaymentGatewayManager {
     providerId: string,
     externalTransactionId: string,
     userId: string,
-    amount: number,
+    _amount: number,
     credits: number,
-    metadata: Record<string, any> = {}
+    _metadata: Record<string, any> = {}
   ): Promise<boolean> {
     try {
       // Record transaction in database
-      const { data, error } = await supabaseClient
+      const { error } = await supabaseClient
         .from('credit_transactions')
         .insert({
           user_id: userId,

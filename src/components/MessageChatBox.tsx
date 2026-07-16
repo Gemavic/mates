@@ -206,7 +206,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             isOnline: userProfile.is_online || false,
             isTyping: false
           };
-        }).filter((thread): thread is ChatThread => thread !== null);
+        }).filter((thread): thread is NonNullable<typeof thread> => thread !== null);
 
         setDefaultThreads(loadedThreads);
         setChatThreads(loadedThreads);
@@ -384,7 +384,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           filter: `thread_id=eq.${activeThread}`
         },
         (payload) => {
-          const typingData = payload.new;
+          const typingData = payload.new as { user_id?: string; is_typing?: boolean } | null;
           if (typingData && typingData.user_id !== user.id) {
             setOtherUserTyping(typingData.is_typing ?? false);
           }
@@ -588,8 +588,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         .from('mail_threads')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', activeThread)
-        .then(() => {})
-        .catch(() => {});
+        .then(() => {}, () => {});
 
       Promise.resolve().then(() => {
         try {

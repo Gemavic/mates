@@ -74,7 +74,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
 
   const sortedGifts = filteredGifts.sort((a, b) => b.popularity - a.popularity);
 
-  const sendGift = (_giftId: string, giftName: string, price: number) => {
+  const sendGift = async (_giftId: string, giftName: string, price: number) => {
     if (!user) {
       alert('Please sign in to send gifts');
       return;
@@ -90,7 +90,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
       setUserBalance(creditManager.getTotalCredits(user.id));
       alert(`🎁 Successfully sent ${giftName} (Staff - Free)!`);
     } else {
-      const success = creditManager.spendCredits(user.id, price, `Sent ${giftName} gift`);
+      const success = await creditManager.spendCredits(user.id, price, `Sent ${giftName} gift`);
       if (success) {
         setUserBalance(creditManager.getTotalCredits(user.id));
         alert(`🎁 Successfully sent ${giftName} for ${formatCredits(price)}!`);

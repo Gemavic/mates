@@ -29,7 +29,7 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [likedProfiles, setLikedProfiles] = useState<LikedProfile[]>([]);
   const [whoLikesYou, setWhoLikesYou] = useState<WhoLikesYou[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const loadLikes = async () => {

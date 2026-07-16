@@ -239,7 +239,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           .eq('thread_id', selectedThread)
           .eq('is_read', false)
           .neq('sender_id', user.id)
-          .then(() => {}).catch(() => {});
+          .then(() => {}, () => {});
       } catch (error) {
         console.error('Failed to load messages:', error);
         if (!cancelled) setMessages([]);
@@ -282,7 +282,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         event: '*', schema: 'public', table: 'typing_indicators',
         filter: `thread_id=eq.${selectedThread}`
       }, (payload) => {
-        const d = payload.new;
+        const d = payload.new as { user_id?: string; is_typing?: boolean } | null;
         if (d && d.user_id !== user.id) setOtherUserTyping(d.is_typing ?? false);
       })
       .subscribe();
@@ -334,7 +334,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
       supabaseClient.from('mail_threads')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', selectedThread).then(() => {}).catch(() => {});
+        .eq('id', selectedThread).then(() => {}, () => {});
 
       try { sendMessageNotification(thread.participantId, { name: 'You', image: userProfileImage, id: user.id }); } catch {}
     } catch {

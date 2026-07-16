@@ -79,24 +79,32 @@ export class ContentModerationService {
     }
   }
 
+  // ⚠️ NOT CURRENTLY WIRED TO ANY UPLOAD FLOW. This is a placeholder stub —
+  // it does not analyze image content and always reports safe=true. It is
+  // not called anywhere in the app; photo/media safety currently relies on
+  // blur-by-default display (see ProtectedMedia), user reporting, and staff
+  // moderation review — not automated scanning. To add real automated
+  // scanning, integrate a vendor API (e.g. AWS Rekognition, Hive Moderation)
+  // here and wire performImageScan into the actual upload paths
+  // (photo verification, feed posts, chat attachments).
   private async performImageScan(imageFile: File): Promise<ContentScanResult> {
-    const base64Image = await this.fileToBase64(imageFile);
+    void (await this.fileToBase64(imageFile)); // read but intentionally unused in this stub
 
-    const mockScan: ContentScanResult = {
+    const stubScan: ContentScanResult = {
       safe: true,
-      riskScore: Math.random() * 0.3,
+      riskScore: 0,
       hasNudity: false,
       hasViolence: false,
       hasExplicitContent: false,
       details: {
-        scanner: 'hive_moderation',
+        scanner: 'not_configured',
         timestamp: new Date().toISOString(),
         fileSize: imageFile.size,
         fileType: imageFile.type
       }
     };
 
-    return mockScan;
+    return stubScan;
   }
 
   private async performTextScan(text: string): Promise<ContentScanResult> {

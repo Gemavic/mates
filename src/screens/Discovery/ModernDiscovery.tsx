@@ -32,7 +32,7 @@ interface Profile {
 }
 
 interface ModernDiscoveryProps {
-  onNavigate?: (screen: string) => void;
+  onNavigate?: (screen: string, params?: { userId?: string }) => void;
 }
 
 export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = () => {} }) => {
@@ -196,7 +196,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               premium: false
             };
           })
-          .filter((profile): profile is Profile => profile !== null);
+          .filter((profile): profile is NonNullable<typeof profile> => profile !== null);
 
         console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => p && ({ name: p.name, online: p.online, id: p.id })));
         setProfiles(formattedProfiles);
@@ -415,8 +415,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
             <div className="flex justify-center px-1 sm:px-2 pt-2">
               {profiles.length === 0 && !loading ? (
                 <EmptyState
-                  message="No profiles available at the moment"
-                  icon={<Users className="w-16 h-16 text-white/50" />}
+                  icon={Users}
+                  title="No profiles available"
+                  description="Check back soon, or widen your search filters to see more people."
                 />
               ) : currentProfile ? (
                 <SwipeCard
@@ -433,8 +434,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                 />
               ) : (
                 <EmptyState
-                  message="You've viewed all available profiles!"
-                  icon={<Heart className="w-16 h-16 text-white/50" />}
+                  icon={Heart}
+                  title="You've viewed everyone"
+                  description="You've seen all available profiles for now — check back soon for new members."
                 />
               )}
             </div>
@@ -482,8 +484,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
             {profiles.length === 0 && !loading ? (
               <EmptyState
-                message="No profiles available at the moment"
-                icon={<Users className="w-16 h-16 text-white/50" />}
+                icon={Users}
+                title="No profiles available"
+                description="Check back soon, or widen your search filters to see more people."
               />
             ) : viewMode === 'swipe' ? (
               /* Swipe Mode for Desktop */
@@ -504,8 +507,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                 </div>
               ) : (
                 <EmptyState
-                  message="You've viewed all available profiles!"
-                  icon={<Heart className="w-16 h-16 text-white/50" />}
+                  icon={Heart}
+                  title="You've viewed everyone"
+                  description="You've seen all available profiles for now — check back soon for new members."
                 />
               )
             ) : (

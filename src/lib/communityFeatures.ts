@@ -23,7 +23,8 @@ export interface UserComment {
   is_edited: boolean;
   is_deleted: boolean;
   user?: {
-    email: string;
+    name: string;
+    photo_url?: string;
   };
 }
 
@@ -177,10 +178,7 @@ export const communityFeatures = {
     try {
       const { data, error } = await supabase
         .from('user_comments')
-        .select(`
-          *,
-          user:auth.users(email)
-        `)
+        .select('*')
         .eq('content_type', contentType)
         .eq('content_id', contentId)
         .eq('is_deleted', false)
@@ -189,7 +187,31 @@ export const communityFeatures = {
 
       if (error) throw error;
 
-      return { comments: data || [] };
+      const comments = data || [];
+      const userIds = [...new Set(comments.map((c: any) => c.user_id))];
+
+      let profileMap: Record<string, { name: string; photo_url?: string }> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, first_name, full_name, photo_url')
+          .in('user_id', userIds);
+
+        profileMap = (profiles || []).reduce((acc: any, p: any) => {
+          acc[p.user_id] = {
+            name: p.first_name || p.full_name || 'Member',
+            photo_url: p.photo_url,
+          };
+          return acc;
+        }, {});
+      }
+
+      const enrichedComments = comments.map((c: any) => ({
+        ...c,
+        user: profileMap[c.user_id] || { name: 'Member' },
+      }));
+
+      return { comments: enrichedComments };
     } catch (error: any) {
       console.error('Error getting comments:', error);
       return { comments: [], error: error.message };

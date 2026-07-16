@@ -39,7 +39,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
   ];
 
   const [matchSuggestions, setMatchSuggestions] = React.useState<any[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = React.useState(true);
+  const [, setLoadingSuggestions] = React.useState(true);
 
   React.useEffect(() => {
     const loadSuggestions = async () => {

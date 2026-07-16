@@ -29,7 +29,7 @@ export const ModerationDashboard: React.FC = () => {
   const [reports, setReports] = useState<AbuseReport[]>([]);
   const [queue, setQueue] = useState<ModerationQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedReport, setSelectedReport] = useState<AbuseReport | null>(null);
+  const [, setSelectedReport] = useState<AbuseReport | null>(null);
 
   useEffect(() => {
     loadData();

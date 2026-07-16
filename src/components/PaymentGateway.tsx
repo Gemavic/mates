@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { CreditCard, Bitcoin, Smartphone, Shield, Lock, CheckCircle, Loader2, X, Wallet, Copy, QrCode, Clock } from 'lucide-react';
 import { DATES_CRYPTO_WALLETS, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
 import { startCryptoCheckout, resolveCreditPackageId } from '@/lib/cryptoCheckout';
-import { securityManager, encryptSensitiveData } from '@/lib/encryption';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PaymentGatewayProps {
@@ -25,7 +24,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto' | 'mobile'>('crypto');
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTC');
-  const [cryptoPayment, setCryptoPayment] = useState<any>(null);
+  const [cryptoPayment] = useState<any>(null);
   const [paymentStep, setPaymentStep] = useState<'method' | 'payment' | 'confirmation'>('method');
   const [cardData, setCardData] = useState({
     number: '',
@@ -78,7 +77,6 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   const selectedWallet = Object.values(DATES_CRYPTO_WALLETS).find(w => w.symbol === selectedCrypto);
   const tempCryptoAmount = selectedWallet ? calculateCryptoAmount(amount, selectedCrypto) : null;
   const cryptoAmount = typeof tempCryptoAmount === 'number' && !isNaN(tempCryptoAmount) ? tempCryptoAmount : 0;
-  const cryptoPrice = getCryptoPrice(selectedCrypto);
 
   // Crypto payment confirmation step
   if (paymentStep === 'confirmation' && cryptoPayment && selectedWallet) {

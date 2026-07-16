@@ -81,13 +81,13 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     alert('User blocked successfully.');
   };
 
-  const handleSuperLike = () => {
+  const handleSuperLike = async () => {
     if (!user) {
       alert('Please sign in to send Super Likes');
       return;
     }
     if (creditManager.canAfford(user.id, 5)) {
-     const success = creditManager.deductCredits(user.id, 5);
+     const success = await creditManager.deductCredits(user.id, 5);
       if (success) {
         onSuperLike(profile.id);
         

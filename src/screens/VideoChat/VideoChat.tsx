@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabaseClient } from '@/lib/supabase';
 import { twilioVideoManager } from '@/lib/twilioVideo';
-import type { RemoteParticipant, RemoteTrack, RemoteVideoTrack, RemoteAudioTrack } from 'twilio-video';
+import type { RemoteParticipant, RemoteTrack, RemoteVideoTrack } from 'twilio-video';
 
 interface ActiveMatch {
   id: string;
@@ -109,7 +109,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       setCurrentMatchName(matchName);
 
       const localVideo = await twilioVideoManager.startLocalVideo();
-      const localAudio = await twilioVideoManager.startLocalAudio();
+      await twilioVideoManager.startLocalAudio();
 
       if (localVideoRef.current) {
         twilioVideoManager.attachTrack(localVideo, localVideoRef.current);
@@ -117,7 +117,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
       const roomName = `room_${[user.id, matchId].sort().join('_')}`;
 
-      const room = await twilioVideoManager.joinRoom(
+      await twilioVideoManager.joinRoom(
         roomName,
         user.id,
         (participant: RemoteParticipant) => {
@@ -141,17 +141,19 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         setCallDuration(prev => {
           const newDuration = prev + 1;
           if (newDuration % 60 === 0) {
-            const success = creditManager.deductCredits(user.id, 60);
-            if (success) {
-              setUserBalance(creditManager.getTotalCredits(user.id));
-            } else if (!creditManager.isStaffMember(user.id)) {
-              endCall();
-              const errorMessage = document.createElement('div');
-              errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-              errorMessage.textContent = 'Insufficient credits for video call!';
-              document.body.appendChild(errorMessage);
-              setTimeout(() => document.body.removeChild(errorMessage), 3000);
-            }
+            void (async () => {
+              const success = await creditManager.deductCredits(user.id, 60);
+              if (success) {
+                setUserBalance(creditManager.getTotalCredits(user.id));
+              } else if (!creditManager.isStaffMember(user.id)) {
+                endCall();
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                errorMessage.textContent = 'Insufficient credits for video call!';
+                document.body.appendChild(errorMessage);
+                setTimeout(() => document.body.removeChild(errorMessage), 3000);
+              }
+            })();
           }
           return newDuration;
         });
