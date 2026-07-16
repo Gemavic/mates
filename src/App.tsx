@@ -4,46 +4,49 @@ import { cn } from '@/lib/utils';
 import { Menu } from '@/components/Menu';
 import { SEO } from '@/components/SEO';
 import { Welcome } from '@/screens/Welcome/Welcome';
-import { SignIn } from '@/screens/Auth/SignIn';
-import { SignUp } from '@/screens/Auth/SignUp';
-import { Discovery } from '@/screens/Discovery/Discovery';
-import { ModernDiscovery } from '@/screens/Discovery/ModernDiscovery';
-import { Matches } from '@/screens/Matches/Matches';
-import { Likes } from '@/screens/Likes/Likes';
-import { ModernCredits } from '@/screens/Credits/ModernCredits';
-import { GiftShop } from '@/screens/GiftShop/GiftShop';
-import { Mail } from '@/screens/Mail/Mail';
-import { Profile } from '@/screens/Profile/Profile';
-import { ViewUserProfile } from '@/screens/Profile/ViewUserProfile';
-import { Newsfeed } from '@/screens/Newsfeed/Newsfeed';
-import { Feedback } from '@/screens/Feedback/Feedback';
-import { Settings } from '@/screens/Settings/Settings';
-import { Terms } from '@/screens/Legal/Terms';
-import { Privacy } from '@/screens/Legal/Privacy';
-import { Dispute } from '@/screens/Legal/Dispute';
-import { Disclaimer } from '@/screens/Legal/Disclaimer';
-import { PaymentRefund } from '@/screens/Legal/PaymentRefund';
-import { MisconductPolicy } from '@/screens/Legal/MisconductPolicy';
-import { ConsentPolicy } from '@/screens/Legal/ConsentPolicy';
-import { AcceptableUsePolicy } from '@/screens/Legal/AcceptableUsePolicy';
-import { SuccessPage } from '@/screens/Success/SuccessPage';
-import { CancelPage } from '@/screens/Cancel/CancelPage';
-import { CheckoutPage } from '@/screens/Checkout/CheckoutPage';
-import { StaffPanel } from '@/screens/StaffPanel/StaffPanel';
+
+// Lazy-loaded screens: split out of the main bundle so the first paint
+// (Welcome + auth) stays small; each screen loads on first visit.
+const SignIn = React.lazy(() => import('@/screens/Auth/SignIn').then(m => ({ default: m.SignIn })));
+const SignUp = React.lazy(() => import('@/screens/Auth/SignUp').then(m => ({ default: m.SignUp })));
+const Discovery = React.lazy(() => import('@/screens/Discovery/Discovery').then(m => ({ default: m.Discovery })));
+const ModernDiscovery = React.lazy(() => import('@/screens/Discovery/ModernDiscovery').then(m => ({ default: m.ModernDiscovery })));
+const Matches = React.lazy(() => import('@/screens/Matches/Matches').then(m => ({ default: m.Matches })));
+const Likes = React.lazy(() => import('@/screens/Likes/Likes').then(m => ({ default: m.Likes })));
+const ModernCredits = React.lazy(() => import('@/screens/Credits/ModernCredits').then(m => ({ default: m.ModernCredits })));
+const GiftShop = React.lazy(() => import('@/screens/GiftShop/GiftShop').then(m => ({ default: m.GiftShop })));
+const Mail = React.lazy(() => import('@/screens/Mail/Mail').then(m => ({ default: m.Mail })));
+const Profile = React.lazy(() => import('@/screens/Profile/Profile').then(m => ({ default: m.Profile })));
+const ViewUserProfile = React.lazy(() => import('@/screens/Profile/ViewUserProfile').then(m => ({ default: m.ViewUserProfile })));
+const Newsfeed = React.lazy(() => import('@/screens/Newsfeed/Newsfeed').then(m => ({ default: m.Newsfeed })));
+const Feedback = React.lazy(() => import('@/screens/Feedback/Feedback').then(m => ({ default: m.Feedback })));
+const Settings = React.lazy(() => import('@/screens/Settings/Settings').then(m => ({ default: m.Settings })));
+const Terms = React.lazy(() => import('@/screens/Legal/Terms').then(m => ({ default: m.Terms })));
+const Privacy = React.lazy(() => import('@/screens/Legal/Privacy').then(m => ({ default: m.Privacy })));
+const Dispute = React.lazy(() => import('@/screens/Legal/Dispute').then(m => ({ default: m.Dispute })));
+const Disclaimer = React.lazy(() => import('@/screens/Legal/Disclaimer').then(m => ({ default: m.Disclaimer })));
+const PaymentRefund = React.lazy(() => import('@/screens/Legal/PaymentRefund').then(m => ({ default: m.PaymentRefund })));
+const MisconductPolicy = React.lazy(() => import('@/screens/Legal/MisconductPolicy').then(m => ({ default: m.MisconductPolicy })));
+const ConsentPolicy = React.lazy(() => import('@/screens/Legal/ConsentPolicy').then(m => ({ default: m.ConsentPolicy })));
+const AcceptableUsePolicy = React.lazy(() => import('@/screens/Legal/AcceptableUsePolicy').then(m => ({ default: m.AcceptableUsePolicy })));
+const SuccessPage = React.lazy(() => import('@/screens/Success/SuccessPage').then(m => ({ default: m.SuccessPage })));
+const CancelPage = React.lazy(() => import('@/screens/Cancel/CancelPage').then(m => ({ default: m.CancelPage })));
+const CheckoutPage = React.lazy(() => import('@/screens/Checkout/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
+const StaffPanel = React.lazy(() => import('@/screens/StaffPanel/StaffPanel').then(m => ({ default: m.StaffPanel })));
+const MenuShowcase = React.lazy(() => import('@/screens/MenuShowcase/MenuShowcase').then(m => ({ default: m.MenuShowcase })));
+const VideoChat = React.lazy(() => import('@/screens/VideoChat/VideoChat').then(m => ({ default: m.VideoChat })));
+const AudioChat = React.lazy(() => import('@/screens/AudioChat/AudioChat').then(m => ({ default: m.AudioChat })));
+const RelationshipServices = React.lazy(() => import('@/screens/RelationshipServices/RelationshipServices').then(m => ({ default: m.RelationshipServices })));
+const Education = React.lazy(() => import('@/screens/Education/Education').then(m => ({ default: m.Education })));
+const MatchSuitor = React.lazy(() => import('@/screens/MatchSuitor/MatchSuitor').then(m => ({ default: m.MatchSuitor })));
+const Verification = React.lazy(() => import('@/screens/Verification/Verification').then(m => ({ default: m.Verification })));
+const PaymentSetup = React.lazy(() => import('@/screens/PaymentSetup/PaymentSetup').then(m => ({ default: m.PaymentSetup })));
+const Help = React.lazy(() => import('@/screens/Help/Help').then(m => ({ default: m.Help })));
+const CareBlog = React.lazy(() => import('@/screens/CareBlog/CareBlog').then(m => ({ default: m.CareBlog })));
+const Quizzes = React.lazy(() => import('@/screens/Quizzes/Quizzes').then(m => ({ default: m.Quizzes })));
+const Onboarding = React.lazy(() => import('@/screens/Onboarding/Onboarding').then(m => ({ default: m.Onboarding })));
+const AuthCallback = React.lazy(() => import('@/screens/Auth/AuthCallback').then(m => ({ default: m.AuthCallback })));
 import { useStaffAccess } from '@/hooks/useStaffAccess';
-import { MenuShowcase } from '@/screens/MenuShowcase/MenuShowcase';
-import { VideoChat } from '@/screens/VideoChat/VideoChat';
-import { AudioChat } from '@/screens/AudioChat/AudioChat';
-import { RelationshipServices } from '@/screens/RelationshipServices/RelationshipServices';
-import { Education } from '@/screens/Education/Education';
-import { MatchSuitor } from '@/screens/MatchSuitor/MatchSuitor';
-import { Verification } from '@/screens/Verification/Verification';
-import { PaymentSetup } from '@/screens/PaymentSetup/PaymentSetup';
-import { Help } from '@/screens/Help/Help';
-import { CareBlog } from '@/screens/CareBlog/CareBlog';
-import { Quizzes } from '@/screens/Quizzes/Quizzes';
-import { Onboarding } from '@/screens/Onboarding/Onboarding';
-import { AuthCallback } from '@/screens/Auth/AuthCallback';
 import { MonitoringDashboard } from '@/components/MonitoringDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -58,6 +61,14 @@ interface SelectedChatUser {
   id: string;
   name: string;
   image: string;
+}
+
+function ScreenLoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+      <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+    </div>
+  );
 }
 
 const App: React.FC = () => {
@@ -474,7 +485,9 @@ const App: React.FC = () => {
             "transition-all duration-300",
             isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
           )}>
-            {renderScreen()}
+            <React.Suspense fallback={<ScreenLoadingFallback />}>
+              {renderScreen()}
+            </React.Suspense>
           </div>
         </div>
       </div>
