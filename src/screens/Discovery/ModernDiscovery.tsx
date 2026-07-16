@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, X, Star, MapPin, Briefcase, GraduationCap, Search, Filter, Users, CreditCard } from 'lucide-react';
+import { Heart, Users, CreditCard } from 'lucide-react';
 import { SwipeCard } from '@/components/SwipeCard';
 import { GridProfileCard } from '@/components/GridProfileCard';
 import { ModernHeader } from '@/components/ModernHeader';
@@ -12,7 +12,7 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { ProfileManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
-import { sendLikeNotification, sendMessageNotification, sendWinkNotification } from '@/lib/emailNotifications';
+import { sendLikeNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -45,10 +45,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
   const {
-    subscription,
-    tier,
-    usage,
-    isFreeTier,
     daysRemaining,
     checkAccess,
     trackUsage,
@@ -202,7 +198,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           })
           .filter((profile): profile is Profile => profile !== null);
 
-        console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => ({ name: p.name, online: p.online, id: p.id })));
+        console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => p && ({ name: p.name, online: p.online, id: p.id })));
         setProfiles(formattedProfiles);
       }
     } catch (error) {

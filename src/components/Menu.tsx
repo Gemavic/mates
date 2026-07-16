@@ -19,8 +19,8 @@ interface MenuProps {
 export const Menu: React.FC<MenuProps> = ({
   onNavigate,
   currentScreen,
-  selectedChatUser,
-  onSelectChatUser
+  selectedChatUser: _selectedChatUser,
+  onSelectChatUser: _onSelectChatUser
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, getFirstName } = useAuth();

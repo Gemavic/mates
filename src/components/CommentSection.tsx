@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Send, Trash2, CreditCard as Edit2, User } from 'lucide-react';
+import { Heart, MessageCircle, Send, CreditCard as Edit2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { communityFeatures, UserComment } from '@/lib/communityFeatures';

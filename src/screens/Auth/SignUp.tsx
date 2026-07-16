@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { trackSignup } from '@/lib/analytics';
 import { Layout } from '@/components/Layout';
-import { Menu } from '@/components/Menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Heart, Mail, Lock, User, Shield, AlertTriangle, CheckCircle } from 'lucide-react';

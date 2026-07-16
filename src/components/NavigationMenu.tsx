@@ -11,7 +11,6 @@ import {
   BookOpen,
   Newspaper,
   HelpCircle,
-  Lightbulb,
   CreditCard,
   Gift,
   HeartHandshake,

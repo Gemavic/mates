@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, Lock, User, AlertTriangle, Eye, EyeOff, Key } from 'lucide-react';
@@ -172,7 +172,7 @@ export const StaffLogin: React.FC<StaffLoginProps> = ({ onNavigate, onStaffLogin
 
           <Button
             type="submit"
-            onClick={(e) => {
+            onClick={(_e) => {
               console.log('Login button clicked');
             }}
             className="w-full h-14 bg-gradient-to-r from-red-500 to-purple-600 text-white font-bold text-lg rounded-xl hover:from-red-600 hover:to-purple-700 hover:scale-105 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"

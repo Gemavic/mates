@@ -83,7 +83,7 @@ class HighSecurityEncryption {
   // 2. If encryption is required, use Web Crypto API with AES-256-GCM
   // 3. Manage keys server-side
   // 4. Use HTTPS for all connections
-  async encryptUserData(userId: string, sensitiveData: any): Promise<string> {
+  async encryptUserData(_userId: string, sensitiveData: any): Promise<string> {
     console.error('⚠️ SECURITY WARNING: Encryption system is disabled. Data is NOT encrypted.');
     console.error('Do NOT store sensitive data using this system.');
     console.error('Implement proper server-side encryption or use Web Crypto API with AES-256-GCM.');
@@ -97,7 +97,7 @@ class HighSecurityEncryption {
   }
   
   // ⚠️ SECURITY: Decryption disabled - returns plaintext
-  async decryptUserData(userId: string, encryptedData: string): Promise<any> {
+  async decryptUserData(_userId: string, encryptedData: string): Promise<any> {
     console.error('⚠️ SECURITY WARNING: Decryption system is disabled.');
 
     try {

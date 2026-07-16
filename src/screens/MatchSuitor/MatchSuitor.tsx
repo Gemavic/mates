@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Crown, Star, Zap, Target, Users, Heart } from 'lucide-react';
+import { Crown, Star, Zap, Target } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -179,7 +179,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                 <div className="mb-4">
                   <p className="text-white/80 text-sm mb-2">Why you're compatible:</p>
                   <div className="space-y-1">
-                    {match.reasons.map((reason, index) => (
+                    {match.reasons.map((reason: string, index: number) => (
                       <div key={index} className="flex items-center text-white/70 text-xs">
                         <div className="w-1.5 h-1.5 bg-pink-400 rounded-full mr-2"></div>
                         {reason}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Heart, Star, Mail, Phone, Video, BookOpen, FileText, HelpCircle, CreditCard, Gift, Briefcase, MessageCircle, Sparkles, UserPlus, Award, Shield, Settings, TrendingUp, Bell, Calendar } from 'lucide-react';
+import { Users, Heart, Star, Mail, Phone, Video, BookOpen, FileText, HelpCircle, CreditCard, Gift, Briefcase, MessageCircle, Sparkles, UserPlus, Shield, Settings, TrendingUp, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CategoryNavigationProps {

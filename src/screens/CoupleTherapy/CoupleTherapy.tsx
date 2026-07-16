@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Users, Heart, MessageCircle, Calendar, Star, Shield, Clock } from 'lucide-react';
+import { Users, Heart, MessageCircle, Calendar, Star, Shield } from 'lucide-react';
 import { BookingCalendar } from '@/components/BookingCalendar';
 
 interface CoupleTherapyProps {

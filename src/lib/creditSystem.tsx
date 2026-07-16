@@ -21,6 +21,7 @@ export interface CreditPackage {
   package_type: string;
   is_popular: boolean;
   features: string[];
+  savings?: string;
 }
 
 export interface SpendingOption {

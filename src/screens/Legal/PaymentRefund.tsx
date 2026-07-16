@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { CreditCard, DollarSign, RefreshCw, CircleAlert as AlertCircle, CircleCheck as CheckCircle } from 'lucide-react';
+import { CreditCard, DollarSign, RefreshCw, CircleAlert as AlertCircle } from 'lucide-react';
 
 interface PaymentRefundProps {
   onNavigate?: (screen: string) => void;

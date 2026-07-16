@@ -1,30 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TrafficAnalytics } from './TrafficAnalytics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Shield,
-  Lock,
-  User,
-  AlertTriangle,
-  CreditCard,
-  Users,
-  Settings,
-  BarChart3,
-  LogOut,
-  Key,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  CheckCircle,
-  Search,
-  Gift,
-  History,
-  Zap
-} from 'lucide-react';
+import { Shield, AlertTriangle, CreditCard, Users, Settings, BarChart3, LogOut, Key, Eye, EyeOff, RefreshCw, CheckCircle, Search, Gift, History, Zap } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { creditManager } from '@/lib/creditSystem';
-import { getCurrentStaffSession, changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPermission } from '@/lib/staffManager';
+import { changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPermission } from '@/lib/staffManager';
 import { RewardPanel } from '@/components/RewardPanel';
 import { AutomatedRulesPanel } from '@/components/AutomatedRulesPanel';
 import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Gift, Heart, Star, Crown, Coffee, Flower2, TrendingUp, Clock, CreditCard } from 'lucide-react';
+import { Gift, Heart, Star, Crown, Coffee, Flower2, CreditCard } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -74,7 +74,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
 
   const sortedGifts = filteredGifts.sort((a, b) => b.popularity - a.popularity);
 
-  const sendGift = (giftId: string, giftName: string, price: number) => {
+  const sendGift = (_giftId: string, giftName: string, price: number) => {
     if (!user) {
       alert('Please sign in to send gifts');
       return;

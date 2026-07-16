@@ -1,16 +1,5 @@
 import React from 'react';
-import {
-  Users,
-  Heart,
-  Star,
-  MessageCircle,
-  Mail,
-  Phone,
-  Video,
-  CreditCard,
-  Gift,
-  BookOpen,
-} from 'lucide-react';
+import { Users, Heart, Star, Mail, Phone, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickNavigationProps {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Video, VideoOff, Mic, MicOff, Phone, PhoneOff, Camera, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, PhoneOff, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
@@ -126,7 +126,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         (participant: RemoteParticipant) => {
           console.log('Participant disconnected:', participant.identity);
         },
-        (track: RemoteTrack, participant: RemoteParticipant) => {
+        (track: RemoteTrack, _participant: RemoteParticipant) => {
           if (remoteVideoRef.current && track.kind === 'video') {
             twilioVideoManager.attachTrack(track as RemoteVideoTrack, remoteVideoRef.current);
           }

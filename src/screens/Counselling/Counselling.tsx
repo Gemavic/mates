@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Heart, Brain, Shield, Phone, Video, Calendar, Clock, Star } from 'lucide-react';
+import { MessageCircle, Heart, Brain, Shield, Phone, Video, Calendar } from 'lucide-react';
 import { BookingCalendar } from '@/components/BookingCalendar';
 
 interface CounsellingProps {

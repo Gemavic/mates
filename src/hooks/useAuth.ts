@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabaseClient, supabaseConfigError } from '@/lib/supabase';
-import { createUserProfile, getUserProfile, ProfileManager } from '@/lib/database';
+import { createUserProfile, ProfileManager } from '@/lib/database';
 import { anonymousAuth } from '@/lib/anonymousAuth';
 import type { User } from '@supabase/supabase-js';
 
@@ -70,7 +70,7 @@ export const useAuth = () => {
     }
 
     const authClient = supabaseClient;
-    const subscription = authClient.auth.onAuthStateChange((event, session) => {
+    const subscription = authClient.auth.onAuthStateChange((_event, session) => {
       // Update state directly without async IIFE to prevent memory leaks
       setUser(session?.user ?? null);
       setIsAnonymous(session?.user?.is_anonymous || false);
@@ -188,13 +188,14 @@ export const useAuth = () => {
 
       if (data.user) {
         console.log('User created successfully');
+        const newUser = data.user;
 
         setTimeout(async () => {
           try {
-            const profile = await ProfileManager.getProfile(data.user.id);
+            const profile = await ProfileManager.getProfile(newUser.id);
             if (!profile) {
               console.log('Creating profile as fallback...');
-              await createUserProfile(data.user.id, {
+              await createUserProfile(newUser.id, {
                 email,
                 full_name: fullName,
               });

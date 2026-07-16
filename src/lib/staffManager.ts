@@ -273,7 +273,7 @@ class StaffAuthManager {
   }
 
   // Get all staff members (for managers only)
-  async getAllStaffMembers(requestingStaffId: string): Promise<StaffMember[] | null> {
+  async getAllStaffMembers(_requestingStaffId: string): Promise<StaffMember[] | null> {
     try {
       const { supabaseClient } = await import('@/lib/supabase');
 

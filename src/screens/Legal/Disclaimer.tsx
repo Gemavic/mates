@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { AlertTriangle, Shield, Heart, Users, Gavel, FileText, Phone, Mail, Clock } from 'lucide-react';
+import { AlertTriangle, Heart } from 'lucide-react';
 
 interface DisclaimerProps {
   onNavigate?: (screen: string) => void;

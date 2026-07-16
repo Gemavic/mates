@@ -4,7 +4,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Scale, FileText, Phone, Mail, AlertCircle, CheckCircle, Gavel, Shield, Clock, Upload } from 'lucide-react';
+import { Scale, FileText, Phone, Mail, Gavel } from 'lucide-react';
 
 interface DisputeProps {
   onNavigate?: (screen: string) => void;

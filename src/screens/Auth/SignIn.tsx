@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Menu } from '@/components/Menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Heart, Mail, Lock, Shield, AlertTriangle } from 'lucide-react';
-import { SecurityManager } from '@/lib/security';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';

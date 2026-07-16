@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeftIcon, XIcon, Settings, User, Heart, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ChevronLeftIcon, XIcon, Settings, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {

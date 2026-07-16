@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { Shield, Lock, Eye, Database, Users, MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { Shield, Lock, Database, MapPin, Phone, Mail } from 'lucide-react';
 
 interface PrivacyProps {
   onNavigate?: (screen: string) => void;

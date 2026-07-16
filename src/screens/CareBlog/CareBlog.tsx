@@ -7,23 +7,17 @@ import {
   BookOpen,
   Heart,
   PlusCircle,
-  Calendar,
   User,
   Users,
   Clock,
   MessageCircle,
   ThumbsUp,
-  Share,
   Search,
   Filter,
   TrendingUp,
   Edit,
-  Trash2,
   Eye,
   DollarSign,
-  PiggyBank,
-  Calculator,
-  TrendingDown,
   Sparkles
 } from 'lucide-react';
 

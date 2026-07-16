@@ -3,26 +3,8 @@ import { ResponsiveLayout } from '@/components/ResponsiveLayout';
 import { ModernHeader } from '@/components/ModernHeader';
 import { ModernCard } from '@/components/ModernCard';
 import { Button } from '@/components/ui/button';
-import {
-  CreditCard,
-  Coins,
-  Heart as KoboIcon,
-  Star,
-  Crown,
-  Zap,
-  Gift,
-  TrendingUp,
-  Clock,
-  MessageCircle,
-  Mail,
-  Video,
-  Heart,
-  Shield,
-  ShoppingCart,
-  Check,
-  Sparkles
-} from 'lucide-react';
-import { creditManager, formatCredits, formatPrice } from '@/lib/creditSystem';
+import { CreditCard, Coins, Heart as KoboIcon, Star, Crown, Gift, TrendingUp, Clock, MessageCircle, Mail, Video, Heart, ShoppingCart, Check, Sparkles } from 'lucide-react';
+import { creditManager, formatPrice } from '@/lib/creditSystem';
 import { getUserCredits, getCreditTransactions } from '@/lib/database';
 import { generateSecurityReport } from '@/lib/encryption';
 import { useAuth } from '@/hooks/useAuth';
@@ -530,7 +512,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
               <div className="space-y-3">
-                {(transactions.length > 0 ? transactions : userData.transactions).slice(-5).reverse().map((transaction, index) => (
+                {(transactions.length > 0 ? transactions : userData.transactions).slice(-5).reverse().map((transaction: any, index: number) => (
                   <div key={index} className="flex items-center justify-between py-2 border-b border-white/20 last:border-b-0">
                     <div className="flex items-center space-x-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${

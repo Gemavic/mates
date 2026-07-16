@@ -310,8 +310,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           .eq('thread_id', activeThread)
           .eq('is_read', false)
           .neq('sender_id', user.id)
-          .then(() => {})
-          .catch(err => console.error('Failed to mark as read:', err));
+          .then(
+            () => {},
+            (err: unknown) => console.error('Failed to mark as read:', err)
+          );
 
       } catch (error) {
         console.error('Failed to load messages:', error);
