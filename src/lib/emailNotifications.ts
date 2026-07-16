@@ -46,28 +46,29 @@ class EmailNotificationManager {
     }
   };
 
-  // Send email notification (simulated)
+  // Send a real email via the /api/send-notification serverless endpoint.
+  // Fails silently (returns false) if unconfigured or offline — an email
+  // notification should never crash or block the in-app action it follows.
   private async sendEmail(
     recipientId: string,
-    subject: string,
-    message: string,
-    actionUrl?: string
+    type: 'like' | 'message' | 'profile_view' | 'wink' | 'match' | 'gift',
+    senderName: string
   ): Promise<boolean> {
     try {
-      // In a real implementation, this would integrate with an email service
-      console.log(`📧 Email sent to ${recipientId}:`);
-      console.log(`Subject: ${subject}`);
-      console.log(`Message: ${message}`);
-      if (actionUrl) {
-        console.log(`Action URL: ${actionUrl}`);
-      }
-      
-      // Simulate email delivery delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      return true;
+      const { supabaseClient } = await import('@/lib/supabase');
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) return false;
+
+      const resp = await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type, recipientId, senderName }),
+      });
+      const json = await resp.json().catch(() => null);
+      return !!json?.sent;
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.warn('Email notification not sent:', error);
       return false;
     }
   }
@@ -100,13 +101,8 @@ class EmailNotificationManager {
     }
     this.notifications.get(recipientId)!.push(notification);
 
-    // Send email
-    return await this.sendEmail(
-      recipientId,
-      template.subject,
-      message,
-      notification.actionUrl
-    );
+    // Send real email
+    return await this.sendEmail(recipientId, type, sender.name);
   }
 
   // Public methods for different notification types
