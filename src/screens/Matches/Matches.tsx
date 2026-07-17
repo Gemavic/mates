@@ -58,6 +58,7 @@ interface ChatThread {
   unreadCount: number;
   isOnline: boolean;
   isVerified: boolean;
+  hasMessages: boolean;
 }
 
 interface ChatMessage {
@@ -79,6 +80,7 @@ interface MatchesProps {
 export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [threadFilter, setThreadFilter] = useState<'active' | 'requests'>('active');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState('');
@@ -173,6 +175,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           unreadCount: threadMsgs?.unreadCount || 0,
           isOnline: p?.is_online || false,
           isVerified: p?.is_verified || false,
+          hasMessages: !!threadMsgs?.latest,
         };
       }).filter((t): t is ChatThread => t !== null);
 
@@ -525,8 +528,42 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 actionText="Start Discovering" onAction={() => onNavigate('discovery')} />
             ) : (
               <div className="bg-white/90 backdrop-blur-sm py-2 px-3 sm:px-4 border-t border-white/20">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 px-1 py-2">Messages</h2>
-                {threads.map((thread) => (
+                {/* Active / Requests — separates ongoing conversations from
+                    new mutual matches nobody has messaged yet, so a full
+                    inbox doesn't bury the matches still waiting for a
+                    first hello. */}
+                <div className="flex gap-1 px-1 py-2">
+                  {(['active', 'requests'] as const).map((tab) => {
+                    const count = threads.filter((t) =>
+                      tab === 'active' ? t.hasMessages : !t.hasMessages
+                    ).length;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setThreadFilter(tab)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                          threadFilter === tab
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        type="button"
+                      >
+                        {tab === 'active' ? 'Active' : 'New Matches'}
+                        {count > 0 && ` (${count})`}
+                      </button>
+                    );
+                  })}
+                </div>
+                {threads.filter((t) => (threadFilter === 'active' ? t.hasMessages : !t.hasMessages)).length === 0 ? (
+                  <div className="py-10 text-center text-gray-400 text-sm">
+                    {threadFilter === 'active'
+                      ? "No conversations yet — say hello to a new match!"
+                      : 'No new matches waiting for a first message.'}
+                  </div>
+                ) : (
+                  threads
+                    .filter((t) => (threadFilter === 'active' ? t.hasMessages : !t.hasMessages))
+                    .map((thread) => (
                   <button key={thread.id} onClick={() => setSelectedThread(thread.id)}
                     className="w-full py-3 px-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-all rounded-lg text-left active:scale-[0.98]">
                     <div className="flex items-start gap-3">
@@ -559,7 +596,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                   </button>
-                ))}
+                ))
+                )}
               </div>
             )}
           </div>
