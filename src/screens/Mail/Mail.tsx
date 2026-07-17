@@ -15,6 +15,7 @@ import { supabaseClient } from '@/lib/supabase';
 
 interface MailProps {
   onNavigate: (screen: string) => void;
+  initialRecipientId?: string | null;
 }
 
 interface AttachedFile {
@@ -55,7 +56,7 @@ interface MailMessage {
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
-export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
+export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) => {
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'exclusive'>('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
@@ -105,6 +106,21 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
   useEffect(() => {
     if (user) loadMailThreads();
   }, [user]);
+
+  // "Message" from a profile arrives here with a target recipient — open
+  // (or create) that specific conversation instead of the default inbox view.
+  useEffect(() => {
+    if (!user || !initialRecipientId || initialRecipientId === user.id) return;
+    (async () => {
+      try {
+        const threadId = await MessagingManager.getOrCreateThread(user.id, initialRecipientId);
+        setSelectedThread(threadId);
+        loadMailThreads();
+      } catch (err) {
+        console.error('Failed to open conversation:', err);
+      }
+    })();
+  }, [user, initialRecipientId]);
 
   const loadMailThreads = async () => {
     if (!user) return;
