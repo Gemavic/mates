@@ -90,8 +90,16 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'method_not_allowed' });
   }
 
-  const { NOWPAYMENTS_IPN_SECRET } = process.env;
-  if (!NOWPAYMENTS_IPN_SECRET) {
+  const { NOWPAYMENTS_IPN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!NOWPAYMENTS_IPN_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.error(
+      'crypto-webhook misconfigured. Missing:',
+      [
+        !NOWPAYMENTS_IPN_SECRET && 'NOWPAYMENTS_IPN_SECRET',
+        !SUPABASE_URL && 'SUPABASE_URL',
+        !SUPABASE_SERVICE_ROLE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
+      ].filter(Boolean).join(', ')
+    );
     return res.status(500).json({ error: 'webhook_not_configured' });
   }
 
