@@ -91,10 +91,19 @@ class MonitoringService {
       }
     }
 
-    this.startHealthChecks();
+    // NOTE: health checks are no longer auto-started here. This class was
+    // being imported at app boot (via a static import of MonitoringDashboard
+    // in App.tsx), which meant startHealthChecks() fired a real database
+    // query every 60 seconds for every single visitor, all the time,
+    // regardless of whether anyone ever viewed the monitoring screen.
+    // Supabase/Vercel already provide production uptime monitoring;
+    // client-side synthetic pings from every visitor's browser added
+    // needless load without real benefit. Call monitoring.startHealthChecks()
+    // explicitly (e.g. only when the Monitoring screen itself mounts) if
+    // this is needed again.
   }
 
-  private startHealthChecks() {
+  public startHealthChecks() {
     this.healthCheckInterval = setInterval(() => {
       this.performHealthCheck().catch(console.error);
     }, 60000);
