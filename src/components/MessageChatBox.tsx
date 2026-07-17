@@ -614,7 +614,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     setShowEmojiPicker(false);
   }, []);
 
-  const sendGift = useCallback((gift: GiftItem) => {
+  const sendGift = useCallback(async (gift: GiftItem) => {
     const activeThreadData = chatThreadsRef.current.find(t => t.id === activeThread);
     if (!activeThreadData) {
       alert('Please select a chat first');
@@ -634,7 +634,11 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         alert(`Need ${formatCredits(gift.price)} to send ${gift.name}!`);
         return;
       }
-      creditManager.deductCredits(user.id, gift.price);
+      const deducted = await creditManager.deductCredits(user.id, gift.price, `Sent ${gift.name} gift`);
+      if (!deducted) {
+        alert(`Could not send ${gift.name} — insufficient credits.`);
+        return;
+      }
       setUserBalance(creditManager.getTotalCredits(user.id));
     }
 
@@ -662,7 +666,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     const activeThreadData = chatThreadsRef.current.find(t => t.id === activeThread);
     if (!activeThreadData) return;
 
-    const isStaff = creditManager.isStaffMember(user?.id || 'demo-user');
+    if (!user) {
+      alert('Please sign in to send attachments');
+      return;
+    }
+
+    const isStaff = creditManager.isStaffMember(user.id);
 
     let cost = 0;
     if (type === 'image') cost = 10;
@@ -670,7 +679,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     else if (type === 'file') cost = 10;
 
     if (!isStaff && cost > 0) {
-      if (!creditManager.canAfford(user?.id || 'demo-user', cost)) {
+      if (!creditManager.canAfford(user.id, cost)) {
         alert(`Need ${formatCredits(cost)} to send ${type}!`);
         return;
       }
@@ -682,13 +691,90 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     else if (type === 'video') input.accept = 'video/*';
     else input.accept = '*/*';
 
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        if (!isStaff && cost > 0) {
-          creditManager.deductCredits(user?.id || 'demo-user', cost);
-          setUserBalance(creditManager.getTotalCredits(user?.id || 'demo-user'));
+      if (!file) return;
+
+      if (file.size > 25 * 1024 * 1024) {
+        alert('File is too large. Please choose a file under 25MB.');
+        return;
+      }
+
+      // Charge first — never upload/send content the sender hasn't actually paid for
+      if (!isStaff && cost > 0) {
+        const deducted = await creditManager.deductCredits(user.id, cost, `Sent ${type} attachment`);
+        if (!deducted) {
+          alert(`Could not send ${type} — insufficient credits.`);
+          return;
         }
+        setUserBalance(creditManager.getTotalCredits(user.id));
+      }
+
+      try {
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${file.name.split('.').pop() || 'bin'}`;
+        const { error: uploadError } = await supabaseClient.storage
+          .from('chat-media')
+          .upload(path, file, { contentType: file.type });
+
+        if (uploadError) {
+          console.error('Attachment upload failed:', uploadError);
+          alert('Failed to upload attachment. Please try again.');
+          return;
+        }
+
+        const { data: pub } = supabaseClient.storage.from('chat-media').getPublicUrl(path);
+        const fileUrl = pub.publicUrl;
+
+        const optimisticMessage: ChatMessage = {
+          id: `temp-${Date.now()}`,
+          senderId: user.id,
+          senderName: 'You',
+          senderImage: userProfileImageRef.current || DEFAULT_AVATAR,
+          message: fileUrl,
+          timestamp: new Date(),
+          type: 'text',
+          isDelivered: false,
+          isRead: false
+        };
+        setMessages(prev => [...prev, optimisticMessage]);
+
+        const { data: savedMessage, error: messageError } = await supabaseClient
+          .from('mail_messages')
+          .insert({
+            thread_id: activeThread,
+            sender_id: user.id,
+            subject: 'Chat Message',
+            message_text: fileUrl,
+            credits_spent: cost,
+            has_photos: type === 'image',
+            is_delivered: true,
+            delivered_at: new Date().toISOString(),
+            is_read: false
+          })
+          .select()
+          .single();
+
+        if (messageError) {
+          console.error('Failed to save attachment message:', messageError);
+          setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+          alert('Attachment uploaded, but could not be sent. Please try again.');
+          return;
+        }
+
+        setMessages(prev =>
+          prev.map(m => m.id === optimisticMessage.id
+            ? { ...m, id: savedMessage.id, isDelivered: true }
+            : m
+          )
+        );
+        setChatThreads(prev => prev.map(thread =>
+          thread.id === activeThread
+            ? { ...thread, lastMessage: { ...optimisticMessage, id: savedMessage.id, isDelivered: true }, unreadCount: 0 }
+            : thread
+        ));
+      } catch (err) {
+        console.error('Attachment send error:', err);
+        alert('Failed to send attachment. Please try again.');
       }
     };
     input.click();
