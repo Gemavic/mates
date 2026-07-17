@@ -312,6 +312,32 @@ export class MessagingManager {
     return data;
   }
 
+  // Find an existing mail thread between two users, or create an empty one.
+  // Used when a person taps "Message" on a profile — opens straight into
+  // that conversation instead of dumping them in the generic inbox.
+  static async getOrCreateThread(userId1: string, userId2: string) {
+    const [participant1, participant2] = [userId1, userId2].sort();
+
+    const { data: existing, error: findError } = await supabaseClient
+      .from('mail_threads')
+      .select('id')
+      .eq('participant1_id', participant1)
+      .eq('participant2_id', participant2)
+      .maybeSingle();
+
+    if (findError) throw findError;
+    if (existing) return existing.id;
+
+    const { data: created, error: createError } = await supabaseClient
+      .from('mail_threads')
+      .insert({ participant1_id: participant1, participant2_id: participant2 })
+      .select('id')
+      .single();
+
+    if (createError) throw createError;
+    return created.id;
+  }
+
   // Simple message sending that auto-creates thread if needed
   static async sendMessage(senderId: string, recipientId: string, message: string, creditsSpent: number = 0) {
     try {

@@ -176,7 +176,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
       onNavigate('signin');
       return;
     }
-    onNavigate('mail');
+    onNavigate('mail', { userId });
   };
 
   const handleVideoCall = () => {
@@ -387,6 +387,19 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
             </div>
           )}
         </div>
+      </div>
+
+      {/* Persistent Message CTA — always reachable regardless of scroll
+          position, so starting a conversation is never more than one tap
+          away no matter how far a person has scrolled through the profile. */}
+      <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-2">
+        <Button
+          onClick={handleMessage}
+          className="w-full max-w-md mx-auto flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-purple-600 text-white font-semibold py-3.5 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <MessageCircle className="w-5 h-5" />
+          Message {profile.full_name.split(' ')[0]}
+        </Button>
       </div>
     </Layout>
   );

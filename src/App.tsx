@@ -94,9 +94,13 @@ const App: React.FC = () => {
     setIsTransitioning(true);
     console.log('Navigating to:', screen, params);
 
-    // Handle userId parameter for view-profile
+    // Handle userId parameter for view-profile / mail (message this person)
     if (params?.userId) {
       setSelectedUserId(params.userId);
+    } else if (screen !== 'view-profile') {
+      // Clear any stale target so a later, unrelated visit to Mail doesn't
+      // silently reopen a previous profile's conversation.
+      setSelectedUserId(null);
     }
 
     setTimeout(() => {
@@ -307,7 +311,7 @@ const App: React.FC = () => {
         return <GiftShop onNavigate={handleNavigate} />;
       
       case 'mail':
-        return <Mail onNavigate={handleNavigate} />;
+        return <Mail onNavigate={handleNavigate} initialRecipientId={selectedUserId} />;
       
       case 'profile':
         return <Profile onNavigate={handleNavigate} />;
