@@ -8,10 +8,10 @@ interface SEOProps {
 }
 
 export const SEO: React.FC<SEOProps> = ({
-  title = 'Dates - Find Your Perfect Match | Modern Dating App',
-  description = 'Meet genuine singles on Dates, the modern dating app with video chat, audio calls, couple therapy, and verified profiles. Start meaningful connections today.',
-  keywords = 'dating app, online dating, meet singles, video chat dating, verified profiles, couple therapy, relationship counseling',
-  canonicalUrl = 'https://dates-app.vercel.app/'
+  title = 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
+  description = 'Verified profiles, thoughtful matching, and real conversations. Free to join — browsing and your first message to every connection are always free.',
+  keywords = 'dating app, online dating, meet singles, verified profiles, video chat dating, couple therapy, relationship counseling',
+  canonicalUrl = 'https://dates.care/'
 }) => {
   useEffect(() => {
     document.title = title;

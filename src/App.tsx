@@ -182,12 +182,12 @@ const App: React.FC = () => {
   }
 
   const getSEOProps = () => {
-    const baseUrl = 'https://dates-app.vercel.app';
+    const baseUrl = 'https://dates.care';
     switch (currentScreen) {
       case 'welcome':
         return {
-          title: 'Dates - Find Your Perfect Match | Modern Dating App',
-          description: 'Meet genuine singles on Dates, the modern dating app with video chat, audio calls, couple therapy, and verified profiles. Start meaningful connections today.',
+          title: 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
+          description: 'Verified profiles, thoughtful matching, and real conversations. Free to join — browsing and your first message to every connection are always free.',
           canonicalUrl: baseUrl
         };
       case 'signin':
@@ -264,8 +264,8 @@ const App: React.FC = () => {
         };
       default:
         return {
-          title: 'Dates - Find Your Perfect Match | Modern Dating App',
-          description: 'Meet genuine singles on Dates, the modern dating app with video chat, audio calls, couple therapy, and verified profiles.',
+          title: 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
+          description: 'Verified profiles, thoughtful matching, and real conversations — built for people who are serious about connection.',
           canonicalUrl: baseUrl
         };
     }
