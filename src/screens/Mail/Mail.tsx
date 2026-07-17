@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Mail as MailIcon, Send, Search, ArrowLeft, Image, Camera, File, X, Lock, Star, Paperclip, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { MessagingManager, CreditManager } from '@/lib/database';
+import { MessagingManager } from '@/lib/database';
+import { creditManager } from '@/lib/creditSystem';
 import { supabaseClient } from '@/lib/supabase';
 
 interface MailProps {
@@ -89,9 +90,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
     const loadCredits = async () => {
       if (user) {
         try {
-          const credits = await CreditManager.getUserCredits(user.id);
-          const total = (credits?.complimentary_credits || 0) + (credits?.total_kobos || 0) + (credits?.purchased_credits || 0);
-          setUserBalance(total);
+          creditManager.initializeUser(user.id);
+          setUserBalance(creditManager.getTotalCredits(user.id));
         } catch (err) {
           console.error('Failed to load credits:', err);
         }
@@ -235,24 +235,23 @@ export const Mail: React.FC<MailProps> = ({ onNavigate }) => {
       if (attachedFiles.length > 0) totalCost += attachedFiles.length * 10;
       if (isExclusive) totalCost += 20;
 
-      const userCredits = await CreditManager.getUserCredits(user.id);
-      const available = (userCredits?.complimentary_credits || 0) + (userCredits?.total_kobos || 0) + (userCredits?.purchased_credits || 0);
-
-      if (available < totalCost) {
-        alert(`Insufficient credits! Need ${totalCost} credits. You have ${available}.`);
+      if (!creditManager.canAfford(user.id, totalCost) && !creditManager.isStaffMember(user.id)) {
+        alert(`Insufficient credits! Need ${totalCost} credits. You have ${creditManager.getTotalCredits(user.id)}.`);
         onNavigate('credits');
         return;
       }
 
-      try {
-        await CreditManager.spendCredits(user.id, totalCost, isExclusive ? 'Exclusive mail' : 'Private mail', 'mail');
-      } catch (err: any) {
-        alert(`Credit deduction failed: ${err?.message || 'Unknown error'}`);
+      const deducted = await creditManager.deductCredits(
+        user.id,
+        totalCost,
+        isExclusive ? 'Exclusive mail' : 'Private mail'
+      );
+      if (!deducted) {
+        alert('Credit deduction failed. Please try again.');
         return;
       }
 
-      const updatedCredits = await CreditManager.getUserCredits(user.id);
-      setUserBalance((updatedCredits?.complimentary_credits || 0) + (updatedCredits?.total_kobos || 0) + (updatedCredits?.purchased_credits || 0));
+      setUserBalance(creditManager.getTotalCredits(user.id));
 
       const subject = isExclusive ? 'Exclusive Private Mail' : (subjectText.trim() || 'Private Mail');
 

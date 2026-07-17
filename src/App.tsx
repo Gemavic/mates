@@ -7,15 +7,15 @@ import { Welcome } from '@/screens/Welcome/Welcome';
 
 // Lazy-loaded screens: split out of the main bundle so the first paint
 // (Welcome + auth) stays small; each screen loads on first visit.
-const SignIn = React.lazy(() => import('@/screens/Auth/SignIn').then(m => ({ default: m.SignIn })));
-const SignUp = React.lazy(() => import('@/screens/Auth/SignUp').then(m => ({ default: m.SignUp })));
-const Discovery = React.lazy(() => import('@/screens/Discovery/Discovery').then(m => ({ default: m.Discovery })));
-const ModernDiscovery = React.lazy(() => import('@/screens/Discovery/ModernDiscovery').then(m => ({ default: m.ModernDiscovery })));
-const Matches = React.lazy(() => import('@/screens/Matches/Matches').then(m => ({ default: m.Matches })));
-const Likes = React.lazy(() => import('@/screens/Likes/Likes').then(m => ({ default: m.Likes })));
-const ModernCredits = React.lazy(() => import('@/screens/Credits/ModernCredits').then(m => ({ default: m.ModernCredits })));
+import { SignIn } from '@/screens/Auth/SignIn';
+import { SignUp } from '@/screens/Auth/SignUp';
+import { Discovery } from '@/screens/Discovery/Discovery';
+import { ModernDiscovery } from '@/screens/Discovery/ModernDiscovery';
+import { Matches } from '@/screens/Matches/Matches';
+import { Likes } from '@/screens/Likes/Likes';
+import { ModernCredits } from '@/screens/Credits/ModernCredits';
 const GiftShop = React.lazy(() => import('@/screens/GiftShop/GiftShop').then(m => ({ default: m.GiftShop })));
-const Mail = React.lazy(() => import('@/screens/Mail/Mail').then(m => ({ default: m.Mail })));
+import { Mail } from '@/screens/Mail/Mail';
 const Profile = React.lazy(() => import('@/screens/Profile/Profile').then(m => ({ default: m.Profile })));
 const ViewUserProfile = React.lazy(() => import('@/screens/Profile/ViewUserProfile').then(m => ({ default: m.ViewUserProfile })));
 const Newsfeed = React.lazy(() => import('@/screens/Newsfeed/Newsfeed').then(m => ({ default: m.Newsfeed })));
@@ -44,8 +44,8 @@ const PaymentSetup = React.lazy(() => import('@/screens/PaymentSetup/PaymentSetu
 const Help = React.lazy(() => import('@/screens/Help/Help').then(m => ({ default: m.Help })));
 const CareBlog = React.lazy(() => import('@/screens/CareBlog/CareBlog').then(m => ({ default: m.CareBlog })));
 const Quizzes = React.lazy(() => import('@/screens/Quizzes/Quizzes').then(m => ({ default: m.Quizzes })));
-const Onboarding = React.lazy(() => import('@/screens/Onboarding/Onboarding').then(m => ({ default: m.Onboarding })));
-const AuthCallback = React.lazy(() => import('@/screens/Auth/AuthCallback').then(m => ({ default: m.AuthCallback })));
+import { Onboarding } from '@/screens/Onboarding/Onboarding';
+import { AuthCallback } from '@/screens/Auth/AuthCallback';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
 import { MonitoringDashboard } from '@/components/MonitoringDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
