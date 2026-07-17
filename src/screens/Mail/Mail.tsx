@@ -57,7 +57,8 @@ interface MailMessage {
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
 export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) => {
-  const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'exclusive'>('inbox');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'starred' | 'exclusive'>('inbox');
+  const [starredThreadIds, setStarredThreadIds] = useState<Set<string>>(new Set());
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -106,6 +107,49 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
   useEffect(() => {
     if (user) loadMailThreads();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabaseClient
+        .from('app_starred_threads')
+        .select('thread_id')
+        .eq('user_id', user.id);
+      setStarredThreadIds(new Set((data || []).map((r: any) => r.thread_id)));
+    })();
+  }, [user]);
+
+  const toggleStar = async (threadId: string) => {
+    if (!user) return;
+    const isStarred = starredThreadIds.has(threadId);
+    // Optimistic update
+    setStarredThreadIds((prev) => {
+      const next = new Set(prev);
+      isStarred ? next.delete(threadId) : next.add(threadId);
+      return next;
+    });
+    try {
+      if (isStarred) {
+        await supabaseClient
+          .from('app_starred_threads')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('thread_id', threadId);
+      } else {
+        await supabaseClient
+          .from('app_starred_threads')
+          .insert({ user_id: user.id, thread_id: threadId });
+      }
+    } catch (err) {
+      console.error('Failed to toggle star:', err);
+      // Revert on failure
+      setStarredThreadIds((prev) => {
+        const next = new Set(prev);
+        isStarred ? next.add(threadId) : next.delete(threadId);
+        return next;
+      });
+    }
+  };
 
   // "Message" from a profile arrives here with a target recipient — open
   // (or create) that specific conversation instead of the default inbox view.
@@ -370,9 +414,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
   };
 
   const activeThreadData = mailThreads.find(t => t.id === selectedThread);
-  const filteredThreads = mailThreads.filter(t =>
-    t.participantName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredThreads = mailThreads
+    .filter(t => activeTab !== 'starred' || starredThreadIds.has(t.id))
+    .filter(t => t.participantName.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (selectedThread && activeThreadData) {
     return (
@@ -596,7 +640,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
               </div>
 
               <div className="flex items-center gap-2 mb-3">
-                {(['inbox', 'sent', 'exclusive'] as const).map(tab => (
+                {(['inbox', 'sent', 'starred', 'exclusive'] as const).map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     className={cn(
                       "px-4 py-2 text-sm font-medium rounded-full transition-all capitalize",
@@ -605,6 +649,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                         : 'text-gray-600 hover:bg-gray-100'
                     )}>
                     {tab === 'exclusive' && <Lock className="w-3 h-3 inline mr-1" />}
+                    {tab === 'starred' && <Star className="w-3 h-3 inline mr-1" />}
                     {tab}
                   </button>
                 ))}
@@ -635,33 +680,46 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
             ) : (
               <div className="space-y-0">
                 {filteredThreads.map(thread => (
-                  <button key={thread.id} onClick={() => setSelectedThread(thread.id)}
-                    className="w-full text-left px-3 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 rounded-lg transition-all active:scale-[0.98]">
-                    <div className="relative flex-shrink-0">
-                      <img src={thread.participantImage} alt={thread.participantName}
-                        className="w-12 h-12 rounded-full object-cover" />
-                      {thread.isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="font-semibold text-gray-900 text-sm truncate">{thread.participantName}</h3>
-                          {thread.isVerified && (
-                            <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          )}
+                  <div key={thread.id}
+                    className="w-full text-left px-3 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 rounded-lg transition-all">
+                    <button onClick={() => setSelectedThread(thread.id)} className="flex items-center gap-3 flex-1 min-w-0 text-left active:scale-[0.98] transition-transform">
+                      <div className="relative flex-shrink-0">
+                        <img src={thread.participantImage} alt={thread.participantName}
+                          className="w-12 h-12 rounded-full object-cover" />
+                        {thread.isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-semibold text-gray-900 text-sm truncate">{thread.participantName}</h3>
+                            {thread.isVerified && (
+                              <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-gray-400 flex-shrink-0">{formatTimestamp(thread.timestamp)}</span>
                         </div>
-                        <span className="text-[11px] text-gray-400 flex-shrink-0">{formatTimestamp(thread.timestamp)}</span>
+                        <p className="text-xs text-gray-500 truncate">{thread.lastMessage}</p>
                       </div>
-                      <p className="text-xs text-gray-500 truncate">{thread.lastMessage}</p>
-                    </div>
-                    {thread.unreadCount > 0 && (
-                      <div className="bg-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
-                        {thread.unreadCount}
-                      </div>
-                    )}
-                  </button>
+                      {thread.unreadCount > 0 && (
+                        <div className="bg-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
+                          {thread.unreadCount}
+                        </div>
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleStar(thread.id); }}
+                      className="flex-shrink-0 p-1.5 -mr-1"
+                      aria-label={starredThreadIds.has(thread.id) ? 'Unstar conversation' : 'Star conversation'}
+                      type="button"
+                    >
+                      <Star className={cn(
+                        "w-4 h-4 transition-colors",
+                        starredThreadIds.has(thread.id) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
+                      )} />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
