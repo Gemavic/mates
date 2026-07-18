@@ -11,7 +11,7 @@
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 
 // Must mirror the credits catalog in create-payment.js
 const CREDIT_PACKAGES = { starter: 60, popular: 125, premium: 500 };
@@ -85,7 +85,7 @@ async function callRpc(name, args) {
   return { ok: resp.ok, data };
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'method_not_allowed' });
   }
@@ -197,4 +197,4 @@ module.exports = async (req, res) => {
     // Non-200 makes NOWPayments retry, which is what we want on transient errors
     return res.status(500).json({ error: 'internal_error' });
   }
-};
+}

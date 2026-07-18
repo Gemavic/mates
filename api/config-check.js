@@ -5,7 +5,7 @@
 // Visit https://<your-domain>/api/config-check after setting env vars
 // in Vercel to confirm everything is wired correctly before launch.
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const check = (name) => ({ name, set: !!process.env[name] });
 
   const groups = {
@@ -37,4 +37,4 @@ module.exports = async (req, res) => {
       'the Supabase dashboard directly, or the twilio-status endpoint ' +
       'noted in TWILIO_TROUBLESHOOTING.md once deployed there.',
   });
-};
+}
