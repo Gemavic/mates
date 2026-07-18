@@ -36,7 +36,7 @@ const TEMPLATES = {
   },
 };
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'method_not_allowed' });
   }
@@ -117,4 +117,4 @@ module.exports = async (req, res) => {
     console.error('send-notification error:', err);
     return res.status(200).json({ sent: false, error: 'internal_error' });
   }
-};
+}
