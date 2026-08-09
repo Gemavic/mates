@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useStaffAccess } from '@/hooks/useStaffAccess';
 
 interface SelectedChatUser {
   id: string;
@@ -24,6 +25,7 @@ export const Menu: React.FC<MenuProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, getFirstName } = useAuth();
+  const { isStaff } = useStaffAccess();
 
   const handleLogout = async () => {
     try {
@@ -64,6 +66,9 @@ export const Menu: React.FC<MenuProps> = ({
       items: [
         { id: 'credits', icon: CreditCard, label: 'Credits', description: 'Your balance & top-ups' },
         { id: 'gift-shop', icon: Gift, label: 'Gift Shop', description: 'Send a virtual gift' },
+        ...(isStaff
+          ? [{ id: 'staff-panel', icon: Shield, label: 'Staff Panel', description: 'Moderation & admin tools' }]
+          : []),
       ]
     },
   ];
