@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { MessagingManager } from '@/lib/database';
+import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
 
@@ -304,6 +305,17 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     const thread = threads.find(t => t.id === selectedThread);
     if (!thread) return;
 
+    const charge = await creditManager.sendMessage(user.id, selectedThread, trimmed);
+    if (!charge.success) {
+      if (charge.dailyFreeLimitReached) {
+        alert("You've used today's free messages to new matches. This message costs 10 credits — top up to keep the conversation going.");
+      } else {
+        alert(`Need ${formatCredits(charge.cost)} credits to send this message.`);
+      }
+      onNavigate('credits');
+      return;
+    }
+
     const optimistic: ChatMessage = {
       id: `temp-${Date.now()}`, senderId: user.id, senderName: 'You',
       senderImage: userProfileImage, message: trimmed, timestamp: new Date(),
@@ -320,7 +332,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         .insert({
           thread_id: selectedThread, sender_id: user.id,
           subject: 'Chat Message', message_text: trimmed,
-          credits_spent: 0, has_photos: false, is_delivered: true,
+          credits_spent: charge.cost, has_photos: false, is_delivered: true,
           delivered_at: new Date().toISOString(), is_read: false
         })
         .select().single();
