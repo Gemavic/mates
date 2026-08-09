@@ -9,14 +9,16 @@ import { changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPe
 import { RewardPanel } from '@/components/RewardPanel';
 import { AutomatedRulesPanel } from '@/components/AutomatedRulesPanel';
 import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
+import { StaffAccessRequests } from '@/components/StaffAccessRequests';
 
 interface StaffPanelProps {
   onLogout: () => void;
   staffAuth: any;
+  isAdmin?: boolean;
 }
 
-export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) => {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'traffic' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password'>('overview');
+export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isAdmin = false }) => {
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'traffic' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password' | 'access'>('overview');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
@@ -310,6 +312,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
             { id: 'rewards', label: 'Rewards', icon: Gift },
             { id: 'rules', label: 'Auto Rules', icon: Zap },
             { id: 'history', label: 'History', icon: History },
+            { id: 'access', label: 'Free Access', icon: Shield },
             ...((staffAuth?.permissions?.includes('change_staff_passwords') || staffAuth?.permissions?.includes('all')) ?
               [{ id: 'password', label: 'Passwords', icon: Key }] : [])
           ].map((tab) => {
@@ -708,6 +711,10 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth }) =
               selectedUserId={selectedUserId}
               onError={showError}
             />
+          )}
+
+          {selectedTab === 'access' && (
+            <StaffAccessRequests isAdmin={isAdmin} />
           )}
         </div>
 

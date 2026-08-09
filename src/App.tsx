@@ -77,7 +77,7 @@ const App: React.FC = () => {
   const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { user, loading } = useAuth();
-  const { staffAuth, isStaff, loading: staffLoading } = useStaffAccess();
+  const { staffAuth, isStaff, isAdmin, loading: staffLoading } = useStaffAccess();
 
   const handleStaffLogout = () => {
     try {
@@ -395,7 +395,7 @@ const App: React.FC = () => {
             </div>
           );
         }
-        return <StaffPanel onLogout={handleStaffLogout} staffAuth={staffAuth} />;
+        return <StaffPanel onLogout={handleStaffLogout} staffAuth={staffAuth} isAdmin={isAdmin} />;
       
       case 'menu-showcase':
         return <MenuShowcase onNavigate={handleNavigate} />;
