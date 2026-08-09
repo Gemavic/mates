@@ -38,7 +38,14 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(0);
-  const [viewMode, setViewMode] = useState<'swipe' | 'grid'>('swipe');
+  // Swipe makes sense on mobile (touch gestures, limited screen). On
+  // desktop, a single small card centered in a wide viewport just reads as
+  // empty space — grid uses the available width properly, so that's the
+  // sensible default there. Matches the lg: breakpoint used elsewhere in
+  // this component to switch between the mobile/desktop render branches.
+  const [viewMode, setViewMode] = useState<'swipe' | 'grid'>(
+    typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'grid' : 'swipe'
+  );
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -507,7 +514,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               )
             ) : (
               /* Grid Mode for Desktop */
-              <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
                 {profiles.map((profile) => (
                   <GridProfileCard
                     key={profile.id}
