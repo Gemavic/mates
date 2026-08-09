@@ -525,6 +525,23 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       return;
     }
 
+    const charge = await creditManager.sendMessage(user.id, activeThreadData.id, trimmed);
+    if (!charge.success) {
+      if (charge.dailyFreeLimitReached) {
+        alert("You've used today's free messages to new matches. This message costs 10 credits — top up to keep the conversation going, or try again after your daily free messages reset.");
+      } else {
+        alert(`Need ${formatCredits(charge.cost)} credits to send this message.`);
+      }
+      onNavigate('credits');
+      return;
+    }
+    setUserBalance(creditManager.getTotalCredits(user.id));
+    if (charge.dailyFreeLimitReached) {
+      // Charged normally today, but still worth letting them know why —
+      // avoids a confusing "why did that cost credits?" moment.
+      console.info('Daily free-message allowance reached; this message was charged normally.');
+    }
+
     const optimisticMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       senderId: user.id,
@@ -555,7 +572,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           sender_id: user.id,
           subject: 'Chat Message',
           message_text: trimmed,
-          credits_spent: 0,
+          credits_spent: charge.cost,
           has_photos: false,
           is_delivered: true,
           delivered_at: new Date().toISOString(),

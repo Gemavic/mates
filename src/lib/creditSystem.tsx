@@ -224,7 +224,7 @@ export class CreditManager {
     userId: string,
     threadId: string,
     _message: string
-  ): Promise<{ success: boolean; cost: number; isFree: boolean }> {
+  ): Promise<{ success: boolean; cost: number; isFree: boolean; dailyFreeLimitReached: boolean }> {
     try {
       const { data, error } = await supabaseClient.rpc('spend_message', {
         p_thread_id: threadId,
@@ -233,15 +233,25 @@ export class CreditManager {
         if (data?.total_credits !== undefined) {
           this.updateCacheTotal(userId, data.total_credits);
         }
-        return { success: false, cost: CREDIT_COSTS.MESSAGE, isFree: false };
+        return {
+          success: false,
+          cost: CREDIT_COSTS.MESSAGE,
+          isFree: false,
+          dailyFreeLimitReached: !!data?.daily_free_limit_reached,
+        };
       }
       if (data.total_credits !== undefined) {
         this.updateCacheTotal(userId, data.total_credits);
       }
-      return { success: true, cost: data.charged ?? 0, isFree: !!data.is_free };
+      return {
+        success: true,
+        cost: data.charged ?? 0,
+        isFree: !!data.is_free,
+        dailyFreeLimitReached: !!data.daily_free_limit_reached,
+      };
     } catch (err) {
       console.error('Message charge failed:', err);
-      return { success: false, cost: CREDIT_COSTS.MESSAGE, isFree: false };
+      return { success: false, cost: CREDIT_COSTS.MESSAGE, isFree: false, dailyFreeLimitReached: false };
     }
   }
 
@@ -303,7 +313,7 @@ export class CreditManager {
         package_name: 'Starter',
         credits: 50,
         bonus_credits: 10,
-        price_usd: 14.99,
+        price_usd: 9.99,
         package_type: 'credits',
         is_popular: false,
         features: ['50 Credits', '10 Bonus Credits', 'Messaging & Gifts', 'All Core Features'],
@@ -313,7 +323,7 @@ export class CreditManager {
         package_name: 'Popular',
         credits: 100,
         bonus_credits: 25,
-        price_usd: 29.99,
+        price_usd: 18.99,
         package_type: 'credits',
         is_popular: true,
         features: ['100 Credits', '25 Bonus Credits', 'Best For Regular Use', 'Priority Support'],
@@ -323,7 +333,7 @@ export class CreditManager {
         package_name: 'Premium',
         credits: 450,
         bonus_credits: 50,
-        price_usd: 79.99,
+        price_usd: 50.99,
         package_type: 'credits',
         is_popular: false,
         features: ['450 Credits', '50 Bonus Credits', 'Best Value Per Credit', 'VIP Support'],
