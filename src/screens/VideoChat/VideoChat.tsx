@@ -95,7 +95,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     }
 
     const canAfford = creditManager.canAfford(user.id, 60);
-    if (!canAfford && !creditManager.isStaffMember(user.id)) {
+    if (!canAfford && !(await creditManager.hasFreeCallingAccess(user.id))) {
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       errorMessage.textContent = `Need ${formatCredits(60)} per minute for video calls!`;
@@ -145,7 +145,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
               const success = await creditManager.deductCredits(user.id, 60);
               if (success) {
                 setUserBalance(creditManager.getTotalCredits(user.id));
-              } else if (!creditManager.isStaffMember(user.id)) {
+              } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
                 endCall();
                 const errorMessage = document.createElement('div');
                 errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';

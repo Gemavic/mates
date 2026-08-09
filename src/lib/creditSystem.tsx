@@ -170,6 +170,31 @@ export class CreditManager {
     return this._cache.get(userId)?.isStaff ?? false;
   }
 
+  /**
+   * Free calling requires BOTH is_staff AND a currently-active, admin-
+   * approved, time-bound grant (see app_staff_access_requests) — being
+   * staff alone is no longer enough to bypass call charges. This is a
+   * live server check (not cached) since grants can be approved, expire,
+   * or be revoked at any time independent of the client's session.
+   */
+  async hasFreeCallingAccess(userId: string): Promise<boolean> {
+    if (!this.isStaffMember(userId)) return false;
+    try {
+      const { data, error } = await supabaseClient.rpc('has_active_staff_grant', {
+        p_user_id: userId,
+        p_scope: 'calling',
+      });
+      if (error) {
+        console.error('Failed to check calling access grant:', error);
+        return false;
+      }
+      return !!data;
+    } catch (err) {
+      console.error('Failed to check calling access grant:', err);
+      return false;
+    }
+  }
+
   /** Active subscription tier ('silver'|'gold'|'platinum'|'elite') or null. */
   getTier(userId: string): 'silver' | 'gold' | 'platinum' | 'elite' | null {
     return this._cache.get(userId)?.tier ?? null;

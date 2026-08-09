@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 export function useStaffAccess() {
   const { user } = useAuth();
   const [isStaff, setIsStaff] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export function useStaffAccess() {
 
     if (!user?.id) {
       setIsStaff(false);
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
@@ -34,9 +36,11 @@ export function useStaffAccess() {
         if (cancelled) return;
         if (error || !data || data.length === 0) {
           setIsStaff(false);
+          setIsAdmin(false);
         } else {
           const row = Array.isArray(data) ? data[0] : data;
           setIsStaff(!!row.is_staff);
+          setIsAdmin(!!row.is_admin);
         }
         setLoading(false);
       });
@@ -58,5 +62,5 @@ export function useStaffAccess() {
       }
     : null;
 
-  return { isStaff, loading, staffAuth };
+  return { isStaff, isAdmin, loading, staffAuth };
 }

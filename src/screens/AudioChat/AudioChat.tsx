@@ -105,7 +105,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     }
 
     const canAfford = creditManager.canAfford(user.id, 50);
-    if (!canAfford && !creditManager.isStaffMember(user.id)) {
+    if (!canAfford && !(await creditManager.hasFreeCallingAccess(user.id))) {
       alert(`Need ${formatCredits(50)} per minute for audio calls!`);
       return;
     }
@@ -128,7 +128,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
               const success = await creditManager.deductCredits(user.id, 50);
               if (success) {
                 setUserBalance(creditManager.getTotalCredits(user.id));
-              } else if (!creditManager.isStaffMember(user.id)) {
+              } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
                 endCall();
                 alert('Insufficient credits for audio call!');
               }
