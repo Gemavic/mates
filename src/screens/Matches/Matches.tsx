@@ -12,7 +12,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { MessagingManager } from '@/lib/database';
-import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { creditManager } from '@/lib/creditSystem';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
 
@@ -93,6 +93,34 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   const { user, profile } = useAuth();
 
   const userProfileImage = profile?.photo_url || DEFAULT_AVATAR;
+
+  // Same real per-minute live-chat billing as MessageChatBox — see that
+  // component for the full rationale. Kept in sync deliberately since
+  // this screen has its own separate chat implementation.
+  useEffect(() => {
+    if (!selectedThread || !user) return;
+
+    let seconds = 0;
+    let cancelled = false;
+
+    const timer = setInterval(() => {
+      seconds += 1;
+      if (seconds % 60 === 0 && !cancelled) {
+        void (async () => {
+          const success = await creditManager.deductCredits(user.id, 2, 'live_chat_minute');
+          if (!success && !cancelled) {
+            cancelled = true;
+            alert(
+              "You're out of credits — this conversation will pause billing here. Top up to keep chatting, your messages so far are saved."
+            );
+            onNavigate('credits');
+          }
+        })();
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [selectedThread, user, onNavigate]);
 
   useEffect(() => {
     if (user) {
@@ -305,17 +333,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     const thread = threads.find(t => t.id === selectedThread);
     if (!thread) return;
 
-    const charge = await creditManager.sendMessage(user.id, selectedThread, trimmed);
-    if (!charge.success) {
-      if (charge.dailyFreeLimitReached) {
-        alert("You've used today's free messages to new matches. This message costs 10 credits — top up to keep the conversation going.");
-      } else {
-        alert(`Need ${formatCredits(charge.cost)} credits to send this message.`);
-      }
-      onNavigate('credits');
-      return;
-    }
-
     const optimistic: ChatMessage = {
       id: `temp-${Date.now()}`, senderId: user.id, senderName: 'You',
       senderImage: userProfileImage, message: trimmed, timestamp: new Date(),
@@ -332,7 +349,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         .insert({
           thread_id: selectedThread, sender_id: user.id,
           subject: 'Chat Message', message_text: trimmed,
-          credits_spent: charge.cost, has_photos: false, is_delivered: true,
+          credits_spent: 0, has_photos: false, is_delivered: true,
           delivered_at: new Date().toISOString(), is_read: false
         })
         .select().single();
@@ -478,7 +495,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          <div className="bg-pink-50 border-t border-pink-200 px-3 py-3 flex items-center gap-2 safe-area-inset-bottom flex-shrink-0">
+          <div className="bg-pink-50 border-t border-pink-200 px-3 pt-2 flex flex-col gap-1.5 safe-area-inset-bottom flex-shrink-0">
+            <p className="text-xs text-gray-400 text-center">
+              Live chat: 2 credits/min while this conversation is open · included free with any subscription
+            </p>
+            <div className="flex items-center gap-2 pb-3">
             <button onClick={() => { setShowQuickMessages(!showQuickMessages); setShowEmojiPicker(false); }}
               className="bg-white text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
               Hi
@@ -499,6 +520,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               className="bg-pink-500 text-white p-3 rounded-full hover:bg-pink-600 transition-all active:scale-95 flex-shrink-0 disabled:opacity-40">
               <Send className="w-5 h-5" />
             </Button>
+            </div>
           </div>
         </div>
       </PageTransition>
