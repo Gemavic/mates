@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { HeartAnimation } from './HeartAnimation';
-import { Heart, X, Star, MapPin, Briefcase, GraduationCap, MoreVertical, Flag, Shield, Zap, MessageCircle, Send, Smile } from 'lucide-react';
+import { Heart, X, Star, MapPin, Briefcase, GraduationCap, MoreVertical, Flag, Shield, Zap, MessageCircle, Send, Smile, Gift as GiftIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendProfileViewNotification } from '@/lib/emailNotifications';
 import { Button } from '@/components/ui/button';
@@ -408,15 +408,44 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       {showMessageBox && (
         <div className="p-3 sm:p-4 bg-white border-t border-gray-200 max-h-48 overflow-y-auto">
           <div className="space-y-3">
-            <Textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={`Send a message to ${profile.name}...`}
-              className="w-full min-h-[50px] sm:min-h-[60px] md:min-h-[80px] resize-none text-sm"
-            />
-            
+            {/* Message Input with Embedded Emoji */}
+            <div className="relative">
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={`Send a message to ${profile.name}...`}
+                className="w-full min-h-[50px] sm:min-h-[60px] md:min-h-[80px] resize-none pl-8 sm:pl-10 md:pl-12 text-sm"
+              />
+              <button
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="absolute left-2 sm:left-3 top-2 sm:top-3 p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100 touch-manipulation active:scale-95"
+                title="Add emoji"
+                type="button"
+              >
+                <Smile className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              </button>
+            </div>
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="bg-gray-50 rounded-lg p-2 border max-h-24 sm:max-h-32 overflow-y-auto">
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
+                  {emojis.map((emoji, index) => (
+                    <button
+                      key={index}
+                      onClick={() => addEmoji(emoji)}
+                      className="text-sm sm:text-base md:text-lg hover:bg-gray-200 rounded p-0.5 sm:p-1 transition-colors touch-manipulation active:scale-95"
+                      type="button"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Chat Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex space-x-2">
                 <Button
                   onClick={() => setShowMessageBox(false)}
@@ -435,50 +464,24 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
                   Send
                 </Button>
               </div>
-              <Button
-                onClick={() => onNavigate?.('credits')}
-                className="bg-white/20 text-white hover:bg-white/30 text-xs px-2 py-1 rounded-full cursor-pointer touch-manipulation active:scale-95 transition-all duration-200"
-                type="button"
-              >
-                Buy Credits
-              </Button>
-            </div>
-            
-            {/* Message Input with Embedded Emoji */}
-            <div className="relative">
-              <Textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={`Send a message to ${profile.name}...`}
-                className="w-full min-h-[50px] sm:min-h-[60px] md:min-h-[80px] resize-none pl-8 sm:pl-10 md:pl-12 text-sm"
-              />
-              <button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="absolute left-2 sm:left-3 top-2 sm:top-3 p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100 touch-manipulation active:scale-95"
-                title="Add emoji"
-                type="button"
-              >
-                <Smile className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              </button>
-            </div>
-            
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <div className="bg-gray-50 rounded-lg p-2 border max-h-24 sm:max-h-32 overflow-y-auto">
-                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
-                  {emojis.map((emoji, index) => (
-                    <button
-                      key={index}
-                      onClick={() => addEmoji(emoji)}
-                      className="text-sm sm:text-base md:text-lg hover:bg-gray-200 rounded p-0.5 sm:p-1 transition-colors touch-manipulation active:scale-95"
-                      type="button"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => onNavigate?.('gift-shop', { userId: profile.id, userName: profile.name })}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-full cursor-pointer touch-manipulation active:scale-95 transition-all duration-200 flex items-center"
+                  type="button"
+                >
+                  <GiftIcon className="w-3 h-3 mr-1 flex-shrink-0" />
+                  Gift
+                </Button>
+                <Button
+                  onClick={() => onNavigate?.('credits')}
+                  className="bg-white/20 text-white hover:bg-white/30 text-xs px-2 py-1 rounded-full cursor-pointer touch-manipulation active:scale-95 transition-all duration-200"
+                  type="button"
+                >
+                  Buy Credits
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
