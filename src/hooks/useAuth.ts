@@ -36,7 +36,21 @@ export const useAuth = () => {
       }
 
       try {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        // getSession() has no built-in timeout — on a slow or stalled
+        // connection, this await can hang indefinitely with no error and
+        // no rejection, leaving the entire app stuck on the loading
+        // screen forever (ProtectedRoute wraps every authenticated
+        // screen, so this is the single point of failure for the whole
+        // app, not just one page). Race it against a hard timeout so
+        // loading always resolves within a bounded time either way —
+        // treating a timeout as "no session" is the safe default, since
+        // ProtectedRoute will correctly redirect to sign-in rather than
+        // silently pretend someone is authenticated when we don't know.
+        const sessionPromise = supabaseClient.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null }; error: null }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null }, error: null }), 8000)
+        );
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
 
         // Only clear session if it's a refresh token error
         if (error && error.message && error.message.includes('refresh_token_not_found')) {
