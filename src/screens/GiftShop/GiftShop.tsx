@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Gift, Heart, Star, Crown, Coffee, Flower2, CreditCard } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { supabaseClient } from '@/lib/supabase';
+import { MessagingManager } from '@/lib/database';
 
 interface GiftItem {
   id: string;
@@ -17,9 +19,11 @@ interface GiftItem {
 
 interface GiftShopProps {
   onNavigate: (screen: string) => void;
+  initialRecipientId?: string | null;
+  initialRecipientName?: string | null;
 }
 
-export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
+export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipientId = null, initialRecipientName = null }) => {
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -74,29 +78,54 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
 
   const sortedGifts = filteredGifts.sort((a, b) => b.popularity - a.popularity);
 
-  const sendGift = async (_giftId: string, giftName: string, price: number) => {
+  const sendGift = async (_giftId: string, giftName: string, price: number, emoji: string) => {
     if (!user) {
       alert('Please sign in to send gifts');
       return;
     }
 
-    if (!creditManager.canAfford(user.id, price) && !creditManager.isStaffMember(user.id)) {
+    const isStaffFree = creditManager.isStaffMember(user.id);
+    if (!creditManager.canAfford(user.id, price) && !isStaffFree) {
       alert(`You need ${formatCredits(price)} to send this gift!`);
       return;
     }
 
-    if (creditManager.isStaffMember(user.id)) {
-      // Staff members can send gifts for free
-      setUserBalance(creditManager.getTotalCredits(user.id));
-      alert(`🎁 Successfully sent ${giftName} (Staff - Free)!`);
-    } else {
+    if (!isStaffFree) {
       const success = await creditManager.spendCredits(user.id, price, `Sent ${giftName} gift`);
-      if (success) {
-        setUserBalance(creditManager.getTotalCredits(user.id));
-        alert(`🎁 Successfully sent ${giftName} for ${formatCredits(price)}!`);
-      } else {
+      if (!success) {
         alert('Failed to send gift. Please try again.');
+        return;
       }
+      setUserBalance(creditManager.getTotalCredits(user.id));
+    } else {
+      setUserBalance(creditManager.getTotalCredits(user.id));
+    }
+
+    // If this gift is going to a specific person (opened from their chat),
+    // actually deliver it into their real conversation — previously this
+    // function only showed a success alert with no record of who, if
+    // anyone, received anything.
+    if (initialRecipientId) {
+      try {
+        const threadId = await MessagingManager.getOrCreateThread(user.id, initialRecipientId);
+        await supabaseClient.from('mail_messages').insert({
+          thread_id: threadId,
+          sender_id: user.id,
+          subject: 'Gift',
+          message_text: `${emoji} Sent you a ${giftName}!`,
+          credits_spent: 0, // already charged above via spendCredits
+          has_photos: false,
+          is_delivered: true,
+          delivered_at: new Date().toISOString(),
+          is_read: false,
+        });
+        alert(`🎁 Sent ${giftName} to ${initialRecipientName || 'them'}!`);
+      } catch (err) {
+        console.error('Gift charged but failed to deliver message:', err);
+        alert(`🎁 ${giftName} purchased, but delivering it to their chat failed — please try messaging them directly.`);
+      }
+    } else {
+      alert(`🎁 Successfully sent ${giftName} for ${formatCredits(price)}!`);
     }
   };
 
@@ -110,6 +139,16 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
       showClose={false}
     >
       <div className="px-4 py-6">
+        {initialRecipientId && (
+          <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-3 mb-6 flex items-center gap-2">
+            <Gift className="w-5 h-5 text-white flex-shrink-0" />
+            <p className="text-white text-sm">
+              Sending a gift to <span className="font-bold">{initialRecipientName || 'this person'}</span>
+              {' '}— it'll appear right in your chat with them.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
@@ -197,7 +236,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate }) => {
                 </div>
                 <div className="mt-auto">
                   <Button
-                    onClick={() => sendGift(gift.id, gift.name, gift.price)}
+                    onClick={() => sendGift(gift.id, gift.name, gift.price, gift.emoji)}
                     disabled={!creditManager.canAfford(user?.id || 'demo-user', gift.price) && !creditManager.isStaffMember(user?.id || 'demo-user')}
                     className={`w-full text-xs py-2 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
                       creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user')

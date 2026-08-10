@@ -77,6 +77,7 @@ const App: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const { user, loading } = useAuth();
   const { staffAuth, isStaff, isAdmin, loading: staffLoading } = useStaffAccess();
 
@@ -90,7 +91,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleNavigate = (screen: string, params?: { userId?: string }) => {
+  const handleNavigate = (screen: string, params?: { userId?: string; userName?: string }) => {
     // Add smooth transition
     setIsTransitioning(true);
     console.log('Navigating to:', screen, params);
@@ -98,10 +99,12 @@ const App: React.FC = () => {
     // Handle userId parameter for view-profile / mail (message this person)
     if (params?.userId) {
       setSelectedUserId(params.userId);
+      setSelectedUserName(params.userName || null);
     } else if (screen !== 'view-profile') {
       // Clear any stale target so a later, unrelated visit to Mail doesn't
       // silently reopen a previous profile's conversation.
       setSelectedUserId(null);
+      setSelectedUserName(null);
     }
 
     setTimeout(() => {
@@ -321,7 +324,7 @@ const App: React.FC = () => {
         return <ModernCredits onNavigate={handleNavigate} />;
       
       case 'gift-shop':
-        return <GiftShop onNavigate={handleNavigate} />;
+        return <GiftShop onNavigate={handleNavigate} initialRecipientId={selectedUserId} initialRecipientName={selectedUserName} />;
       
       case 'mail':
         return <Mail onNavigate={handleNavigate} initialRecipientId={selectedUserId} />;
