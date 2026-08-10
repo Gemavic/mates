@@ -184,6 +184,18 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
             </div>
           )}
 
+          {paymentModel === 'credits' && (
+            <div className="text-center mb-6">
+              <button
+                onClick={() => onNavigate('credit-history')}
+                className="text-white/80 hover:text-white text-sm underline underline-offset-2 cursor-pointer"
+                type="button"
+              >
+                View transaction history
+              </button>
+            </div>
+          )}
+
           {/* Payment Model Toggle */}
           <div className="flex bg-white/10 backdrop-blur-sm rounded-2xl p-1">
             <button
