@@ -40,14 +40,11 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(0);
-  // Swipe makes sense on mobile (touch gestures, limited screen). On
-  // desktop, a single small card centered in a wide viewport just reads as
-  // empty space — grid uses the available width properly, so that's the
-  // sensible default there. Matches the lg: breakpoint used elsewhere in
-  // this component to switch between the mobile/desktop render branches.
-  const [viewMode, setViewMode] = useState<'swipe' | 'grid'>(
-    typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'grid' : 'swipe'
-  );
+  // Grid view (a vertically-scrollable, multi-column browsing list) is now
+  // the default everywhere — mobile included — matching the explicitly
+  // requested browsing pattern. Swipe mode remains available as a toggle
+  // for anyone who prefers it.
+  const [viewMode, setViewMode] = useState<'swipe' | 'grid'>('grid');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -415,35 +412,77 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               </Button>
             </div>
 
-            {/* Swipe Card */}
-            <div className="flex justify-center px-1 sm:px-2 pt-2">
-              {profiles.length === 0 && !loading ? (
-                <EmptyState
-                  icon={Users}
-                  title="No profiles available"
-                  description="Check back soon, or widen your search filters to see more people."
-                />
-              ) : currentProfile ? (
-                <SwipeCard
-                  profile={currentProfile}
-                  onLike={handleLike}
-                  onPass={handlePass}
-                  onSuperLike={handleSuperLike}
-                  onSendMessage={handleSendMessage}
-                  onBlink={handleBlink}
-                  onReport={handleReport}
-                  onBlock={handleBlock}
-                  onNavigate={onNavigate}
-                  className="w-full max-w-sm"
-                />
-              ) : (
-                <EmptyState
-                  icon={Heart}
-                  title="You've viewed everyone"
-                  description="You've seen all available profiles for now — check back soon for new members."
-                />
-              )}
+            {/* View Mode Toggle */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setViewMode('swipe')}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer touch-manipulation ${
+                  viewMode === 'swipe' ? 'bg-white text-gray-900' : 'bg-white/20 text-white'
+                }`}
+                type="button"
+              >
+                Swipe
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer touch-manipulation ${
+                  viewMode === 'grid' ? 'bg-white text-gray-900' : 'bg-white/20 text-white'
+                }`}
+                type="button"
+              >
+                Grid
+              </button>
             </div>
+
+            {profiles.length === 0 && !loading ? (
+              <EmptyState
+                icon={Users}
+                title="No profiles available"
+                description="Check back soon, or widen your search filters to see more people."
+              />
+            ) : viewMode === 'swipe' ? (
+              /* Swipe Card */
+              <div className="flex justify-center px-1 sm:px-2 pt-2">
+                {currentProfile ? (
+                  <SwipeCard
+                    profile={currentProfile}
+                    onLike={handleLike}
+                    onPass={handlePass}
+                    onSuperLike={handleSuperLike}
+                    onSendMessage={handleSendMessage}
+                    onBlink={handleBlink}
+                    onReport={handleReport}
+                    onBlock={handleBlock}
+                    onNavigate={onNavigate}
+                    className="w-full max-w-sm"
+                  />
+                ) : (
+                  <EmptyState
+                    icon={Heart}
+                    title="You've viewed everyone"
+                    description="You've seen all available profiles for now — check back soon for new members."
+                  />
+                )}
+              </div>
+            ) : (
+              /* Grid — vertically scrollable, 2 columns on phone width */
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                {profiles.map((profile) => (
+                  <GridProfileCard
+                    key={profile.id}
+                    id={profile.id}
+                    name={profile.name}
+                    age={profile.age}
+                    images={profile.images}
+                    online={profile.online}
+                    verified={profile.verified}
+                    lookingFor={profile.lookingFor}
+                    onViewProfile={(id) => onNavigate('view-profile', { userId: id })}
+                    onLike={handleLike}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

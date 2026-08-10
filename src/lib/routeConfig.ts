@@ -33,11 +33,6 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
     allowAnonymous: true,
   },
 
-  'browse-profiles': {
-    requireAuth: true,
-    allowAnonymous: true,
-  },
-
   matches: {
     requireAuth: true,
     allowAnonymous: false,

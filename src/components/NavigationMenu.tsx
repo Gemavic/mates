@@ -60,7 +60,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
       icon: Users,
       color: 'from-blue-500 to-blue-600',
       items: [
-        { id: 'browse-all', label: 'Browse All', icon: Users, route: 'browse-profiles', description: 'Discover new connections' },
+        { id: 'browse-all', label: 'Browse All', icon: Users, route: 'discovery', description: 'Discover new connections' },
         { id: 'my-matches', label: 'My Matches', icon: Heart, route: 'matches', description: 'View mutual connections' },
         { id: 'likes', label: 'Likes', icon: Star, route: 'likes', description: 'See who liked you' },
         { id: 'vip-matching', label: 'VIP Matching', icon: Sparkles, route: 'match-suitor', description: 'Premium matchmaking' },
