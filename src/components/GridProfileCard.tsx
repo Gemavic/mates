@@ -1,12 +1,21 @@
 import React from 'react';
 import { Heart, Camera } from 'lucide-react';
 
+const LOOKING_FOR_LABELS: Record<string, string> = {
+  friendship: 'Friendship',
+  serious: 'True Love',
+  casual: 'Casual Dating',
+  flirting: 'Flirting',
+  not_sure: 'Not Sure Yet',
+};
+
 interface GridProfileCardProps {
   id: string;
   name: string;
   age: number;
   images: string[];
   online: boolean;
+  lookingFor?: string | null;
   onViewProfile: (id: string) => void;
   onLike?: (id: string) => void;
 }
@@ -17,6 +26,7 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
   age,
   images,
   online,
+  lookingFor,
   onViewProfile,
   onLike
 }) => {
@@ -58,6 +68,15 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           )}
         </div>
+
+        {lookingFor && LOOKING_FOR_LABELS[lookingFor] && (
+          <div className="mb-3">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-medium">
+              <Heart className="w-3 h-3" />
+              {LOOKING_FOR_LABELS[lookingFor]}
+            </span>
+          </div>
+        )}
 
         <button
           onClick={() => onViewProfile(id)}
