@@ -13,6 +13,7 @@ import { ProfileManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
 import { sendLikeNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/hooks/useSubscription';
 
 interface Profile {
@@ -39,6 +40,7 @@ interface ModernDiscoveryProps {
 export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = () => {} }) => {
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [userBalance, setUserBalance] = useState(0);
   // Grid view (a vertically-scrollable, multi-column browsing list) is now
   // the default everywhere — mobile included — matching the explicitly
@@ -387,7 +389,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-x-hidden">
+    <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'} overflow-x-hidden`}>
       {/* Mobile Header */}
       <div className="lg:hidden">
         <ModernHeader

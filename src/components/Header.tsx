@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeftIcon, XIcon, Settings, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface HeaderProps {
   title?: string;
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   className = ""
 }) => {
   const { user, getFirstName, signOut, isAnonymous, loading } = useAuth();
+  const { theme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = async () => {
@@ -41,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className={`relative w-full h-20 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-2xl z-30 ${className}`}>
+    <div className={`relative w-full h-20 bg-gradient-to-r ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'} shadow-2xl z-30 ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent shadow-[0px_8px_32px_rgba(0,0,0,0.25)]" />
       
       {/* Left side buttons */}

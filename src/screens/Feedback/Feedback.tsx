@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, Send, TrendingUp, CheckCircle, Clock, ThumbsUp, Search } from 'lucide-react';
 import { submitFeedback, getFeedbackCategories, getUserFeedbackHistory, getFeedbackStats, getTrendingFeedback } from '@/lib/feedbackSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FeedbackProps {
   onNavigate: (screen: string) => void;
@@ -22,6 +23,7 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user, getFullName } = useAuth();
+  const { theme } = useTheme();
   const categories = getFeedbackCategories();
   const userFeedback = getUserFeedbackHistory(user?.id || 'demo-user');
   const stats = getFeedbackStats();
@@ -278,7 +280,7 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+    <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'}`}>
       <div className="max-w-md mx-auto min-h-screen relative">
         {/* Header */}
         <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-4 py-3">

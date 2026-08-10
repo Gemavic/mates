@@ -2,6 +2,7 @@ import React from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { QuickNavBar } from './QuickNavBar';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -38,8 +39,9 @@ export const Layout: React.FC<LayoutProps> = ({
   onNavigate,
   className = ""
 }) => {
+  const { theme } = useTheme();
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 ${className}`}>
+    <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'} ${className}`}>
       <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative overflow-hidden">
         {/* Header */}
         <Header

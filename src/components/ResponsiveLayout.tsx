@@ -2,6 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Menu } from './Menu';
 import { Footer } from './Footer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -20,9 +21,11 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   currentScreen = 'discovery',
   onNavigate = () => {}
 }) => {
+  const { theme } = useTheme();
   return (
     <div className={cn(
-      "min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600",
+      "min-h-screen bg-gradient-to-br",
+      theme === 'dark' ? "from-slate-900 via-purple-950 to-slate-900" : "from-pink-500 via-rose-500 to-purple-600",
       "relative overflow-hidden",
       className
     )}>

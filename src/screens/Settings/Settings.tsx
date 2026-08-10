@@ -4,6 +4,7 @@ import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRi
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SettingsProps {
   onNavigate: (screen: string) => void;
@@ -17,6 +18,7 @@ interface BlockedUser {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showOnline, setShowOnline] = useState(true);
   const [savingOnlineStatus, setSavingOnlineStatus] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
@@ -190,7 +192,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         {
           icon: Moon,
           label: 'Dark Mode',
-          comingSoon: true,
+          toggle: true,
+          value: theme === 'dark',
+          onChange: toggleTheme,
         },
       ]
     },
