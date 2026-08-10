@@ -92,6 +92,21 @@ export class ProfileManager {
     // Only exclude current user if provided
     if (currentUserId) {
       query = query.neq('user_id', currentUserId);
+
+      // Exclude anyone blocked in either direction — someone the current
+      // user blocked, and anyone who has blocked the current user.
+      const { data: blocks } = await supabaseClient
+        .from('user_blocks')
+        .select('blocker_id, blocked_id')
+        .or(`blocker_id.eq.${currentUserId},blocked_id.eq.${currentUserId}`);
+
+      const excludedIds = (blocks || [])
+        .map((b: any) => (b.blocker_id === currentUserId ? b.blocked_id : b.blocker_id))
+        .filter(Boolean);
+
+      if (excludedIds.length > 0) {
+        query = query.not('user_id', 'in', `(${excludedIds.join(',')})`);
+      }
     }
 
     // Show all profiles that are either public OR don't have visibility set (default to public)

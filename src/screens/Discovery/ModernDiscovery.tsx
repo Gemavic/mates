@@ -324,15 +324,43 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     setCurrentProfileIndex((prev) => (prev + 1) % profiles.length);
   };
 
-  const handleReport = (profileId: string) => {
-    console.log('Reported profile:', profileId);
-    alert(`Profile reported: ${currentProfile.name}`);
+  const handleReport = async (profileId: string) => {
+    if (!user) return;
+    const reportedName = currentProfile?.name || 'this profile';
+    try {
+      const { error } = await supabaseClient.from('abuse_reports').insert({
+        reporter_id: user.id,
+        reported_user_id: profileId,
+        report_type: 'other',
+        context_type: 'profile',
+        description: 'Reported from Discovery',
+      });
+      if (error) throw error;
+      alert(`${reportedName} has been reported to our moderation team.`);
+    } catch (err) {
+      console.error('Failed to submit report:', err);
+      alert('Failed to submit report. Please try again.');
+      return;
+    }
     nextProfile();
   };
 
-  const handleBlock = (profileId: string) => {
-    console.log('Blocked profile:', profileId);
-    alert(`Profile blocked: ${currentProfile.name}`);
+  const handleBlock = async (profileId: string) => {
+    if (!user) return;
+    const blockedName = currentProfile?.name || 'this profile';
+    try {
+      const { error } = await supabaseClient.from('user_blocks').insert({
+        blocker_id: user.id,
+        blocked_id: profileId,
+      });
+      if (error && error.code !== '23505') throw error; // 23505 = already blocked, treat as success
+      setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+      alert(`${blockedName} has been blocked and won't be shown to you again.`);
+    } catch (err) {
+      console.error('Failed to block user:', err);
+      alert('Failed to block user. Please try again.');
+      return;
+    }
     nextProfile();
   };
 
