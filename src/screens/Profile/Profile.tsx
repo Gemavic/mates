@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Camera, MapPin, Briefcase, GraduationCap, Settings, CreditCard as Edit, Shield, Upload, X, Heart, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
+import { uploadProfilePhoto } from '@/lib/photoUpload';
 import { ProfileManager } from '@/lib/database';
 
 const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
@@ -206,29 +207,23 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
       try {
         for (const file of Array.from(files)) {
-          // Create a data URL for immediate display
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            const dataUrl = e.target?.result as string;
+          const publicUrl = await uploadProfilePhoto(user.id, file);
 
-            // Save to database (using data URL as placeholder)
-            const { error } = await supabaseClient
-              .from('user_photos')
-              .insert({
-                user_id: user.id,
-                photo_url: dataUrl,
-                is_primary: userPhotos.length === 0,
-                display_order: userPhotos.length + 1
-              })
-              .select()
-              .single();
+          const { error } = await supabaseClient
+            .from('user_photos')
+            .insert({
+              user_id: user.id,
+              photo_url: publicUrl,
+              is_primary: userPhotos.length === 0,
+              display_order: userPhotos.length + 1
+            })
+            .select()
+            .single();
 
-            if (error) throw error;
+          if (error) throw error;
 
-            // Reload photos
-            await loadUserPhotos();
-          };
-          reader.readAsDataURL(file);
+          // Reload photos
+          await loadUserPhotos();
         }
 
         const successMessage = document.createElement('div');
@@ -459,69 +454,65 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                   setUploadingPhoto(true);
 
                   try {
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                      const dataUrl = e.target?.result as string;
+                    const publicUrl = await uploadProfilePhoto(user.id, file);
 
-                      // CRITICAL: Update user_profiles.photo_url first for immediate visibility
-                      const { error: profileError } = await supabaseClient
-                        .from('user_profiles')
-                        .update({ photo_url: dataUrl })
-                        .eq('user_id', user.id);
+                    // CRITICAL: Update user_profiles.photo_url first for immediate visibility
+                    const { error: profileError } = await supabaseClient
+                      .from('user_profiles')
+                      .update({ photo_url: publicUrl })
+                      .eq('user_id', user.id);
 
-                      if (profileError) {
-                        console.error('Failed to update profile photo:', profileError);
-                        throw profileError;
-                      }
+                    if (profileError) {
+                      console.error('Failed to update profile photo:', profileError);
+                      throw profileError;
+                    }
 
-                      // Then update or insert into user_photos
-                      const { data: existingPrimary, error: checkError } = await supabaseClient
+                    // Then update or insert into user_photos
+                    const { data: existingPrimary, error: checkError } = await supabaseClient
+                      .from('user_photos')
+                      .select('id')
+                      .eq('user_id', user.id)
+                      .eq('is_primary', true)
+                      .maybeSingle();
+
+                    if (checkError) throw checkError;
+
+                    if (existingPrimary) {
+                      // Update existing primary photo
+                      const { error: updateError } = await supabaseClient
                         .from('user_photos')
-                        .select('id')
-                        .eq('user_id', user.id)
-                        .eq('is_primary', true)
-                        .maybeSingle();
+                        .update({ photo_url: publicUrl })
+                        .eq('id', existingPrimary.id);
 
-                      if (checkError) throw checkError;
+                      if (updateError) throw updateError;
+                    } else {
+                      // Insert new primary photo
+                      const { error: insertError } = await supabaseClient
+                        .from('user_photos')
+                        .insert({
+                          user_id: user.id,
+                          photo_url: publicUrl,
+                          is_primary: true,
+                          display_order: 1
+                        });
 
-                      if (existingPrimary) {
-                        // Update existing primary photo
-                        const { error: updateError } = await supabaseClient
-                          .from('user_photos')
-                          .update({ photo_url: dataUrl })
-                          .eq('id', existingPrimary.id);
+                      if (insertError) throw insertError;
+                    }
 
-                        if (updateError) throw updateError;
-                      } else {
-                        // Insert new primary photo
-                        const { error: insertError } = await supabaseClient
-                          .from('user_photos')
-                          .insert({
-                            user_id: user.id,
-                            photo_url: dataUrl,
-                            is_primary: true,
-                            display_order: 1
-                          });
+                    await loadUserPhotos();
+                    await loadUserProfile();
 
-                        if (insertError) throw insertError;
+                    const successMessage = document.createElement('div');
+                    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    successMessage.textContent = '✅ Profile photo updated!';
+                    document.body.appendChild(successMessage);
+                    setTimeout(() => {
+                      if (document.body.contains(successMessage)) {
+                        document.body.removeChild(successMessage);
                       }
+                    }, 3000);
 
-                      await loadUserPhotos();
-                      await loadUserProfile();
-
-                      const successMessage = document.createElement('div');
-                      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                      successMessage.textContent = '✅ Profile photo updated!';
-                      document.body.appendChild(successMessage);
-                      setTimeout(() => {
-                        if (document.body.contains(successMessage)) {
-                          document.body.removeChild(successMessage);
-                        }
-                      }, 3000);
-
-                      setUploadingPhoto(false);
-                    };
-                    reader.readAsDataURL(file);
+                    setUploadingPhoto(false);
                   } catch (error: any) {
                     console.error('Upload error:', error);
                     const errorMessage = document.createElement('div');
