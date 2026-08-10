@@ -3,7 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, MapPin, Briefcase, GraduationCap, Settings, CreditCard as Edit, Shield, Upload, X } from 'lucide-react';
+import { Camera, MapPin, Briefcase, GraduationCap, Settings, CreditCard as Edit, Shield, Upload, X, Heart, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { ProfileManager } from '@/lib/database';
@@ -25,6 +25,22 @@ interface ProfileProps {
   onNavigate: (screen: string) => void;
 }
 
+const RELATIONSHIP_STATUS_LABELS: Record<string, string> = {
+  single: 'Single / Unmarried',
+  married: 'Married',
+  divorced: 'Divorced',
+  widowed: 'Widowed',
+  separated: 'Separated',
+};
+
+const LOOKING_FOR_LABELS: Record<string, string> = {
+  friendship: 'Friendship',
+  serious: 'True Love / Serious Relationship',
+  casual: 'Casual Dating',
+  flirting: 'Flirting',
+  not_sure: 'Not Sure Yet',
+};
+
 export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { user, getFirstName, getFullName, profile, loadUserProfile } = useAuth();
@@ -35,7 +51,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
     occupation: 'Professional',
     education: 'University',
     bio: 'Hello! I\'m excited to meet new people and see where things go.',
-    interests: ['Travel', 'Music', 'Food', 'Movies']
+    interests: ['Travel', 'Music', 'Food', 'Movies'],
+    relationshipStatus: '',
+    lookingFor: ''
   });
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [userPhotos, setUserPhotos] = useState<Array<{id: string, url: string, isPrimary: boolean}>>([]);
@@ -57,7 +75,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         occupation: profile.occupation || 'Professional',
         education: profile.education || 'University',
         bio: profile.bio || '',
-        interests: parseArrayField(profile.interests, ['Travel', 'Music', 'Food', 'Movies'])
+        interests: parseArrayField(profile.interests, ['Travel', 'Music', 'Food', 'Movies']),
+        relationshipStatus: profile.relationship_status || '',
+        lookingFor: profile.looking_for || ''
       });
     }
   }, [profile]);
@@ -124,7 +144,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         occupation: profileData.occupation || null,
         education: profileData.education || null,
         bio: profileData.bio || null,
-        interests: profileData.interests || null
+        interests: profileData.interests || null,
+        relationship_status: profileData.relationshipStatus || null,
+        looking_for: profileData.lookingFor || null
       };
 
       console.log('Update data:', updateData);
@@ -325,6 +347,38 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                 onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
                 className="bg-white/20 text-white placeholder-white/50 border-white/30 min-h-[100px]"
               />
+            </div>
+
+            <div>
+              <label className="block text-white font-medium mb-2">Relationship Status</label>
+              <select
+                value={profileData.relationshipStatus}
+                onChange={(e) => setProfileData(prev => ({ ...prev, relationshipStatus: e.target.value }))}
+                className="w-full bg-white/20 text-white border-white/30 rounded-lg px-3 py-2 [&>option]:text-gray-900"
+              >
+                <option value="">Prefer not to say</option>
+                <option value="single">Single / Unmarried</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="widowed">Widowed</option>
+                <option value="separated">Separated</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-white font-medium mb-2">Looking For</label>
+              <select
+                value={profileData.lookingFor}
+                onChange={(e) => setProfileData(prev => ({ ...prev, lookingFor: e.target.value }))}
+                className="w-full bg-white/20 text-white border-white/30 rounded-lg px-3 py-2 [&>option]:text-gray-900"
+              >
+                <option value="">Prefer not to say</option>
+                <option value="friendship">Friendship</option>
+                <option value="serious">True Love / Serious Relationship</option>
+                <option value="casual">Casual Dating</option>
+                <option value="flirting">Flirting</option>
+                <option value="not_sure">Not Sure Yet</option>
+              </select>
             </div>
 
             <Button
@@ -610,6 +664,18 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
               <GraduationCap className="w-5 h-5 mr-3 text-white/70" />
               <span>{profileData.education}</span>
             </div>
+            {profileData.relationshipStatus && (
+              <div className="flex items-center text-white">
+                <Users className="w-5 h-5 mr-3 text-white/70" />
+                <span>{RELATIONSHIP_STATUS_LABELS[profileData.relationshipStatus] || profileData.relationshipStatus}</span>
+              </div>
+            )}
+            {profileData.lookingFor && (
+              <div className="flex items-center text-white">
+                <Heart className="w-5 h-5 mr-3 text-white/70" />
+                <span>Looking for: {LOOKING_FOR_LABELS[profileData.lookingFor] || profileData.lookingFor}</span>
+              </div>
+            )}
           </div>
 
           <div className="mt-4">

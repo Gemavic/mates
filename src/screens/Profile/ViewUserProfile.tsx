@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  Circle
+  Circle,
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
@@ -47,6 +48,8 @@ interface UserProfile {
   photo_url: string;
   is_verified: boolean;
   is_online: boolean;
+  relationship_status: string | null;
+  looking_for: string | null;
 }
 
 interface UserPhoto {
@@ -54,6 +57,22 @@ interface UserPhoto {
   photo_url: string;
   display_order: number;
 }
+
+const RELATIONSHIP_STATUS_LABELS: Record<string, string> = {
+  single: 'Single / Unmarried',
+  married: 'Married',
+  divorced: 'Divorced',
+  widowed: 'Widowed',
+  separated: 'Separated',
+};
+
+const LOOKING_FOR_LABELS: Record<string, string> = {
+  friendship: 'Friendship',
+  serious: 'True Love',
+  casual: 'Casual Dating',
+  flirting: 'Flirting',
+  not_sure: 'Not Sure Yet',
+};
 
 export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, userId }) => {
   const { user } = useAuth();
@@ -368,6 +387,23 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
             <div>
               <h2 className="text-white font-semibold text-lg mb-2">About</h2>
               <p className="text-white/80 leading-relaxed">{profile.bio}</p>
+            </div>
+          )}
+
+          {(profile.relationship_status || profile.looking_for) && (
+            <div className="flex flex-wrap gap-2">
+              {profile.relationship_status && (
+                <span className="px-3 py-1.5 bg-white/15 border border-white/20 text-white rounded-full text-sm flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  {RELATIONSHIP_STATUS_LABELS[profile.relationship_status] || profile.relationship_status}
+                </span>
+              )}
+              {profile.looking_for && (
+                <span className="px-3 py-1.5 bg-rose-500/20 border border-rose-400/30 text-white rounded-full text-sm flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5" />
+                  Looking for {LOOKING_FOR_LABELS[profile.looking_for] || profile.looking_for}
+                </span>
+              )}
             </div>
           )}
 

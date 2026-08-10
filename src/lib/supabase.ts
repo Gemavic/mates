@@ -102,6 +102,7 @@ export type Database = {
           bio: string | null;
           interests: any;
           looking_for: string | null;
+          relationship_status: string | null;
           distance_preference: number | null;
           age_range_min: number | null;
           age_range_max: number | null;
@@ -126,6 +127,7 @@ export type Database = {
           bio?: string;
           interests?: string[];
           looking_for?: string;
+          relationship_status?: string;
           distance_preference?: number;
           age_range_min?: number;
           age_range_max?: number;
@@ -147,6 +149,7 @@ export type Database = {
           bio?: string;
           interests?: string[];
           looking_for?: string;
+          relationship_status?: string;
           distance_preference?: number;
           age_range_min?: number;
           age_range_max?: number;
