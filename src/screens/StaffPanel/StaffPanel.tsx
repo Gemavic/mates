@@ -10,6 +10,7 @@ import { RewardPanel } from '@/components/RewardPanel';
 import { AutomatedRulesPanel } from '@/components/AutomatedRulesPanel';
 import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
 import { StaffAccessRequests } from '@/components/StaffAccessRequests';
+import { PhotoMigrationTool } from '@/components/PhotoMigrationTool';
 
 interface StaffPanelProps {
   onLogout: () => void;
@@ -714,7 +715,10 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
           )}
 
           {selectedTab === 'access' && (
-            <StaffAccessRequests isAdmin={isAdmin} />
+            <div className="space-y-6">
+              <StaffAccessRequests isAdmin={isAdmin} />
+              {isAdmin && <PhotoMigrationTool />}
+            </div>
           )}
         </div>
 
