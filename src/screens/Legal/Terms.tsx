@@ -293,7 +293,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">16.1 Scope and Applicability</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">10.1 Scope and Applicability</h4>
                 <p>
                   This Arbitration Agreement applies to all disputes, claims, or controversies between you and
                   Datescare, including those arising from these Terms or your use of the Services.
@@ -301,7 +301,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">16.2 Pre-Arbitration Informal Dispute Resolution</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">10.2 Pre-Arbitration Informal Dispute Resolution</h4>
                 <p className="mb-2">
                   Before initiating arbitration, both parties must attempt informal resolution:
                 </p>
@@ -327,7 +327,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">16.5 Class Action Waiver</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">10.4 Class Action Waiver</h4>
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                   <p className="font-semibold text-yellow-900">
                     TO THE FULLEST EXTENT PERMITTED BY LAW, BOTH YOU AND WE WAIVE ANY RIGHT TO BRING OR PARTICIPATE
