@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Gift, Loader2, Clock, XCircle } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Gift, Loader2, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
@@ -63,55 +63,80 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
-  useEffect(() => {
+  const loadHistory = React.useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
-    (async () => {
-      const [ledgerRes, intentsRes] = await Promise.all([
-        supabaseClient
-          .from('app_credit_ledger')
-          .select('id, amount, balance_after, reason, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(100),
-        supabaseClient
-          .from('app_payment_intents')
-          .select('id, product_id, amount_usd, status, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(50),
-      ]);
+    const [ledgerRes, intentsRes] = await Promise.all([
+      supabaseClient
+        .from('app_credit_ledger')
+        .select('id, amount, balance_after, reason, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+      supabaseClient
+        .from('app_payment_intents')
+        .select('id, product_id, amount_usd, status, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+    ]);
 
-      if (ledgerRes.error) console.error('Failed to load ledger:', ledgerRes.error);
-      if (intentsRes.error) console.error('Failed to load payment intents:', intentsRes.error);
-      if (ledgerRes.error && intentsRes.error) {
-        setError(true);
-        setLoading(false);
-        return;
-      }
+    if (ledgerRes.error) console.error('Failed to load ledger:', ledgerRes.error);
+    if (intentsRes.error) console.error('Failed to load payment intents:', intentsRes.error);
+    if (ledgerRes.error && intentsRes.error) {
+      setError(true);
+      setLoading(false);
+      return;
+    }
 
-      const ledgerRows: HistoryRow[] = (ledgerRes.data || []).map((e: any) => ({
-        kind: 'ledger', id: `l${e.id}`, amount: e.amount,
-        balance_after: e.balance_after, reason: e.reason, created_at: e.created_at,
+    const ledgerRows: HistoryRow[] = (ledgerRes.data || []).map((e: any) => ({
+      kind: 'ledger', id: `l${e.id}`, amount: e.amount,
+      balance_after: e.balance_after, reason: e.reason, created_at: e.created_at,
+    }));
+
+    const intentRows: HistoryRow[] = (intentsRes.data || [])
+      .filter((i: any) => !TERMINAL_INTENT_STATUSES.has(i.status))
+      .map((i: any) => ({
+        kind: 'intent', id: `i${i.id}`, product_id: i.product_id,
+        amount_usd: i.amount_usd, status: i.status, created_at: i.created_at,
       }));
 
-      const intentRows: HistoryRow[] = (intentsRes.data || [])
-        .filter((i: any) => !TERMINAL_INTENT_STATUSES.has(i.status))
-        .map((i: any) => ({
-          kind: 'intent', id: `i${i.id}`, product_id: i.product_id,
-          amount_usd: i.amount_usd, status: i.status, created_at: i.created_at,
-        }));
-
-      const merged = [...ledgerRows, ...intentRows].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setRows(merged);
-      setLoading(false);
-    })();
+    const merged = [...ledgerRows, ...intentRows].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    setRows(merged);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  const hasOpenIntent = rows.some((r) => r.kind === 'intent');
+
+  const checkStatusNow = async () => {
+    if (!user) return;
+    setCheckingStatus(true);
+    try {
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) return;
+
+      await fetch('/api/check-payment-status', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      await loadHistory();
+    } catch (err) {
+      console.error('Failed to check payment status:', err);
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
 
   return (
     <Layout title="Transaction History" onBack={() => onNavigate('credits')}>
@@ -131,7 +156,19 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
             <p className="text-sm mt-1">Purchases, spends, and rewards will show up here.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <>
+            {hasOpenIntent && (
+              <button
+                onClick={checkStatusNow}
+                disabled={checkingStatus}
+                className="w-full mb-4 flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-60"
+                type="button"
+              >
+                <RefreshCw className={`w-4 h-4 ${checkingStatus ? 'animate-spin' : ''}`} />
+                {checkingStatus ? 'Checking with payment provider…' : 'Check Status Now'}
+              </button>
+            )}
+            <div className="space-y-3">
             {rows.map((row) => {
               if (row.kind === 'intent') {
                 const display = INTENT_STATUS_DISPLAY[row.status] || {
@@ -203,7 +240,8 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
                 </div>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </Layout>

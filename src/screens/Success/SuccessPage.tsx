@@ -16,15 +16,43 @@ interface SuccessPageProps {
 export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} }) => {
   const { user } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     creditManager.initializeUser(user.id);
     setBalance(creditManager.getTotalCredits(user.id));
 
-    // Balance may not have updated yet if the webhook hasn't confirmed
-    // the payment. Check again after a short delay so a fast confirmation
-    // shows up without the person needing to navigate away and back.
+    // Don't just passively wait on the webhook — actively ask NOWPayments
+    // for the real status right now, since a person landing on this exact
+    // screen almost certainly has a payment worth checking. Safe to call
+    // freely: this only ever reads the caller's own payments and credits
+    // through the same idempotent path the webhook itself uses.
+    (async () => {
+      setChecking(true);
+      try {
+        const { supabaseClient } = await import('@/lib/supabase');
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (accessToken) {
+          await fetch('/api/check-payment-status', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+        }
+      } catch (err) {
+        console.error('Active payment status check failed:', err);
+      } finally {
+        setChecking(false);
+        creditManager.initializeUser(user.id);
+        setBalance(creditManager.getTotalCredits(user.id));
+      }
+    })();
+
+    // Balance may still not have updated yet even after the active check
+    // (payment might genuinely still be confirming on-chain). Check again
+    // after a short delay so a fast confirmation shows up without the
+    // person needing to navigate away and back.
     const timeout = setTimeout(() => {
       setBalance(creditManager.getTotalCredits(user.id));
     }, 4000);
@@ -53,6 +81,9 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
           <p className="text-white font-bold text-4xl">
             {balance === null ? '—' : formatCredits(balance)}
           </p>
+          {checking && (
+            <p className="text-white/50 text-xs mt-2">Checking with payment provider…</p>
+          )}
         </div>
 
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-6">
