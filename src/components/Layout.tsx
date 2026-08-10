@@ -67,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({
         )}
 
         {/* Content */}
-        <div className={`relative z-10 smooth-scroll ${showFooter ? 'pb-24 sm:pb-28 md:pb-32' : 'pb-6 sm:pb-8'}`}>
+        <div className={`relative z-10 smooth-scroll ${showFooter ? 'pb-20 sm:pb-24' : 'pb-6 sm:pb-8'}`}>
           {children}
         </div>
 
