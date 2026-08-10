@@ -10,7 +10,7 @@ interface QuickNavBarProps {
 
 export const QuickNavBar: React.FC<QuickNavBarProps> = ({ onNavigate, activeScreen, className }) => {
   const navItems = [
-    { id: 'browse-profiles', label: 'Browse', icon: Users, color: 'text-blue-600', activeColor: 'bg-blue-100' },
+    { id: 'discovery', label: 'Browse', icon: Users, color: 'text-blue-600', activeColor: 'bg-blue-100' },
     { id: 'matches', label: 'Chat', icon: MessageCircle, color: 'text-green-600', activeColor: 'bg-green-100' },
     { id: 'mail', label: 'Mail', icon: Mail, color: 'text-purple-600', activeColor: 'bg-purple-100' },
     { id: 'audio-chat', label: 'Audio', icon: Phone, color: 'text-emerald-600', activeColor: 'bg-emerald-100' },

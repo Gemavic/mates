@@ -10,7 +10,7 @@ interface QuickActionCTAProps {
 export const QuickActionCTA: React.FC<QuickActionCTAProps> = ({ onNavigate, className }) => {
   const quickActions = [
     {
-      id: 'browse-profiles',
+      id: 'discovery',
       icon: Users,
       label: 'Browse',
       color: 'bg-blue-500/90',

@@ -9,7 +9,7 @@ interface CategoryNavigationProps {
 
 export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNavigate, className }) => {
   const navigationButtons = [
-    { label: 'Browse', route: 'browse-profiles', icon: Users, color: 'bg-blue-500', hoverColor: 'hover:bg-blue-600' },
+    { label: 'Browse', route: 'discovery', icon: Users, color: 'bg-blue-500', hoverColor: 'hover:bg-blue-600' },
     { label: 'Matches', route: 'matches', icon: Heart, color: 'bg-red-500', hoverColor: 'hover:bg-red-600' },
     { label: 'Likes', route: 'likes', icon: Star, color: 'bg-amber-500', hoverColor: 'hover:bg-amber-600' },
     { label: 'VIP Match', route: 'match-suitor', icon: Sparkles, color: 'bg-purple-500', hoverColor: 'hover:bg-purple-600' },
