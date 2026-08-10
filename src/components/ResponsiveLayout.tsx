@@ -46,7 +46,7 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
           <div className="w-full max-w-md mx-auto min-h-screen relative">
             <div className={cn(
               "relative z-10 min-h-screen",
-              showFooter ? "pb-24" : "pb-8"
+              showFooter ? "pb-20" : "pb-8"
             )}>
               {children}
             </div>
@@ -139,7 +139,7 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
           <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
             <div className={cn(
               "flex-1 overflow-y-auto min-h-screen",
-              showFooter ? "pb-24" : "pb-8"
+              showFooter ? "pb-20" : "pb-8"
             )}>
               {children}
             </div>
