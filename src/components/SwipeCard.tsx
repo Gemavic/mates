@@ -180,7 +180,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
     <div
       ref={cardRef}
       className={cn(
-        "relative w-full max-w-xs sm:max-w-sm mx-auto bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden",
+        "relative w-full max-w-xs sm:max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden",
         "transform transition-transform duration-200 select-none",
         isDragging && "cursor-grabbing",
         className
@@ -272,7 +272,10 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
       </div>
 
       {/* Profile Image */}
-      <div className="relative h-72 sm:h-80 md:h-96 lg:h-[500px] overflow-hidden">
+      <div
+        className="relative h-72 sm:h-80 md:h-96 lg:h-[500px] overflow-hidden"
+        style={{ borderRadius: '50% 50% 0 0 / 18% 18% 0 0' }}
+      >
         <img
           src={profile.images[currentImageIndex]}
           alt={profile.name}
