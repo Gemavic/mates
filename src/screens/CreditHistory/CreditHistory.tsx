@@ -1,18 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Gift, Loader2 } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Gift, Loader2, Clock, XCircle } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { formatCredits } from '@/lib/creditSystem';
 
 interface LedgerEntry {
-  id: number;
+  kind: 'ledger';
+  id: string;
   amount: number;
   balance_after: number;
   reason: string;
-  thread_id: string | null;
   created_at: string;
 }
+
+interface IntentEntry {
+  kind: 'intent';
+  id: string;
+  product_id: string;
+  amount_usd: number;
+  status: string;
+  created_at: string;
+}
+
+type HistoryRow = LedgerEntry | IntentEntry;
 
 interface CreditHistoryProps {
   onNavigate?: (screen: string) => void;
@@ -28,15 +39,28 @@ const REASON_LABELS: Record<string, string> = {
 
 const describeReason = (reason: string): string => {
   if (REASON_LABELS[reason]) return REASON_LABELS[reason];
-  // Reasons are often free-text descriptions already (e.g. "Sent Rose gift",
-  // "Exclusive mail") — title-case anything we don't have a specific label
-  // for rather than showing the raw internal string.
   return reason.charAt(0).toUpperCase() + reason.slice(1);
+};
+
+// Intent statuses that mean "this attempt is done, one way or the other"
+// and already has (or never will have) a matching ledger entry — showing
+// both would be confusing, so these are filtered out once resolved.
+const TERMINAL_INTENT_STATUSES = new Set(['finished']);
+
+const INTENT_STATUS_DISPLAY: Record<string, { label: string; color: string; icon: any }> = {
+  pending: { label: 'Pending', color: 'text-amber-300', icon: Clock },
+  waiting: { label: 'Waiting for payment', color: 'text-amber-300', icon: Clock },
+  confirming: { label: 'Confirming on blockchain', color: 'text-amber-300', icon: Clock },
+  sending: { label: 'Confirming on blockchain', color: 'text-amber-300', icon: Clock },
+  partially_paid: { label: 'Partially paid', color: 'text-orange-400', icon: Clock },
+  failed: { label: 'Failed', color: 'text-red-400', icon: XCircle },
+  expired: { label: 'Expired — not paid', color: 'text-white/50', icon: XCircle },
+  refunded: { label: 'Refunded', color: 'text-white/50', icon: XCircle },
 };
 
 export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () => {} }) => {
   const { user } = useAuth();
-  const [entries, setEntries] = useState<LedgerEntry[]>([]);
+  const [rows, setRows] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -46,19 +70,45 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
       return;
     }
     (async () => {
-      const { data, error: fetchError } = await supabaseClient
-        .from('app_credit_ledger')
-        .select('id, amount, balance_after, reason, thread_id, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
+      const [ledgerRes, intentsRes] = await Promise.all([
+        supabaseClient
+          .from('app_credit_ledger')
+          .select('id, amount, balance_after, reason, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabaseClient
+          .from('app_payment_intents')
+          .select('id, product_id, amount_usd, status, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
 
-      if (fetchError) {
-        console.error('Failed to load credit history:', fetchError);
+      if (ledgerRes.error) console.error('Failed to load ledger:', ledgerRes.error);
+      if (intentsRes.error) console.error('Failed to load payment intents:', intentsRes.error);
+      if (ledgerRes.error && intentsRes.error) {
         setError(true);
-      } else {
-        setEntries(data || []);
+        setLoading(false);
+        return;
       }
+
+      const ledgerRows: HistoryRow[] = (ledgerRes.data || []).map((e: any) => ({
+        kind: 'ledger', id: `l${e.id}`, amount: e.amount,
+        balance_after: e.balance_after, reason: e.reason, created_at: e.created_at,
+      }));
+
+      const intentRows: HistoryRow[] = (intentsRes.data || [])
+        .filter((i: any) => !TERMINAL_INTENT_STATUSES.has(i.status))
+        .map((i: any) => ({
+          kind: 'intent', id: `i${i.id}`, product_id: i.product_id,
+          amount_usd: i.amount_usd, status: i.status, created_at: i.created_at,
+        }));
+
+      const merged = [...ledgerRows, ...intentRows].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setRows(merged);
       setLoading(false);
     })();
   }, [user]);
@@ -75,16 +125,47 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
           <div className="text-center py-16 text-white/70">
             <p>Couldn't load your transaction history. Please try again.</p>
           </div>
-        ) : entries.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="text-center py-16 text-white/70">
             <p>No transactions yet.</p>
             <p className="text-sm mt-1">Purchases, spends, and rewards will show up here.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {entries.map((entry) => {
-              const isCredit = entry.amount > 0;
-              const isZero = entry.amount === 0;
+            {rows.map((row) => {
+              if (row.kind === 'intent') {
+                const display = INTENT_STATUS_DISPLAY[row.status] || {
+                  label: row.status, color: 'text-white/60', icon: Clock,
+                };
+                const Icon = display.icon;
+                return (
+                  <div
+                    key={row.id}
+                    className="bg-white/5 border border-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Icon className={`w-6 h-6 flex-shrink-0 ${display.color}`} />
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate capitalize">
+                          {row.product_id} package — ${row.amount_usd}
+                        </p>
+                        <p className="text-white/50 text-xs">
+                          {new Date(row.created_at).toLocaleDateString(undefined, {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                            hour: 'numeric', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className={`font-semibold text-sm ${display.color}`}>{display.label}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              const isCredit = row.amount > 0;
+              const isZero = row.amount === 0;
               const Icon = isZero ? Gift : isCredit ? ArrowUpCircle : ArrowDownCircle;
               const amountColor = isZero
                 ? 'text-blue-300'
@@ -94,17 +175,17 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
 
               return (
                 <div
-                  key={entry.id}
+                  key={row.id}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon className={`w-6 h-6 flex-shrink-0 ${amountColor}`} />
                     <div className="min-w-0">
                       <p className="text-white font-medium truncate">
-                        {isZero ? `${describeReason(entry.reason)} (Free)` : describeReason(entry.reason)}
+                        {isZero ? `${describeReason(row.reason)} (Free)` : describeReason(row.reason)}
                       </p>
                       <p className="text-white/50 text-xs">
-                        {new Date(entry.created_at).toLocaleDateString(undefined, {
+                        {new Date(row.created_at).toLocaleDateString(undefined, {
                           month: 'short', day: 'numeric', year: 'numeric',
                           hour: 'numeric', minute: '2-digit'
                         })}
@@ -113,10 +194,10 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
                     <p className={`font-bold ${amountColor}`}>
-                      {isZero ? '—' : `${isCredit ? '+' : ''}${formatCredits(entry.amount)}`}
+                      {isZero ? '—' : `${isCredit ? '+' : ''}${formatCredits(row.amount)}`}
                     </p>
                     <p className="text-white/40 text-xs">
-                      Balance: {formatCredits(entry.balance_after)}
+                      Balance: {formatCredits(row.balance_after)}
                     </p>
                   </div>
                 </div>
