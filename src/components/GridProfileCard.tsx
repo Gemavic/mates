@@ -49,6 +49,8 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
           <img
             src={mainPhoto}
             alt={name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-80 object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />

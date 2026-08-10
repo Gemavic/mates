@@ -266,6 +266,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
             <img
               src={currentPhoto}
               alt={profile.full_name}
+              decoding="async"
               className="w-full h-full object-cover"
             />
 
