@@ -119,6 +119,18 @@ const App: React.FC = () => {
     }
   };
 
+  // If ErrorBoundary auto-reloaded us to recover from a stale deployed
+  // chunk, reaching this point means the reload worked — clear the guard
+  // so a genuinely new incident later gets its own fresh recovery attempt
+  // instead of skipping straight to the error screen.
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('chunk_reload_attempted');
+    } catch {
+      // sessionStorage unavailable (e.g. private browsing) — harmless to skip
+    }
+  }, []);
+
   // Initialize user credits on app load
   useEffect(() => {
     if (user) {
