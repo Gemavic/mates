@@ -38,6 +38,35 @@ export class ErrorBoundary extends Component<Props, State> {
       } catch (clearError) {
         console.error('Failed to clear localStorage:', clearError);
       }
+      return;
+    }
+
+    // A new deploy went out while this tab still had an older version of
+    // the app open. The lazy-loaded chunk filename the old bundle is
+    // asking for no longer exists on the server (it was replaced by the
+    // new build's differently-hashed file), so the dynamic import fails.
+    // A single automatic reload fetches the current index.html, which
+    // points at the correct current chunk names and fixes this entirely
+    // — the person never needs to know this happened. Guarded with a
+    // sessionStorage flag so a *genuinely* broken deploy can't trap
+    // someone in an infinite reload loop; after one attempt this falls
+    // through to the normal error screen instead.
+    if (error.message && (
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('error loading dynamically imported module') ||
+      error.message.includes('Importing a module script failed')
+    )) {
+      const alreadyTried = sessionStorage.getItem('chunk_reload_attempted');
+      if (!alreadyTried) {
+        console.warn('Detected stale chunk after a new deploy, reloading once to recover');
+        sessionStorage.setItem('chunk_reload_attempted', '1');
+        window.location.reload();
+        return;
+      }
+      // Reload already happened once this session and it's still failing
+      // — clear the flag so a future genuine deploy hiccup gets its own
+      // fresh attempt, then fall through to the normal error screen.
+      sessionStorage.removeItem('chunk_reload_attempted');
     }
   }
 
