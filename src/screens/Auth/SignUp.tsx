@@ -294,7 +294,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         </div>
 
         {/* Sign Up Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-white font-medium mb-2">Full Name</label>
             <div className="relative">
