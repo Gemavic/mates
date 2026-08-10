@@ -61,6 +61,7 @@ export const SuccessPage: React.FC<SuccessPageProps> = ({ onNavigate = () => {} 
 
   return (
     <Layout
+      showFooter={false}
       title="Payment Received"
       onBack={() => onNavigate('discovery')}
       showClose={false}

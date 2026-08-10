@@ -28,7 +28,7 @@ export const Layout: React.FC<LayoutProps> = ({
   showClose = true,
   showProfile = false,
   showSettings = false,
-  showFooter = false,
+  showFooter = true,
   showQuickNav = true,
   activeTab,
   onBack,

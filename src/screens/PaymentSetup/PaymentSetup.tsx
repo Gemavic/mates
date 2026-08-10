@@ -45,6 +45,7 @@ export const PaymentSetup: React.FC<PaymentSetupProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      showFooter={false}
       title="Payment Gateway Setup"
       onBack={() => onNavigate('settings')}
       showClose={false}

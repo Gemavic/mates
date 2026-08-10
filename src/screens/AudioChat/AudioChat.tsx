@@ -172,6 +172,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   if (isInCall) {
     return (
       <Layout
+      showFooter={false}
         title="Voice Call"
         onBack={endCall}
         showClose={false}
@@ -303,6 +304,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      showFooter={false}
       title="Audio Chat"
       onBack={() => onNavigate('discovery')}
       showClose={false}

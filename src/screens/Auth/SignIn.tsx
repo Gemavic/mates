@@ -148,6 +148,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      showFooter={false}
       title="Sign In"
       onBack={() => onNavigate('welcome')}
       showClose={true}
