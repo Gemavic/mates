@@ -85,6 +85,59 @@ async function callRpc(name, args) {
   return { ok: resp.ok, data };
 }
 
+// Records the current status against the tracking row created when the
+// invoice was first generated — this runs on EVERY IPN call, not just the
+// final 'finished' one, so a person can see "pending"/"confirming"/
+// "failed" in their transaction history instead of nothing at all until
+// (if ever) it completes. provider_payment_id is the reliable match once
+// known; the very first call for a given order_id falls back to matching
+// the most recent still-pending row and stamps the payment id onto it so
+// every later call for the same payment matches directly and
+// unambiguously, even if the same order_id is reused by a later, separate
+// purchase attempt.
+async function recordPaymentStatus(orderId, paymentId, status) {
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  const headers = {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+
+  try {
+    if (paymentId) {
+      const byPaymentId = await fetch(
+        `${SUPABASE_URL}/rest/v1/app_payment_intents?provider_payment_id=eq.${encodeURIComponent(paymentId)}`,
+        {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ status, updated_at: new Date().toISOString() }),
+        }
+      );
+      const updated = await byPaymentId.json().catch(() => []);
+      if (byPaymentId.ok && Array.isArray(updated) && updated.length > 0) return;
+    }
+
+    // First contact for this payment — attach paymentId to the most recent
+    // matching pending row so future updates match directly by paymentId.
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/app_payment_intents?order_id=eq.${encodeURIComponent(orderId)}&status=eq.pending&order=created_at.desc&limit=1`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          status,
+          provider_payment_id: paymentId ? String(paymentId) : null,
+          updated_at: new Date().toISOString(),
+        }),
+      }
+    );
+  } catch (err) {
+    // Status tracking is informational only — never let it block crediting
+    console.error('Failed to record payment intent status (non-fatal):', err);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'method_not_allowed' });
@@ -122,11 +175,15 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'bad_signature' });
     }
 
-    // 2. Only act on final confirmation. All other statuses are acknowledged
-    //    but not credited (waiting/confirming/partially_paid/expired/etc.)
+    // 2. Record the status for transaction-history visibility on EVERY
+    //    call, then only act on final confirmation for actual crediting.
+    //    All other statuses (waiting/confirming/partially_paid/expired/
+    //    failed/etc.) are now tracked, not silently discarded.
     const status = body.payment_status;
     const paymentId = body.payment_id;
     const orderId = body.order_id || '';
+
+    await recordPaymentStatus(orderId, paymentId, status);
 
     if (status !== 'finished') {
       if (status === 'partially_paid') {

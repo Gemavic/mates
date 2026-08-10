@@ -77,6 +77,34 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'invoice_failed' });
     }
 
+    // 4. Record the attempt so it shows up immediately as "pending" in the
+    // person's transaction history, and so the webhook has a row to
+    // update regardless of which status NOWPayments reports next — not
+    // just silently discarding everything short of 'finished' the way
+    // this used to work. Best-effort: a tracking-row failure should never
+    // block the actual checkout the person is trying to complete.
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/app_payment_intents`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          order_id: `${kind}:${user.id}:${id}`,
+          kind,
+          product_id: id,
+          amount_usd: product.usd,
+          status: 'pending',
+        }),
+      });
+    } catch (trackingErr) {
+      console.error('Failed to record payment intent (non-fatal):', trackingErr);
+    }
+
     return res.status(200).json({ invoice_url: invoice.invoice_url });
   } catch (err) {
     console.error('create-payment error:', err);
