@@ -10,6 +10,7 @@ interface MenuShowcaseProps {
 export const MenuShowcase: React.FC<MenuShowcaseProps> = ({ onNavigate }) => {
   return (
     <Layout
+      showFooter={false}
       title="Menu Navigation"
       onBack={() => onNavigate('discovery')}
       showClose={false}

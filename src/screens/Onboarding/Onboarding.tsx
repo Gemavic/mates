@@ -206,6 +206,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
 
   return (
     <Layout
+      showFooter={false}
       title="Your goals"
       onBack={handlePrevious}
       onClose={onBack}

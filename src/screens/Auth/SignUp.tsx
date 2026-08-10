@@ -236,6 +236,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
   return (
     <Layout
+      showFooter={false}
       title="Sign Up"
       onBack={() => onNavigate('welcome')}
       showClose={true}

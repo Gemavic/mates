@@ -208,6 +208,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   if (isInCall) {
     return (
       <Layout
+      showFooter={false}
         title="Video Call"
         onBack={endCall}
         showClose={false}
@@ -362,6 +363,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      showFooter={false}
       title="Video Chat"
       onBack={() => onNavigate('discovery')}
       showClose={false}

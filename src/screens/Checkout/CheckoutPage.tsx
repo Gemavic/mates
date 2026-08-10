@@ -41,6 +41,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
 
   return (
     <Layout
+      showFooter={false}
       title="Purchase Credits"
       onBack={() => (onNavigate ? onNavigate('discovery') : (window.location.href = '/app'))}
       showClose={false}

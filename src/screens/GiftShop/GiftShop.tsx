@@ -132,6 +132,8 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
   return (
     <Layout
       title="Gift Shop"
+      onNavigate={onNavigate}
+      activeTab="gift-shop"
       onBack={() => {
         console.log('Gift Shop back button clicked');
         onNavigate('discovery');

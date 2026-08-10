@@ -10,6 +10,7 @@ interface CancelPageProps {
 export const CancelPage: React.FC<CancelPageProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      showFooter={false}
       title="Payment Cancelled"
       onBack={() => (onNavigate ? onNavigate('checkout') : (window.location.href = '/checkout'))}
       showClose={false}
