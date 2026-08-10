@@ -103,6 +103,41 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   chatThreadsRef.current = chatThreads;
   userProfileImageRef.current = userProfileImage;
 
+  // Real per-minute billing for the time an active chat is open — replaces
+  // the old flat per-message charge, which made Chat indistinguishable
+  // from Mail's pricing. Sending itself is free; this ambient timer is
+  // the actual charge, exactly matching the documented "Live chat:
+  // 2 credits/min" pricing, and mirrors the proven pattern already used
+  // for Video/Audio calls (deduct every 60 ticked seconds, stop cleanly
+  // on insufficient credits without forcing the person out of the
+  // conversation the way ending a call would).
+  useEffect(() => {
+    if (!activeThread || !user) return;
+
+    let seconds = 0;
+    let cancelled = false;
+
+    const timer = setInterval(() => {
+      seconds += 1;
+      if (seconds % 60 === 0 && !cancelled) {
+        void (async () => {
+          const success = await creditManager.deductCredits(user.id, 2, 'live_chat_minute');
+          if (success) {
+            setUserBalance(creditManager.getTotalCredits(user.id));
+          } else if (!cancelled) {
+            cancelled = true;
+            alert(
+              "You're out of credits — this conversation will pause billing here. Top up to keep chatting, your messages so far are saved."
+            );
+            onNavigate('credits');
+          }
+        })();
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeThread, user, onNavigate]);
+
   useEffect(() => {
     const loadCredits = async () => {
       if (user) {
@@ -525,23 +560,6 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       return;
     }
 
-    const charge = await creditManager.sendMessage(user.id, activeThreadData.id, trimmed);
-    if (!charge.success) {
-      if (charge.dailyFreeLimitReached) {
-        alert("You've used today's free messages to new matches. This message costs 10 credits — top up to keep the conversation going, or try again after your daily free messages reset.");
-      } else {
-        alert(`Need ${formatCredits(charge.cost)} credits to send this message.`);
-      }
-      onNavigate('credits');
-      return;
-    }
-    setUserBalance(creditManager.getTotalCredits(user.id));
-    if (charge.dailyFreeLimitReached) {
-      // Charged normally today, but still worth letting them know why —
-      // avoids a confusing "why did that cost credits?" moment.
-      console.info('Daily free-message allowance reached; this message was charged normally.');
-    }
-
     const optimisticMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       senderId: user.id,
@@ -572,7 +590,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           sender_id: user.id,
           subject: 'Chat Message',
           message_text: trimmed,
-          credits_spent: charge.cost,
+          credits_spent: 0,
           has_photos: false,
           is_delivered: true,
           delivered_at: new Date().toISOString(),
@@ -1063,6 +1081,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               </div>
             </div>
           )}
+
+          <p className="text-xs text-gray-400 text-center mb-1.5">
+            Live chat: 2 credits/min while this conversation is open · included free with any subscription
+          </p>
 
           <div className="flex items-center space-x-2">
             <button

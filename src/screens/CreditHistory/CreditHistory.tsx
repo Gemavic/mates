@@ -35,6 +35,7 @@ const REASON_LABELS: Record<string, string> = {
   gift: 'Gift Sent',
   purchase: 'Credit Purchase',
   reward: 'Reward Bonus',
+  live_chat_minute: 'Live Chat (1 min)',
 };
 
 const describeReason = (reason: string): string => {
