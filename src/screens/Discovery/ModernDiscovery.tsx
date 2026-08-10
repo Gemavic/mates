@@ -527,6 +527,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                     age={profile.age}
                     images={profile.images}
                     online={profile.online}
+                    verified={profile.verified}
                     lookingFor={profile.lookingFor}
                     onViewProfile={(id) => onNavigate('view-profile', { userId: id })}
                     onLike={handleLike}
