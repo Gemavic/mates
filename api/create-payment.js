@@ -9,7 +9,7 @@
 
 const CATALOG = {
   credits: {
-    starter: { usd: 9.99, credits: 60, label: 'Starter — 50 credits + 10 bonus' },
+    starter: { usd: 12.99, credits: 60, label: 'Starter — 50 credits + 10 bonus' },
     popular: { usd: 18.99, credits: 125, label: 'Popular — 100 credits + 25 bonus' },
     premium: { usd: 50.99, credits: 500, label: 'Premium — 450 credits + 50 bonus' },
   },
