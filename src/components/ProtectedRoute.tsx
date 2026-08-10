@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowAnonymous = false,
 }) => {
   const { user, loading, isAnonymous } = useAuth();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (loading) return;
@@ -38,7 +40,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 flex items-center justify-center">
+      <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'} flex items-center justify-center`}>
         <div className="text-white text-center space-y-4">
           <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
             <span className="text-2xl">💕</span>

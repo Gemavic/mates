@@ -7,6 +7,7 @@ import { CreditCard, Coins, Heart as KoboIcon, Star, Crown, Gift, TrendingUp, Cl
 import { creditManager, formatPrice } from '@/lib/creditSystem';
 import { getUserCredits, getCreditTransactions } from '@/lib/database';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PaymentGateway } from '@/components/PaymentGateway';
 import { subscriptionManager } from '@/lib/subscriptionManager';
@@ -23,6 +24,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
   const [dbCredits, setDbCredits] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const { user } = useAuth();
+  const { theme } = useTheme();
   const { subscription: userSubscription } = useSubscription();
   const [showPaymentGateway, setShowPaymentGateway] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
@@ -138,7 +140,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
 
   return (
     <ResponsiveLayout currentScreen="credits" onNavigate={onNavigate}>
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+      <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'}`}>
         <ModernHeader
           title="Upgrade"
           showBack={true}

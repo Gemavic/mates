@@ -53,6 +53,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { PublicRoute } from '@/components/PublicRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 import { creditManager } from '@/lib/creditSystem';
 import { supabaseConfigError } from '@/lib/supabase';
 import { getRouteConfig } from '@/lib/routeConfig';
@@ -65,14 +66,19 @@ interface SelectedChatUser {
 }
 
 function ScreenLoadingFallback() {
+  const { theme } = useTheme();
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+    <div className={cn(
+      "min-h-screen flex items-center justify-center bg-gradient-to-br",
+      theme === 'dark' ? "from-slate-900 via-purple-950 to-slate-900" : "from-pink-500 via-rose-500 to-purple-600"
+    )}>
       <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
     </div>
   );
 }
 
 const App: React.FC = () => {
+  const { theme } = useTheme();
   const [currentScreen, setCurrentScreen] = useState('welcome');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
@@ -185,7 +191,10 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 flex items-center justify-center animate-fade-in">
+      <div className={cn(
+        "min-h-screen bg-gradient-to-br flex items-center justify-center animate-fade-in",
+        theme === 'dark' ? "from-slate-900 via-purple-950 to-slate-900" : "from-pink-500 via-rose-500 to-purple-600"
+      )}>
         <div className="text-white text-center space-y-4">
           <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
             <span className="text-2xl">💕</span>
@@ -490,7 +499,10 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 overflow-x-hidden">
+      <div className={cn(
+        "min-h-screen bg-gradient-to-br overflow-x-hidden",
+        theme === 'dark' ? "from-slate-900 via-purple-950 to-slate-900" : "from-pink-500 via-rose-500 to-purple-600"
+      )}>
         {/* SEO Component */}
         <SEO {...getSEOProps()} />
 

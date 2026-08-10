@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { creditManager } from '@/lib/creditSystem';
 import { Heart } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface AuthCallbackProps {
   onNavigate?: (screen: string) => void;
@@ -9,6 +10,7 @@ interface AuthCallbackProps {
 
 export const AuthCallback: React.FC<AuthCallbackProps> = ({ onNavigate }) => {
   const [status, setStatus] = useState('Completing sign in...');
+  const { theme } = useTheme();
 
   const navigate = (screen: string) => {
     if (onNavigate) {
@@ -112,7 +114,7 @@ export const AuthCallback: React.FC<AuthCallbackProps> = ({ onNavigate }) => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'}`}>
       <div className="text-center">
         <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center">
           <Heart className="w-10 h-10 text-white animate-pulse" fill="currentColor" />

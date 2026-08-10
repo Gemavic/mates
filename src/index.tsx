@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastProvider } from "./components/ui/toast";
 import { initializeConfig } from "./lib/config";
 import { supabase, supabaseConfigError } from "./lib/supabase";
@@ -56,9 +57,11 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
-      <ToastProvider>
-        <App />
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 );

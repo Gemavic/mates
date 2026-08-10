@@ -3,6 +3,7 @@ import { Camera, Upload, CheckCircle, AlertCircle, Shield, User, Phone } from 'l
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabaseClient } from '@/lib/supabase';
 
 interface VerificationStep {
@@ -19,6 +20,7 @@ interface VerificationProps {
 
 export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   const { user, profile, loadUserProfile } = useAuth();
+  const { theme } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -445,7 +447,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600">
+    <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'}`}>
       <div className="max-w-md mx-auto min-h-screen relative">
         {/* Header */}
         <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-4 py-3">
