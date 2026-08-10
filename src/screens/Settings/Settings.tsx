@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
+import { isPushSupported, hasActivePushSubscription, subscribeToPush, unsubscribeFromPush } from '@/lib/pushNotifications';
 
 interface SettingsProps {
   onNavigate: (screen: string) => void;
@@ -21,6 +22,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const { theme, toggleTheme } = useTheme();
   const [showOnline, setShowOnline] = useState(true);
   const [savingOnlineStatus, setSavingOnlineStatus] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSaving, setPushSaving] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
 
@@ -49,6 +53,24 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         }
       });
   }, [user]);
+
+  useEffect(() => {
+    if (!isPushSupported()) {
+      setPushSupported(false);
+      return;
+    }
+    hasActivePushSubscription().then(setPushEnabled);
+  }, []);
+
+  const togglePushNotifications = async (value: boolean) => {
+    if (!user) return;
+    setPushSaving(true);
+    const success = value ? await subscribeToPush(user.id) : await unsubscribeFromPush();
+    if (success) {
+      setPushEnabled(value);
+    }
+    setPushSaving(false);
+  };
 
   const toggleOnlineStatus = async (value: boolean) => {
     if (!user) return;
@@ -171,11 +193,20 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     {
       title: 'Notifications',
       items: [
-        {
-          icon: Bell,
-          label: 'Push Notifications',
-          comingSoon: true,
-        },
+        pushSupported
+          ? {
+              icon: Bell,
+              label: 'Push Notifications',
+              toggle: true,
+              value: pushEnabled,
+              onChange: togglePushNotifications,
+              saving: pushSaving,
+            }
+          : {
+              icon: Bell,
+              label: 'Push Notifications',
+              comingSoon: true,
+            },
         {
           icon: Users,
           label: 'Show Online Status',
