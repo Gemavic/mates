@@ -338,7 +338,7 @@ export class CreditManager {
         package_name: 'Starter',
         credits: 50,
         bonus_credits: 10,
-        price_usd: 9.99,
+        price_usd: 12.99,
         package_type: 'credits',
         is_popular: false,
         features: ['50 Credits', '10 Bonus Credits', 'Messaging & Gifts', 'All Core Features'],

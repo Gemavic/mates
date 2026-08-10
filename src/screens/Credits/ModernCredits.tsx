@@ -422,6 +422,14 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                   );
                 })}
               </div>
+
+              {activeTab === 'credits' && (
+                <p className="text-white/60 text-xs text-center mt-4">
+                  Tip: TRX, LTC, and BNB tend to process the most reliably for smaller
+                  amounts. If your chosen coin shows a "below minimum" error at checkout,
+                  try one of those instead.
+                </p>
+              )}
             </>
           )}
 
