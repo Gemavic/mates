@@ -30,6 +30,7 @@ const MisconductPolicy = React.lazy(() => import('@/screens/Legal/MisconductPoli
 const ConsentPolicy = React.lazy(() => import('@/screens/Legal/ConsentPolicy').then(m => ({ default: m.ConsentPolicy })));
 const AcceptableUsePolicy = React.lazy(() => import('@/screens/Legal/AcceptableUsePolicy').then(m => ({ default: m.AcceptableUsePolicy })));
 const SuccessPage = React.lazy(() => import('@/screens/Success/SuccessPage').then(m => ({ default: m.SuccessPage })));
+const CreditHistory = React.lazy(() => import('@/screens/CreditHistory/CreditHistory').then(m => ({ default: m.CreditHistory })));
 const CancelPage = React.lazy(() => import('@/screens/Cancel/CancelPage').then(m => ({ default: m.CancelPage })));
 const CheckoutPage = React.lazy(() => import('@/screens/Checkout/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const StaffPanel = React.lazy(() => import('@/screens/StaffPanel/StaffPanel').then(m => ({ default: m.StaffPanel })));
@@ -370,6 +371,9 @@ const App: React.FC = () => {
 
       case 'success':
         return <SuccessPage onNavigate={handleNavigate} />;
+
+      case 'credit-history':
+        return <CreditHistory onNavigate={handleNavigate} />;
       
       case 'cancel':
         return <CancelPage onNavigate={handleNavigate} />;
