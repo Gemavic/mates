@@ -28,6 +28,8 @@ interface Profile {
   online: boolean;
   verified: boolean;
   premium?: boolean;
+  relationshipStatus?: string | null;
+  lookingFor?: string | null;
 }
 
 interface ModernDiscoveryProps {
@@ -199,7 +201,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               interests: parseArrayField(profile.interests, []),
               online: profile.is_online || false,
               verified: profile.is_verified || false,
-              premium: false
+              premium: false,
+              relationshipStatus: profile.relationship_status || null,
+              lookingFor: profile.looking_for || null
             };
           })
           .filter((profile): profile is NonNullable<typeof profile> => profile !== null);
@@ -523,6 +527,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                     age={profile.age}
                     images={profile.images}
                     online={profile.online}
+                    lookingFor={profile.lookingFor}
                     onViewProfile={(id) => onNavigate('view-profile', { userId: id })}
                     onLike={handleLike}
                   />
