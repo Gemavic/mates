@@ -92,11 +92,7 @@ export class ProfileManager {
     // before the first card paints, on every Discovery load, for every user.
     let query = supabaseClient
       .from('user_profiles')
-      .select(
-        'user_id, first_name, full_name, age, location, occupation, education, ' +
-        'bio, interests, is_online, is_verified, photo_url, relationship_status, ' +
-        'looking_for, profile_visibility, last_active, created_at'
-      );
+      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, photo_url, relationship_status, looking_for, profile_visibility, last_active, created_at');
 
     // Only exclude current user if provided
     if (currentUserId) {
