@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./components/ui/toast";
 import { initializeConfig } from "./lib/config";
 import { supabase, supabaseConfigError } from "./lib/supabase";
@@ -59,7 +60,9 @@ createRoot(rootElement).render(
     <BrowserRouter>
       <ThemeProvider>
         <ToastProvider>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </ToastProvider>
       </ThemeProvider>
     </BrowserRouter>

@@ -206,6 +206,13 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       setUploadingPhoto(true);
 
       try {
+        // Track the count locally. `userPhotos` is captured by this closure
+        // and does NOT update between loop iterations (setState is async and
+        // the closure holds the value from when the handler was created), so
+        // reading it inside the loop marked EVERY photo in a batch as primary
+        // and gave them all display_order 1.
+        let photoCount = userPhotos.length;
+
         for (const file of Array.from(files)) {
           const publicUrl = await uploadProfilePhoto(user.id, file);
 
@@ -214,17 +221,18 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
             .insert({
               user_id: user.id,
               photo_url: publicUrl,
-              is_primary: userPhotos.length === 0,
-              display_order: userPhotos.length + 1
+              is_primary: photoCount === 0,
+              display_order: photoCount + 1
             })
             .select()
             .single();
 
           if (error) throw error;
 
-          // Reload photos
-          await loadUserPhotos();
+          photoCount += 1;
         }
+
+        await loadUserPhotos();
 
         const successMessage = document.createElement('div');
         successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
@@ -239,7 +247,18 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         console.error('Upload error:', error);
         const errorMsg = document.createElement('div');
         errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-        errorMsg.textContent = '❌ Failed to upload photos';
+        // Surface the real reason. A bare "Failed to upload photos" hides
+        // the common causes (missing storage bucket, RLS rejection, file too
+        // large) and leaves both the user and us with nothing to act on.
+        const reason = error?.message || error?.error_description || 'Unknown error';
+        const friendly = /bucket not found/i.test(reason)
+          ? 'Photo storage is not set up yet. Please contact support.'
+          : /row-level security|not authorized|jwt/i.test(reason)
+          ? 'Your session expired. Please sign in again and retry.'
+          : /exceeded|too large|payload/i.test(reason)
+          ? 'That image is too large. Please try a smaller photo.'
+          : reason;
+        errorMsg.textContent = `❌ Upload failed: ${friendly}`;
         document.body.appendChild(errorMsg);
         setTimeout(() => {
           if (document.body.contains(errorMsg)) {

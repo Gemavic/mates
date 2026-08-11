@@ -85,9 +85,14 @@ export class ProfileManager {
 
   static async getDiscoveryProfiles(currentUserId?: string, limit = 50) {
     // Build query to fetch profiles for discovery
+    // Select only the columns Discovery actually renders. `select('*')`
+    // pulled every column of every profile — including photo_url, which for
+    // any row predating the storage migration holds a full base64-encoded
+    // image. At limit 50 that is potentially tens of megabytes transferred
+    // before the first card paints, on every Discovery load, for every user.
     let query = supabaseClient
       .from('user_profiles')
-      .select('*');
+      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, photo_url, relationship_status, looking_for, profile_visibility, last_active, created_at');
 
     // Only exclude current user if provided
     if (currentUserId) {

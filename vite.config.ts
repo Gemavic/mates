@@ -22,6 +22,19 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
     },
   },
+  // Strip debug logging from production bundles. The app carries ~390
+  // console.* calls, many inside render and data-loading paths, several
+  // printing full profile arrays and user IDs. At scale that is both a
+  // measurable main-thread cost on low-end phones and an unnecessary
+  // disclosure of user data in the browser console. console.error and
+  // console.warn are kept so real failures remain visible.
+  esbuild: {
+    drop: process.env.NODE_ENV === "production" ? ["debugger"] : [],
+    pure:
+      process.env.NODE_ENV === "production"
+        ? ["console.log", "console.info", "console.debug"]
+        : [],
+  },
   build: {
     outDir: "dist",
     assetsDir: "assets",

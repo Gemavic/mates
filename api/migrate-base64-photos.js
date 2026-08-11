@@ -105,6 +105,39 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'not_admin' });
     }
 
+    // Dry run: report how much work is pending WITHOUT modifying anything.
+    // Call with ?dry_run=1 first. This is a one-way data migration — the
+    // caller should know the scale, and have a backup, before it starts.
+    if (req.query?.dry_run === '1' || req.query?.dry_run === 'true') {
+      const counts = {};
+      for (const table of ['user_photos', 'user_profiles']) {
+        const countResp = await fetch(
+          `${SUPABASE_URL}/rest/v1/${table}?photo_url=like.data:*&select=id`,
+          {
+            headers: {
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              Prefer: 'count=exact',
+              Range: '0-0',
+            },
+          }
+        );
+        const range = countResp.headers.get('content-range') || '';
+        counts[table] = Number(range.split('/')[1]) || 0;
+      }
+      const total = counts.user_photos + counts.user_profiles;
+      return res.status(200).json({
+        dry_run: true,
+        pending: counts,
+        total_rows_to_migrate: total,
+        batch_size: BATCH_SIZE,
+        estimated_calls: Math.ceil(total / BATCH_SIZE),
+        note:
+          'Nothing was modified. Take a database backup, then call this ' +
+          'endpoint without dry_run to begin. Repeat until remaining is 0.',
+      });
+    }
+
     // Find a batch of unmigrated rows across both tables
     const results = { migrated: [], failed: [] };
     let processedThisBatch = 0;
