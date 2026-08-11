@@ -6,7 +6,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./components/ui/toast";
 import { initializeConfig } from "./lib/config";
-import { supabase, supabaseConfigError } from "./lib/supabase";
 import { logEnvironmentStatus } from "./lib/debug";
 import "./tailwind.css";
 
@@ -16,38 +15,12 @@ logEnvironmentStatus();
 // Initialize configuration on app start
 initializeConfig();
 
-// Clear only invalid refresh tokens on app start
-const clearStaleSession = async () => {
-  // Skip if Supabase isn't configured
-  if (supabaseConfigError) {
-    console.warn('Skipping session check - Supabase not configured');
-    return;
-  }
-
-  try {
-    const { data: { session: _session }, error } = await supabase.auth.getSession();
-
-    // Only clear if there's a specific refresh token error
-    if (error && error.message && error.message.includes('refresh_token_not_found')) {
-      console.warn('Clearing stale refresh token on startup');
-      await supabase.auth.signOut();
-
-      // Only remove auth-related keys, not everything
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.includes('supabase') || key.includes('auth-token'))) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-    }
-  } catch (error) {
-    console.warn('Error checking session on startup:', error);
-  }
-};
-
-clearStaleSession().catch(console.warn);
+// NOTE: a clearStaleSession() helper used to call supabase.auth.getSession()
+// here at module load. AuthContext already performs that call and already
+// handles refresh_token_not_found by signing out. Because GoTrue serialises
+// concurrent auth calls behind an internal lock, this duplicate ran first and
+// the one the UI actually waits on queued behind it — an extra round trip on
+// the critical path of every single page load.
 
 const rootElement = document.getElementById("app");
 

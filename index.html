@@ -39,13 +39,32 @@
     <link rel="alternate" hreflang="x-default" href="https://dates.care/" />
 
     <!-- Preconnect for Performance -->
+    <!-- Supabase is the origin every screen depends on, and it was not
+         preconnected: the browser only began DNS + TLS for it after the JS
+         bundle had downloaded and executed. Starting the handshake during
+         HTML parse overlaps it with the bundle download. Vite substitutes
+         %VITE_SUPABASE_URL% at build time. -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <link rel="dns-prefetch" href="%VITE_SUPABASE_URL%" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Fonts -->
-    <style>
-      @import url("https://fonts.googleapis.com/css?family=Alegreya:700,400&display=swap");
-    </style>
+    <!-- Fonts: a stylesheet link is found by the browser's preload scanner
+         straight away, whereas an @import nested in a <style> block cannot
+         even be discovered until that block is parsed, delaying the request
+         and blocking render behind it. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Alegreya:700,400&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Alegreya:700,400&display=swap"
+      />
+    </noscript>
     <link href="tailwind.css" rel="stylesheet" />
 
     <!-- Structured Data / Schema.org -->
