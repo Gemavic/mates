@@ -83,51 +83,56 @@ export class ProfileManager {
     return data;
   }
 
-  static async getDiscoveryProfiles(currentUserId?: string, limit = 50) {
-    // Build query to fetch profiles for discovery
-    // Select only the columns Discovery actually renders. `select('*')`
-    // pulled every column of every profile — including photo_url, which for
-    // any row predating the storage migration holds a full base64-encoded
-    // image. At limit 50 that is potentially tens of megabytes transferred
-    // before the first card paints, on every Discovery load, for every user.
-    let query = supabaseClient
+  static async getDiscoveryProfiles(currentUserId?: string, limit = 20) {
+    // The blocks lookup and the profiles query are independent, but were
+    // awaited one after the other, so the profiles request could not even
+    // start until blocks came back. On mobile that is a wasted round trip
+    // on the critical path. They now run concurrently and blocked users are
+    // filtered out afterwards.
+    //
+    // Over-fetch slightly so that filtering blocked users client-side still
+    // leaves a full page. Blocks are rare, so a small buffer is enough.
+    const fetchLimit = currentUserId ? limit + 10 : limit;
+
+    let profilesQuery = supabaseClient
       .from('user_profiles')
-      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, photo_url, relationship_status, looking_for, profile_visibility, last_active, created_at');
-
-    // Only exclude current user if provided
-    if (currentUserId) {
-      query = query.neq('user_id', currentUserId);
-
-      // Exclude anyone blocked in either direction — someone the current
-      // user blocked, and anyone who has blocked the current user.
-      const { data: blocks } = await supabaseClient
-        .from('user_blocks')
-        .select('blocker_id, blocked_id')
-        .or(`blocker_id.eq.${currentUserId},blocked_id.eq.${currentUserId}`);
-
-      const excludedIds = (blocks || [])
-        .map((b: any) => (b.blocker_id === currentUserId ? b.blocked_id : b.blocker_id))
-        .filter(Boolean);
-
-      if (excludedIds.length > 0) {
-        query = query.not('user_id', 'in', `(${excludedIds.join(',')})`);
-      }
-    }
-
-    // Show all profiles that are either public OR don't have visibility set (default to public)
-    // This ensures we show all users unless they explicitly set their profile to private
-    query = query.or('profile_visibility.eq.public,profile_visibility.is.null');
-
-    // PRIORITIZE ONLINE USERS FIRST
-    // Order by: 1) Online status (online first), 2) Last active (recent first), 3) Created date (newest first)
-    const { data, error } = await query
+      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, photo_url, relationship_status, looking_for, profile_visibility, last_active, created_at')
+      .or('profile_visibility.eq.public,profile_visibility.is.null')
       .order('is_online', { ascending: false })
       .order('last_active', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(fetchLimit);
 
+    if (currentUserId) {
+      profilesQuery = profilesQuery.neq('user_id', currentUserId);
+    }
+
+    const blocksQuery = currentUserId
+      ? supabaseClient
+          .from('user_blocks')
+          .select('blocker_id, blocked_id')
+          .or(`blocker_id.eq.${currentUserId},blocked_id.eq.${currentUserId}`)
+      : Promise.resolve({ data: [] as any[] });
+
+    const [profilesResult, blocksResult] = await Promise.all([profilesQuery, blocksQuery]);
+
+    const { data, error } = profilesResult as { data: any[] | null; error: any };
     if (error) throw error;
-    return data || [];
+
+    const blocks = (blocksResult as { data: any[] | null }).data || [];
+    if (!currentUserId || blocks.length === 0) {
+      return (data || []).slice(0, limit);
+    }
+
+    // Exclude anyone blocked in either direction — someone the current user
+    // blocked, and anyone who has blocked the current user.
+    const excluded = new Set(
+      blocks
+        .map((b: any) => (b.blocker_id === currentUserId ? b.blocked_id : b.blocker_id))
+        .filter(Boolean)
+    );
+
+    return (data || []).filter((p: any) => !excluded.has(p.user_id)).slice(0, limit);
   }
 
 }

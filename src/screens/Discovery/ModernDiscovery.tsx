@@ -150,27 +150,20 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       }
 
       if (dbProfiles && dbProfiles.length > 0) {
-        // Fetch all photos in a single query instead of N+1 queries
         const userIds = dbProfiles.map(p => p.user_id);
-        const { data: allPhotos } = await supabaseClient
+
+        // The gallery query used to block the first paint: nothing rendered
+        // until every photo for every profile had downloaded. Profiles that
+        // already carry photo_url render immediately, and the gallery is
+        // fetched afterwards and merged in, so the cards appear as soon as
+        // the profile rows land rather than after the heaviest request.
+        const galleryPromise = supabaseClient
           .from('user_photos')
           .select('user_id, photo_url, is_primary')
           .in('user_id', userIds)
           .order('is_primary', { ascending: false });
 
-        // Group photos by user_id
-        const photosByUser = (allPhotos || []).reduce((acc, photo) => {
-          if (!acc[photo.user_id]) {
-            acc[photo.user_id] = [];
-          }
-          if (acc[photo.user_id].length < 3) {
-            acc[photo.user_id].push(photo.photo_url);
-          }
-          return acc;
-        }, {} as Record<string, string[]>);
-
-        const formattedProfiles = dbProfiles
-          .map((profile) => {
+        const buildProfile = (profile: any, photosByUser: Record<string, string[]>) => {
             let userPhotos: string[] = [];
 
             if (profile.photo_url) {
@@ -204,10 +197,33 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               relationshipStatus: profile.relationship_status || null,
               lookingFor: profile.looking_for || null
             };
-          })
+        };
+
+        const groupPhotos = (rows: any[] | null) =>
+          (rows || []).reduce((acc, photo) => {
+            if (!acc[photo.user_id]) acc[photo.user_id] = [];
+            if (acc[photo.user_id].length < 3) acc[photo.user_id].push(photo.photo_url);
+            return acc;
+          }, {} as Record<string, string[]>);
+
+        // First paint: whatever can be shown without waiting on the gallery.
+        const immediate = dbProfiles
+          .map((profile) => buildProfile(profile, {}))
+          .filter((p): p is NonNullable<typeof p> => p !== null);
+
+        if (immediate.length > 0) {
+          setProfiles(immediate);
+          setLoading(false);
+        }
+
+        // Then merge in the gallery photos once they arrive.
+        const { data: allPhotos } = await galleryPromise;
+        const photosByUser = groupPhotos(allPhotos);
+
+        const formattedProfiles = dbProfiles
+          .map((profile) => buildProfile(profile, photosByUser))
           .filter((profile): profile is NonNullable<typeof profile> => profile !== null);
 
-        console.log('✅ Formatted profiles with online status:', formattedProfiles.map(p => p && ({ name: p.name, online: p.online, id: p.id })));
         setProfiles(formattedProfiles);
       }
     } catch (error) {
