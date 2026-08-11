@@ -157,11 +157,17 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         // already carry photo_url render immediately, and the gallery is
         // fetched afterwards and merged in, so the cards appear as soon as
         // the profile rows land rather than after the heaviest request.
+        // Cap the number of rows returned. `.in(userIds)` with no limit
+        // returns EVERY photo for every profile — up to 6 each — and while
+        // legacy rows still hold base64 image data inline, that is a
+        // multi-megabyte response. Primaries come first, so 3 per profile
+        // is all this screen can display anyway.
         const galleryPromise = supabaseClient
           .from('user_photos')
           .select('user_id, photo_url, is_primary')
           .in('user_id', userIds)
-          .order('is_primary', { ascending: false });
+          .order('is_primary', { ascending: false })
+          .limit(userIds.length * 3);
 
         const buildProfile = (profile: any, photosByUser: Record<string, string[]>) => {
             let userPhotos: string[] = [];
@@ -216,8 +222,21 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           setLoading(false);
         }
 
-        // Then merge in the gallery photos once they arrive.
-        const { data: allPhotos } = await galleryPromise;
+        // Then merge in the gallery photos once they arrive — but never
+        // wait on them indefinitely. This request carries the heaviest
+        // payload on the screen, and if it stalls the person would sit on
+        // "Loading profiles..." forever with no error and nothing to
+        // retry. Whatever has already rendered stays on screen instead.
+        const galleryTimeout = new Promise<{ data: null }>((resolve) =>
+          setTimeout(() => resolve({ data: null }), 12000)
+        );
+        const { data: allPhotos } = await Promise.race([galleryPromise, galleryTimeout]);
+
+        if (!allPhotos) {
+          console.warn('Gallery photos timed out; showing profiles without them');
+          return;
+        }
+
         const photosByUser = groupPhotos(allPhotos);
 
         const formattedProfiles = dbProfiles
