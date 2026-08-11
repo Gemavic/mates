@@ -198,6 +198,23 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       console.log('Signup successful, user data:', data);
       trackSignup();
 
+      // When email confirmation is enabled, signUp() succeeds but returns
+      // session: null. The app previously congratulated the person and sent
+      // them to onboarding with no session at all — every screen past that
+      // point then failed silently. Branch explicitly on session.
+      if (data?.user && !data.session) {
+        toast({
+          title: 'Almost there \u2014 check your email',
+          description: `We sent a confirmation link to ${formData.email}. Click it to finish setting up your account.`,
+          variant: 'default'
+        });
+        setTimeout(() => {
+          onNavigate('signin');
+        }, 2500);
+        setIsLoading(false);
+        return;
+      }
+
       if (data?.user?.id) {
         creditManager.initializeUser(data.user.id);
 
