@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
-import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail } from 'lucide-react';
+import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -48,6 +48,7 @@ interface ChatThread {
   unreadCount: number;
   isOnline: boolean;
   isTyping: boolean;
+  matched?: boolean;
 }
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
@@ -210,6 +211,25 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           return acc;
         }, {} as Record<string, any>);
 
+        // Mutual likes = a match. One query for the whole list rather than
+        // one per thread.
+        let matchedIds = new Set<string>();
+        try {
+          const { data: likeRows } = await supabaseClient
+            .from('user_likes')
+            .select('user_id, target_user_id')
+            .or(`user_id.eq.${user.id},target_user_id.eq.${user.id}`);
+          const iLiked = new Set<string>();
+          const likedMe = new Set<string>();
+          for (const row of (likeRows || []) as any[]) {
+            if (row.user_id === user.id) iLiked.add(row.target_user_id);
+            if (row.target_user_id === user.id) likedMe.add(row.user_id);
+          }
+          matchedIds = new Set([...iLiked].filter(id => likedMe.has(id)));
+        } catch (err) {
+          console.warn('Could not resolve matches for threads:', err);
+        }
+
         const loadedThreads: ChatThread[] = threads.map((thread: any) => {
           const otherUserId = thread.participant1_id === user.id
             ? thread.participant2_id
@@ -237,6 +257,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               timestamp: new Date(threadMessages.latest.created_at),
               type: 'text' as const
             } : undefined,
+            matched: matchedIds.has(otherUserId),
             unreadCount: threadMessages?.unreadCount || 0,
             isOnline: userProfile.is_online || false,
             isTyping: false
@@ -873,8 +894,16 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{thread.participantName}</h4>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{thread.participantName}</h4>
+                      {thread.matched && (
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-semibold flex-shrink-0">
+                          <Heart className="w-2.5 h-2.5" fill="currentColor" />
+                          Matched
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                       {thread.lastMessage?.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
