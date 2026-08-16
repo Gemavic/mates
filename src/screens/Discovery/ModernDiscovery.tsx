@@ -31,6 +31,7 @@ interface Profile {
   premium?: boolean;
   relationshipStatus?: string | null;
   lookingFor?: string | null;
+  matched?: boolean;
 }
 
 interface ModernDiscoveryProps {
@@ -162,6 +163,16 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         // legacy rows still hold base64 image data inline, that is a
         // multi-megabyte response. Primaries come first, so 3 per profile
         // is all this screen can display anyway.
+        // Who has this user matched with? A match is a like in both
+        // directions. Fetched alongside the gallery so it costs no extra
+        // round trip on the critical path.
+        const matchesPromise = user?.id
+          ? supabaseClient
+              .from('user_likes')
+              .select('user_id, target_user_id')
+              .or(`user_id.eq.${user?.id},target_user_id.eq.${user?.id}`)
+          : Promise.resolve({ data: [] as any[] });
+
         const galleryPromise = supabaseClient
           .from('user_photos')
           .select('user_id, photo_url, is_primary')
@@ -213,9 +224,26 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           }, {} as Record<string, string[]>);
 
         // First paint: whatever can be shown without waiting on the gallery.
+        // Resolve matches before first paint - the badge should not pop in
+        // a moment after the card renders.
+        let matchedIds = new Set<string>();
+        try {
+          const { data: likeRows } = await matchesPromise;
+          const iLiked = new Set<string>();
+          const likedMe = new Set<string>();
+          for (const row of (likeRows || []) as any[]) {
+            if (row.user_id === user?.id) iLiked.add(row.target_user_id);
+            if (row.target_user_id === user?.id) likedMe.add(row.user_id);
+          }
+          matchedIds = new Set([...iLiked].filter(id => likedMe.has(id)));
+        } catch (err) {
+          console.warn('Could not resolve matches:', err);
+        }
+
         const immediate = dbProfiles
           .map((profile) => buildProfile(profile, {}))
-          .filter((p): p is NonNullable<typeof p> => p !== null);
+          .filter((p): p is NonNullable<typeof p> => p !== null)
+          .map(p => ({ ...p, matched: matchedIds.has(p.id) }));
 
         if (immediate.length > 0) {
           setProfiles(immediate);
@@ -241,7 +269,8 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
         const formattedProfiles = dbProfiles
           .map((profile) => buildProfile(profile, photosByUser))
-          .filter((profile): profile is NonNullable<typeof profile> => profile !== null);
+          .filter((profile): profile is NonNullable<typeof profile> => profile !== null)
+          .map(p => ({ ...p, matched: matchedIds.has(p.id) }));
 
         setProfiles(formattedProfiles);
       }
@@ -542,6 +571,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                     online={profile.online}
                     verified={profile.verified}
                     lookingFor={profile.lookingFor}
+                    matched={profile.matched}
                     onViewProfile={(id) => onNavigate('view-profile', { userId: id })}
                     onLike={handleLike}
                   />
@@ -633,6 +663,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                     online={profile.online}
                     verified={profile.verified}
                     lookingFor={profile.lookingFor}
+                    matched={profile.matched}
                     onViewProfile={(id) => onNavigate('view-profile', { userId: id })}
                     onLike={handleLike}
                   />

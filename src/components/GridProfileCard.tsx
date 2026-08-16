@@ -1,13 +1,16 @@
 import React from 'react';
 import { Heart, Camera, ShieldCheck } from 'lucide-react';
 
-const LOOKING_FOR_LABELS: Record<string, string> = {
-  friendship: 'Friendship',
-  serious: 'True Love',
-  casual: 'Casual Dating',
-  flirting: 'Flirting',
-  not_sure: 'Not Sure Yet',
+// Each intent gets its own label, colour and glyph so the badge reads at a
+// glance in a grid rather than being five identically-coloured pills.
+const LOOKING_FOR_BADGES: Record<string, { label: string; icon: string; className: string }> = {
+  serious:    { label: 'Real love',  icon: '\u{1F54A}\uFE0F', className: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200' },
+  casual:     { label: 'Romance',    icon: '\u{1F495}',       className: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200' },
+  flirting:   { label: 'Flirt',      icon: '\u{1F60D}',       className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
+  friendship: { label: 'Friendship', icon: '\u{1F91D}',       className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+  not_sure:   { label: 'Not sure',   icon: '\u2753',          className: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200' },
 };
+
 
 interface GridProfileCardProps {
   id: string;
@@ -17,6 +20,7 @@ interface GridProfileCardProps {
   online: boolean;
   verified?: boolean;
   lookingFor?: string | null;
+  matched?: boolean;
   onViewProfile: (id: string) => void;
   onLike?: (id: string) => void;
 }
@@ -29,6 +33,7 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
   online,
   verified,
   lookingFor,
+  matched = false,
   onViewProfile,
   onLike
 }) => {
@@ -91,14 +96,20 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
           )}
         </div>
 
-        {lookingFor && LOOKING_FOR_LABELS[lookingFor] && (
-          <div className="mb-3">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-medium">
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          {matched && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 ring-1 ring-purple-200 rounded-full text-xs font-semibold">
               <Heart className="w-3 h-3" fill="currentColor" />
-              {LOOKING_FOR_LABELS[lookingFor]}
+              Matched
             </span>
-          </div>
-        )}
+          )}
+          {lookingFor && LOOKING_FOR_BADGES[lookingFor] && (
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${LOOKING_FOR_BADGES[lookingFor].className}`}>
+              <span aria-hidden="true">{LOOKING_FOR_BADGES[lookingFor].icon}</span>
+              {LOOKING_FOR_BADGES[lookingFor].label}
+            </span>
+          )}
+        </div>
 
         <button
           onClick={() => onViewProfile(id)}
