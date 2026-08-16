@@ -98,6 +98,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Match Suitor"
       onBack={() => onNavigate('discovery')}
       showClose={false}

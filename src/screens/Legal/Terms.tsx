@@ -9,6 +9,7 @@ interface TermsProps {
 export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Terms of Service"
       onBack={() => onNavigate('welcome')}
       showClose={true}

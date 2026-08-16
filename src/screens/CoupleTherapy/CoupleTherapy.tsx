@@ -108,6 +108,7 @@ export const CoupleTherapy: React.FC<CoupleTherapyProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Couple Therapy"
       onBack={() => onNavigate('discovery')}
       showClose={false}

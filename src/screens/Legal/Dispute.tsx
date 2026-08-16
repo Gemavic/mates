@@ -101,6 +101,7 @@ export const Dispute: React.FC<DisputeProps> = ({ onNavigate = () => {} }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Dispute Resolution"
       onBack={() => onNavigate('welcome')}
       showClose={true}

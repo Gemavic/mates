@@ -351,7 +351,8 @@ export const Newsfeed: React.FC<NewsfeedProps> = ({ onNavigate }) => {
   };
 
   return (
-    <Layout title="Community" onBack={() => onNavigate('discovery')} showClose={false}>
+    <Layout
+      onNavigate={onNavigate} title="Community" onBack={() => onNavigate('discovery')} showClose={false}>
       <div className="px-3 sm:px-4 py-4 pb-24 max-w-lg mx-auto space-y-4">
         {/* Composer */}
         {user && (

@@ -329,6 +329,7 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Education - Relationship Learning"
       onBack={() => onNavigate('welcome')}
       showClose={false}

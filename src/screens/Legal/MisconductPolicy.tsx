@@ -9,6 +9,7 @@ interface MisconductPolicyProps {
 export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Misconduct Prevention Policy"
       onBack={() => onNavigate('welcome')}
       showClose={true}

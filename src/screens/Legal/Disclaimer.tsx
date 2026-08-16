@@ -9,6 +9,7 @@ interface DisclaimerProps {
 export const Disclaimer: React.FC<DisclaimerProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Legal Disclaimer"
       onBack={() => onNavigate('welcome')}
       showClose={true}

@@ -73,6 +73,7 @@ export const Quizzes: React.FC<QuizzesProps> = ({ onNavigate = () => {} }) => {
   if (selectedQuiz) {
     return (
       <Layout
+      onNavigate={onNavigate}
         title="Take Quiz"
         onBack={() => setSelectedQuiz(null)}
         showClose={true}

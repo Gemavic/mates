@@ -9,6 +9,7 @@ interface ConsentPolicyProps {
 export const ConsentPolicy: React.FC<ConsentPolicyProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Consent Policy"
       onBack={() => onNavigate('welcome')}
       showClose={true}
