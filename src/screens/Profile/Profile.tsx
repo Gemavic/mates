@@ -57,6 +57,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
     lookingFor: ''
   });
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [settingPrimary, setSettingPrimary] = useState<string | null>(null);
   const [userPhotos, setUserPhotos] = useState<Array<{id: string, url: string, isPrimary: boolean}>>([]);
 
   const userStats = {
@@ -270,6 +271,67 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       }
     };
     input.click();
+  };
+
+  const handleSetPrimaryPhoto = async (photoId: string) => {
+    if (!user) return;
+
+    setSettingPrimary(photoId);
+    try {
+      // Clear the flag on every other photo first, so exactly one primary
+      // ever exists. The avatar handler looks the primary up with
+      // .maybeSingle(), which errors outright if more than one comes back.
+      const { error: clearError } = await supabaseClient
+        .from('user_photos')
+        .update({ is_primary: false })
+        .eq('user_id', user.id)
+        .neq('id', photoId);
+
+      if (clearError) throw clearError;
+
+      const { error: setError } = await supabaseClient
+        .from('user_photos')
+        .update({ is_primary: true })
+        .eq('id', photoId)
+        .eq('user_id', user.id);
+
+      if (setError) throw setError;
+
+      const chosen = userPhotos.find(p => p.id === photoId);
+      if (chosen) {
+        // Keep the profile's own photo_url in step so the avatar and any
+        // other screen reading user_profiles show the same picture.
+        await supabaseClient
+          .from('user_profiles')
+          .update({ photo_url: chosen.url })
+          .eq('user_id', user.id);
+      }
+
+      await loadUserPhotos();
+      await loadUserProfile();
+
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMessage.textContent = '\u2705 Main photo updated!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 2000);
+    } catch (error: any) {
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMsg.textContent = `\u274C Could not set main photo: ${error?.message || 'Unknown error'}`;
+      document.body.appendChild(errorMsg);
+      setTimeout(() => {
+        if (document.body.contains(errorMsg)) {
+          document.body.removeChild(errorMsg);
+        }
+      }, 4000);
+    } finally {
+      setSettingPrimary(null);
+    }
   };
 
   const handleDeletePhoto = async (photoId: string) => {
@@ -618,20 +680,40 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                   <img
                     src={photo.url}
                     alt="Profile"
-                    className="w-full h-24 object-cover rounded-lg"
+                    className={`w-full h-24 object-cover rounded-lg ${
+                      photo.isPrimary ? 'ring-2 ring-green-400' : ''
+                    }`}
                   />
                   {photo.isPrimary && (
                     <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                      Primary
+                      Main
                     </div>
                   )}
+
+                  {/* Delete: was opacity-0 until hover, which meant it was
+                      unreachable on touch devices - most of the audience.
+                      Always visible now, just dimmed until hover on desktop. */}
                   <button
                     onClick={() => handleDeletePhoto(photo.id)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
                     type="button"
+                    aria-label="Delete photo"
                   >
                     <X className="w-3 h-3" />
                   </button>
+
+                  {/* Set as main. Hidden on the photo that already is. */}
+                  {!photo.isPrimary && (
+                    <button
+                      onClick={() => handleSetPrimaryPhoto(photo.id)}
+                      disabled={settingPrimary !== null}
+                      className="absolute inset-x-1 bottom-1 bg-black/70 hover:bg-black/85 text-white text-[11px] font-medium py-1 rounded transition-colors disabled:opacity-50"
+                      type="button"
+                      aria-label="Set as main profile photo"
+                    >
+                      {settingPrimary === photo.id ? 'Setting...' : 'Set as main'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

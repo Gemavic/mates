@@ -9,6 +9,7 @@ interface PrivacyProps {
 export const Privacy: React.FC<PrivacyProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Privacy Policy"
       onBack={() => onNavigate('welcome')}
       showClose={true}

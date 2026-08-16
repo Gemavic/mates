@@ -491,6 +491,7 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Care Blog"
       onBack={() => onNavigate('discovery')}
       showClose={false}

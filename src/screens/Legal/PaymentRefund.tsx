@@ -9,6 +9,7 @@ interface PaymentRefundProps {
 export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () => {} }) => {
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Payment & Refund Policy"
       onBack={() => onNavigate('welcome')}
       showClose={true}

@@ -140,7 +140,8 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
   };
 
   return (
-    <Layout title="Transaction History" onBack={() => onNavigate('credits')}>
+    <Layout
+      onNavigate={onNavigate} title="Transaction History" onBack={() => onNavigate('credits')}>
       <div className="px-4 py-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-white/70">

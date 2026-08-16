@@ -230,7 +230,8 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
 
   if (loading) {
     return (
-      <Layout title="Loading..." onBack={() => onNavigate('discovery')}>
+      <Layout
+      onNavigate={onNavigate} title="Loading..." onBack={() => onNavigate('discovery')}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
         </div>

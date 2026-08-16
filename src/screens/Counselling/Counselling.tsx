@@ -109,6 +109,7 @@ export const Counselling: React.FC<CounsellingProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Personal Counselling"
       onBack={() => onNavigate('discovery')}
       showClose={false}

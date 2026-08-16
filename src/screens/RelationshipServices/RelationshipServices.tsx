@@ -140,6 +140,7 @@ export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNa
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Relationship Services"
       onBack={() => onNavigate('welcome')}
       showClose={false}

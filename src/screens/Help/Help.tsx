@@ -495,6 +495,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
 
   return (
     <Layout
+      onNavigate={onNavigate}
       title="Help & Support"
       onBack={() => onNavigate('discovery')}
       showClose={true}
