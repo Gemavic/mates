@@ -194,7 +194,7 @@ export const communityFeatures = {
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('user_profiles')
-          .select('user_id, first_name, full_name, photo_url')
+          .select('user_id, first_name, full_name')
           .in('user_id', userIds);
 
         profileMap = (profiles || []).reduce((acc: any, p: any) => {

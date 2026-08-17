@@ -239,7 +239,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
         if (senderIds.length > 0) {
           const [pRes, phRes] = await Promise.all([
-            supabaseClient.from('user_profiles').select('user_id, first_name, full_name, photo_url').in('user_id', senderIds),
+            supabaseClient.from('user_profiles').select('user_id, first_name, full_name').in('user_id', senderIds),
             supabaseClient.from('user_photos').select('user_id, photo_url').in('user_id', senderIds).eq('is_primary', true)
           ]);
           profileLookup = (pRes.data || []).reduce((acc, p) => { acc[p.user_id] = p; return acc; }, {} as Record<string, any>);

@@ -79,7 +79,7 @@ export class RealtimeMessagingService {
             // Fetch sender profile
             const { data: profile } = await supabaseClient
               .from('user_profiles')
-              .select('full_name, photo_url')
+              .select('full_name')
               .eq('user_id', message.sender_id)
               .single();
 
