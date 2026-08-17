@@ -39,8 +39,8 @@ interface AuthContextValue {
   loading: boolean;
   isLoadingProfile: boolean;
   isAnonymous: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, fullName: string, dateOfBirth?: string) => Promise<any>;
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<any>;
+  signUp: (email: string, password: string, fullName: string, dateOfBirth?: string, captchaToken?: string) => Promise<any>;
   signOut: () => Promise<void>;
   signInAnonymously: () => Promise<any>;
   upgradeToEmailPassword: (email: string, password: string) => Promise<any>;
@@ -168,9 +168,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, loadUserProfile]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string, captchaToken?: string) => {
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
+      });
 
       if (error) {
         console.error('Sign in error:', error);
@@ -203,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string, dateOfBirth?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, dateOfBirth?: string, captchaToken?: string) => {
     try {
       const { data, error } = await supabaseClient.auth.signUp({
         email,
@@ -219,6 +223,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // URL — so if that was ever wrong, every confirmation link in every
           // email pointed somewhere broken. Anchor it to the real origin.
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          // Only sent when a token exists. Supabase ignores the field
+          // entirely while captcha is disabled, so this is inert until
+          // both the site key and the Supabase setting are in place.
+          ...(captchaToken ? { captchaToken } : {}),
         },
       });
 

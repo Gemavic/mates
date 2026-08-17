@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Heart, Mail, Lock, User, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Captcha, isCaptchaEnabled } from '@/components/Captcha';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toast';
 import { creditManager } from '@/lib/creditSystem';
@@ -27,6 +28,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
   });
 
   const { signUp } = useAuth();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   const validatePassword = (password: string) => {
@@ -132,7 +134,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
       let signUpResult;
       try {
-        signUpResult = await signUp(formData.email, formData.password, formData.name, formData.dateOfBirth);
+        signUpResult = await signUp(formData.email, formData.password, formData.name, formData.dateOfBirth, captchaToken ?? undefined);
       } catch (networkError: any) {
         console.error('Network error during signup:', networkError);
         toast({
@@ -424,10 +426,13 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
             </div>
           </div>
 
+          {/* Renders nothing until VITE_TURNSTILE_SITE_KEY is set. */}
+          <Captcha onToken={setCaptchaToken} className="mb-3" />
+
           <Button
             type="submit"
             className="w-full h-10 sm:h-11 md:h-12 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600 transition-all duration-200 cursor-pointer touch-manipulation active:scale-95 disabled:opacity-50"
-            disabled={isLoading || !passwordValidation.isValid}
+            disabled={isLoading || !passwordValidation.isValid || (isCaptchaEnabled() && !captchaToken)}
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </Button>
