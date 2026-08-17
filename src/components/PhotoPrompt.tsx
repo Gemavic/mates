@@ -42,9 +42,6 @@ export const PhotoPrompt: React.FC<PhotoPromptProps> = ({ onNavigate }) => {
     const check = async () => {
       if (!user || isLoadingProfile || !profile) return;
 
-      // A profile photo on the profile row is enough to be visible.
-      if (profile.photo_url) return;
-
       const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
       const snoozeMs = SNOOZE_HOURS * 60 * 60 * 1000;
       if (dismissedAt && Date.now() - dismissedAt < snoozeMs) return;

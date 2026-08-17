@@ -184,8 +184,22 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
         const { data: profiles } = await supabaseClient
           .from('user_profiles')
-          .select('user_id, full_name, first_name, photo_url, profile_photo, is_online')
+          .select('user_id, full_name, first_name, is_online')
           .in('user_id', otherUserIds);
+
+        // Avatars live in user_photos, not on the profile row.
+        const { data: avatarRows } = await supabaseClient
+          .from('user_photos')
+          .select('user_id, photo_url, is_primary')
+          .in('user_id', otherUserIds)
+          .order('is_primary', { ascending: false });
+
+        const avatarByUser: Record<string, string> = {};
+        for (const row of (avatarRows || []) as any[]) {
+          if (row.user_id && row.photo_url && !avatarByUser[row.user_id]) {
+            avatarByUser[row.user_id] = row.photo_url;
+          }
+        }
 
         const { data: allMessages } = await supabaseClient
           .from('mail_messages')
@@ -241,7 +255,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           if (!userProfile) return null;
 
           const displayName = userProfile.first_name || userProfile.full_name || 'User';
-          const displayImage = userProfile.photo_url || userProfile.profile_photo || DEFAULT_AVATAR;
+          const displayImage = avatarByUser[otherUserId] || DEFAULT_AVATAR;
 
           return {
             id: thread.id,
@@ -303,7 +317,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           const [profilesResult, photosResult] = await Promise.all([
             supabaseClient
               .from('user_profiles')
-              .select('user_id, first_name, full_name, photo_url')
+              .select('user_id, first_name, full_name')
               .in('user_id', otherSenderIds),
             supabaseClient
               .from('user_photos')
