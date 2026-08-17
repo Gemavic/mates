@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Heart, Mail, Lock, Shield, AlertTriangle } from 'lucide-react';
+import { Captcha, isCaptchaEnabled } from '@/components/Captcha';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
@@ -24,6 +25,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
   });
 
   const { signIn } = useAuth();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +87,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
       // Attempt sign in
       let signInResult;
       try {
-        signInResult = await signIn(formData.email, formData.password);
+        signInResult = await signIn(formData.email, formData.password, captchaToken ?? undefined);
       } catch (networkError: any) {
         console.error('Network error during signin:', networkError);
         setErrors(['Unable to connect to server. Please check your internet connection and try again.']);
@@ -304,10 +306,13 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
               </div>
             )}
 
+            {/* Renders nothing until VITE_TURNSTILE_SITE_KEY is set. */}
+            <Captcha onToken={setCaptchaToken} className="mb-3" />
+
             <Button
               type="submit"
               className="w-full h-10 sm:h-11 md:h-12 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600 transition-all duration-200 cursor-pointer touch-manipulation active:scale-95 disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || (isCaptchaEnabled() && !captchaToken)}
             >
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
