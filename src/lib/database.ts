@@ -96,7 +96,7 @@ export class ProfileManager {
 
     let profilesQuery = supabaseClient
       .from('user_profiles')
-      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, photo_url, relationship_status, looking_for, profile_visibility, last_active, created_at')
+      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, relationship_status, looking_for, profile_visibility, last_active, created_at')
       .or('profile_visibility.eq.public,profile_visibility.is.null')
       .order('is_online', { ascending: false })
       .order('last_active', { ascending: false, nullsFirst: false })
