@@ -58,6 +58,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   });
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [settingPrimary, setSettingPrimary] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [userPhotos, setUserPhotos] = useState<Array<{id: string, url: string, isPrimary: boolean}>>([]);
 
   const userStats = {
@@ -675,6 +676,58 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
+              {pendingDelete && (() => {
+                const target = userPhotos.find(p => p.id === pendingDelete);
+                return (
+                  <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="delete-photo-title"
+                  >
+                    <div className="w-full max-w-xs bg-white rounded-2xl shadow-2xl overflow-hidden">
+                      {target && (
+                        <img
+                          src={target.url}
+                          alt=""
+                          className="w-full h-40 object-cover"
+                        />
+                      )}
+                      <div className="p-5">
+                        <h3 id="delete-photo-title" className="text-base font-bold text-gray-900">
+                          Delete this photo?
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {target?.isPrimary
+                            ? 'This is your main photo. Deleting it means your profile will have no main photo until you choose another.'
+                            : 'This cannot be undone.'}
+                        </p>
+                        <div className="flex gap-2 mt-4">
+                          <button
+                            onClick={() => setPendingDelete(null)}
+                            type="button"
+                            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors touch-manipulation"
+                          >
+                            Keep
+                          </button>
+                          <button
+                            onClick={() => {
+                              const id = pendingDelete;
+                              setPendingDelete(null);
+                              handleDeletePhoto(id);
+                            }}
+                            type="button"
+                            className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors touch-manipulation active:scale-95"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {userPhotos.map((photo) => (
                 <div key={photo.id} className="relative group">
                   <img
@@ -693,8 +746,12 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                   {/* Delete: was opacity-0 until hover, which meant it was
                       unreachable on touch devices - most of the audience.
                       Always visible now, just dimmed until hover on desktop. */}
+                  {/* Staged, not immediate. The button is always visible so
+                      it works on touch, which also makes it easy to hit by
+                      accident - deleting a photo outright on one tap is not
+                      a fair trade for that. */}
                   <button
-                    onClick={() => handleDeletePhoto(photo.id)}
+                    onClick={() => setPendingDelete(photo.id)}
                     className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
                     type="button"
                     aria-label="Delete photo"
