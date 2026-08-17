@@ -3,6 +3,7 @@ import { Heart, Users, CreditCard } from 'lucide-react';
 import { SwipeCard } from '@/components/SwipeCard';
 import { GridProfileCard } from '@/components/GridProfileCard';
 import { IntentPrompt } from '@/components/IntentPrompt';
+import { PhotoPrompt } from '@/components/PhotoPrompt';
 import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
@@ -460,6 +461,12 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           renders nothing unless looking_for is null and it has not been
           dismissed in the last 7 days. */}
       <IntentPrompt onSaved={() => loadProfiles()} />
+
+      {/* Discovery drops profiles with no photo, by design - a faceless
+          card helps nobody. But the person being filtered out gets no
+          signal, so they browse an empty grid and never learn that they
+          are equally invisible. This tells them. */}
+      <PhotoPrompt onNavigate={onNavigate} />
 
       {/* Mobile Header */}
       <div className="lg:hidden">
