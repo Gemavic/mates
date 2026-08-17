@@ -18,6 +18,32 @@ interface VerificationProps {
   onNavigate: (screen: string) => void;
 }
 
+/**
+ * Mints a short-lived signed URL for a verification document.
+ *
+ * verification-documents is private, so it cannot be linked directly.
+ * Pass the stored path (e.g. "<uid>/selfie-1765418398348.jpg").
+ * Returns null if the document cannot be read.
+ */
+export async function getVerificationDocUrl(
+  path: string,
+  expiresInSeconds = 300
+): Promise<string | null> {
+  if (!path) return null;
+  // Legacy rows may hold a full URL rather than a path; pass those through.
+  if (path.startsWith('http')) return path;
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from('verification-documents')
+      .createSignedUrl(path, expiresInSeconds);
+    if (error) throw error;
+    return data?.signedUrl ?? null;
+  } catch (err) {
+    console.warn('Could not sign verification document URL:', err);
+    return null;
+  }
+}
+
 export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   const { user, profile, loadUserProfile } = useAuth();
   const { theme } = useTheme();
@@ -150,12 +176,18 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: urlData } = supabaseClient.storage
-          .from('verification-documents')
-          .getPublicUrl(fileName);
-
-        const photoUrl = urlData.publicUrl;
+        // Store the storage PATH, not a URL.
+        //
+        // verification-documents is a private bucket, so getPublicUrl()
+        // returns a URL that does not resolve - it was producing dead links
+        // for the most sensitive documents on the platform. Private objects
+        // need a signed URL, and signed URLs expire, so persisting one in
+        // the database would be wrong too.
+        //
+        // The path is stable. Anything that needs to display the document
+        // calls getVerificationDocUrl() below to mint a short-lived signed
+        // URL at view time.
+        const photoUrl = fileName;
 
         // Create or update verification request
         const updateData: any = {
