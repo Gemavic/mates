@@ -316,11 +316,20 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     if (profile && user) {
       const { data: currentUserProfile } = await supabaseClient
         .from('user_profiles')
-        .select('photo_url, first_name, full_name')
+        .select('first_name, full_name')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      const userImage = currentUserProfile?.photo_url || '';
+      // Avatar comes from user_photos - user_profiles has no photo column.
+      const { data: myPrimary } = await supabaseClient
+        .from('user_photos')
+        .select('photo_url')
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const userImage = myPrimary?.photo_url || '';
       const userName = currentUserProfile?.first_name || currentUserProfile?.full_name || 'Someone';
 
       if (userImage) {

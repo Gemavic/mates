@@ -298,15 +298,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
       if (setError) throw setError;
 
-      const chosen = userPhotos.find(p => p.id === photoId);
-      if (chosen) {
-        // Keep the profile's own photo_url in step so the avatar and any
-        // other screen reading user_profiles show the same picture.
-        await supabaseClient
-          .from('user_profiles')
-          .update({ photo_url: chosen.url })
-          .eq('user_id', user.id);
-      }
+      // No mirror write to user_profiles: that table has no photo column.
+      // user_photos.is_primary is the single source of truth, and every
+      // screen resolves the avatar from there.
 
       await loadUserPhotos();
       await loadUserProfile();
@@ -538,18 +532,12 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                   try {
                     const publicUrl = await uploadProfilePhoto(user.id, file);
 
-                    // CRITICAL: Update user_profiles.photo_url first for immediate visibility
-                    const { error: profileError } = await supabaseClient
-                      .from('user_profiles')
-                      .update({ photo_url: publicUrl })
-                      .eq('user_id', user.id);
+                    // user_profiles has no photo column - this used to write
+                    // photo_url there and throw on failure, which is why the
+                    // avatar upload reported "Failed to upload photo".
+                    // user_photos.is_primary is the source of truth.
 
-                    if (profileError) {
-                      console.error('Failed to update profile photo:', profileError);
-                      throw profileError;
-                    }
-
-                    // Then update or insert into user_photos
+                    // Update or insert into user_photos
                     const { data: existingPrimary, error: checkError } = await supabaseClient
                       .from('user_photos')
                       .select('id')
