@@ -24,9 +24,14 @@ export interface MigrationResult {
 export type ConflictStrategy = 'merge' | 'replace' | 'keep_existing';
 
 export const anonymousAuth = {
-  async signInAnonymously() {
+  async signInAnonymously(captchaToken?: string) {
     try {
-      const { data, error } = await supabase.auth.signInAnonymously();
+      // Captcha is enabled on this project. Anonymous sign-in is an auth
+      // endpoint like any other, so it needs a token too - without one
+      // Supabase rejects it outright.
+      const { data, error } = await supabase.auth.signInAnonymously(
+        captchaToken ? { options: { captchaToken } } : undefined
+      );
 
       if (error) {
         throw error;

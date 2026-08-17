@@ -42,7 +42,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string, captchaToken?: string) => Promise<any>;
   signUp: (email: string, password: string, fullName: string, dateOfBirth?: string, captchaToken?: string) => Promise<any>;
   signOut: () => Promise<void>;
-  signInAnonymously: () => Promise<any>;
+  signInAnonymously: (captchaToken?: string) => Promise<any>;
   upgradeToEmailPassword: (email: string, password: string) => Promise<any>;
   getAnonymousUserData: () => Promise<any>;
   getFirstName: () => string;
@@ -302,8 +302,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isReturningUser = useCallback(() => localStorage.getItem('hasLoggedInBefore') === 'true', []);
   const markAsReturningUser = useCallback(() => localStorage.setItem('hasLoggedInBefore', 'true'), []);
 
-  const signInAnonymously = useCallback(async () => {
-    const { data, error } = await anonymousAuth.signInAnonymously();
+  const signInAnonymously = useCallback(async (captchaToken?: string) => {
+    const { data, error } = await anonymousAuth.signInAnonymously(captchaToken);
     if (error) return { data: null, error: { message: error.message } };
     return { data, error: null };
   }, []);
