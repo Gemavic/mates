@@ -261,7 +261,7 @@ export class MatchManager {
     return data;
   }
 
-  static async getUserMatches(userId: string) {
+  static async getUserMatches(userId: string, limit = 100) {
     const { data, error } = await supabaseClient
       .from('matches')
       .select(`
@@ -271,13 +271,14 @@ export class MatchManager {
       `)
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
       .eq('is_active', true)
-      .order('last_activity', { ascending: false });
+      .order('last_activity', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     return data;
   }
 
-  static async getLikesReceived(userId: string) {
+  static async getLikesReceived(userId: string, limit = 100) {
     const { data, error } = await supabaseClient
       .from('user_likes')
       .select(`
@@ -286,7 +287,8 @@ export class MatchManager {
       `)
       .eq('target_user_id', userId)
       .in('like_type', ['like', 'super_like'])
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     return data;
@@ -295,7 +297,7 @@ export class MatchManager {
 
 // Messaging System
 export class MessagingManager {
-  static async getChatThreads(userId: string) {
+  static async getChatThreads(userId: string, limit = 100) {
     const { data, error } = await supabaseClient
       .from('chat_threads')
       .select(`
@@ -306,7 +308,8 @@ export class MessagingManager {
       .eq('matches.user1_id', userId)
       .or(`matches.user2_id.eq.${userId}`)
       .eq('is_active', true)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     return data;
@@ -442,7 +445,7 @@ export class MessagingManager {
     }
   }
 
-  static async getMailThreads(userId: string) {
+  static async getMailThreads(userId: string, limit = 100) {
     const { data, error } = await supabaseClient
       .from('mail_threads')
       .select(`
@@ -451,7 +454,8 @@ export class MessagingManager {
       `)
       .or(`participant1_id.eq.${userId},participant2_id.eq.${userId}`)
       .eq('is_active', true)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     return data;
@@ -520,7 +524,7 @@ export class GiftManager {
     return data;
   }
 
-  static async getReceivedGifts(userId: string) {
+  static async getReceivedGifts(userId: string, limit = 100) {
     const { data, error } = await supabaseClient
       .from('sent_gifts')
       .select(`
@@ -529,7 +533,8 @@ export class GiftManager {
         sender:user_profiles!sent_gifts_sender_id_fkey(*)
       `)
       .eq('recipient_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     return data;
