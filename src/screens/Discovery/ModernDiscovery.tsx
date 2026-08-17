@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Heart, Users, CreditCard } from 'lucide-react';
 import { SwipeCard } from '@/components/SwipeCard';
 import { GridProfileCard } from '@/components/GridProfileCard';
+import { IntentPrompt } from '@/components/IntentPrompt';
 import { ModernHeader } from '@/components/ModernHeader';
 import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
@@ -454,6 +455,12 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme === 'dark' ? 'from-slate-900 via-purple-950 to-slate-900' : 'from-pink-500 via-rose-500 to-purple-600'} overflow-x-hidden`}>
+      {/* Asks new and existing users what they are here for, so the intent
+          badge on profile cards actually has data to show. Self-gating:
+          renders nothing unless looking_for is null and it has not been
+          dismissed in the last 7 days. */}
+      <IntentPrompt onSaved={() => loadProfiles()} />
+
       {/* Mobile Header */}
       <div className="lg:hidden">
         <ModernHeader
