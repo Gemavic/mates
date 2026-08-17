@@ -52,6 +52,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   const [viewMode, setViewMode] = useState<'swipe' | 'grid'>('grid');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
   const {
@@ -134,10 +135,20 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     }
 
     setLoading(true);
+    setLoadError(null);
     console.log('🔍 Loading profiles for user:', user.id);
 
     try {
-      const dbProfiles = await ProfileManager.getDiscoveryProfiles(user.id);
+      // Never hang. getDiscoveryProfiles has no internal timeout, so if
+      // the request stalls the person sits on "Loading profiles..."
+      // indefinitely with no error and nothing to retry. Fail visibly
+      // instead.
+      const dbProfiles = await Promise.race([
+        ProfileManager.getDiscoveryProfiles(user.id),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Discovery request timed out')), 15000)
+        ),
+      ]);
       console.log('✅ Loaded real profiles from database:', dbProfiles?.length || 0);
       console.log('📋 Profile details:', dbProfiles?.map(p => ({
         name: p.first_name || p.full_name,
@@ -276,8 +287,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
         setProfiles(formattedProfiles);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error loading profiles:', error);
+      setLoadError(error?.message || 'Could not load profiles.');
       setProfiles([]);
     } finally {
       setLoading(false);
@@ -444,11 +456,30 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   }
 
   if (!currentProfile) {
+    // Distinguish "nothing to show" from "we failed to fetch". Showing
+    // the empty state after a failure tells the person the platform is
+    // empty, which is both wrong and discouraging.
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-center">
-          <h2 className="text-2xl font-bold mb-4">No more profiles</h2>
-          <p>Check back later for new matches!</p>
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-white text-center max-w-sm">
+          {loadError ? (
+            <>
+              <h2 className="text-2xl font-bold mb-3">Couldn't load profiles</h2>
+              <p className="text-white/80 text-sm mb-5">{loadError}</p>
+              <button
+                onClick={() => loadProfiles()}
+                type="button"
+                className="px-6 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors touch-manipulation"
+              >
+                Try again
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold mb-4">No more profiles</h2>
+              <p>Check back later for new matches!</p>
+            </>
+          )}
         </div>
       </div>
     );
