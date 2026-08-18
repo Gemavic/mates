@@ -16,6 +16,7 @@ import {
   Users
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { sendWinkNotification } from '@/lib/emailNotifications';
 import { supabaseClient } from '@/lib/supabase';
 
 const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
@@ -80,6 +81,8 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
   const [photos, setPhotos] = useState<UserPhoto[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [hasWinked, setHasWinked] = useState(false);
+  const [winking, setWinking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,9 +136,12 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     if (!user) return;
 
     try {
+      // Select like_type too. A wink and a like both live in user_likes,
+      // so checking only for a row's existence made a wink light up the
+      // like button.
       const { data, error } = await supabaseClient
         .from('user_likes')
-        .select('id')
+        .select('id, like_type')
         .eq('user_id', user.id)
         .eq('target_user_id', userId)
         .maybeSingle();
@@ -144,7 +150,8 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
         console.error('Error checking like status:', error);
       }
 
-      setIsLiked(!!data);
+      setIsLiked(data?.like_type === 'like' || data?.like_type === 'super_like');
+      setHasWinked(data?.like_type === 'blink');
     } catch (err) {
       console.error('Error checking like:', err);
     }
@@ -186,6 +193,68 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     } catch (err) {
       console.error('Error toggling like:', err);
       alert('Failed to update like status');
+    }
+  };
+
+  const handleWink = async () => {
+    if (!user) {
+      alert('Please sign in to send winks');
+      onNavigate('signin');
+      return;
+    }
+    if (hasWinked || winking) return;
+
+    setWinking(true);
+    try {
+      // 'blink' is the value the user_likes_like_type_check constraint
+      // permits - 'wink' would be rejected outright.
+      const { error } = await supabaseClient
+        .from('user_likes')
+        .insert({
+          user_id: user.id,
+          target_user_id: userId,
+          like_type: 'blink'
+        });
+
+      if (error) throw error;
+
+      setHasWinked(true);
+
+      try {
+        const { data: me } = await supabaseClient
+          .from('user_profiles')
+          .select('first_name, full_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const { data: myPhoto } = await supabaseClient
+          .from('user_photos')
+          .select('photo_url')
+          .eq('user_id', user.id)
+          .order('is_primary', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        sendWinkNotification(userId, {
+          name: me?.first_name || me?.full_name || 'Someone',
+          image: myPhoto?.photo_url || '',
+          id: user.id
+        });
+      } catch (notifyErr) {
+        // A failed notification must not make the wink itself look failed.
+        console.warn('Wink notification failed:', notifyErr);
+      }
+
+      alert(`You winked at ${profile?.full_name || 'them'}!`);
+    } catch (err: any) {
+      console.error('Error sending wink:', err);
+      alert(
+        err?.code === '23505'
+          ? 'You have already reacted to this profile.'
+          : `Could not send wink: ${err?.message || 'Unknown error'}`
+      );
+    } finally {
+      setWinking(false);
     }
   };
 
@@ -351,7 +420,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
               </div>
             )}
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               <Button
                 onClick={handleLike}
                 className={`${
@@ -359,8 +428,25 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
                     ? 'bg-pink-500 text-white'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
+                title="Like"
+                aria-label="Like"
               >
                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              </Button>
+              <Button
+                onClick={handleWink}
+                disabled={winking}
+                className={`${
+                  hasWinked
+                    ? 'bg-amber-400 text-white'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                } disabled:opacity-60`}
+                title="Send a wink"
+                aria-label="Send a wink"
+              >
+                <span className="text-lg leading-none" aria-hidden="true">
+                  {winking ? '\u22EF' : '\u{1F609}'}
+                </span>
               </Button>
               <Button
                 onClick={handleMessage}
