@@ -1,0 +1,40 @@
+project_id = "mkgebkkbgiwjqemfakyg"
+
+# Edge functions called directly from the browser.
+#
+# WHY verify_jwt = false HERE:
+# Supabase's gateway verifies a JWT before the function runs. A browser
+# CORS preflight (OPTIONS) carries no Authorization header, so the
+# gateway rejects it with 401 before any function code executes. The
+# browser then reports:
+#
+#   "Response to preflight request doesn't pass access control check:
+#    It does not have HTTP ok status"
+#
+# which reads like a CORS bug but is really the gateway refusing the
+# preflight. Turning gateway verification off lets the OPTIONS request
+# reach the function, which returns proper CORS headers.
+#
+# SECURITY: this does NOT make these functions unauthenticated. Each one
+# checks the Authorization header itself and rejects requests without a
+# valid user - that check was verified present in all six before this
+# was enabled. twilio-status is deliberately absent from this list: it
+# is a Twilio webhook, not browser-called, and has no own-auth check.
+
+[functions.twilio-voice-token]
+verify_jwt = false
+
+[functions.twilio-video-token]
+verify_jwt = false
+
+[functions.send-sms-verification]
+verify_jwt = false
+
+[functions.like-user]
+verify_jwt = false
+
+[functions.send-gift]
+verify_jwt = false
+
+[functions.send-message]
+verify_jwt = false
