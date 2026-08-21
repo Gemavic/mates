@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
@@ -28,22 +28,32 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [currentMatchName, setCurrentMatchName] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
 
+  // Pulled out of the effect so a failed attempt can be retried from the
+  // "Retry" button below, not just on mount. initialize() itself now races
+  // its session lookup against a timeout (see twilioVoice.ts), so this
+  // always settles one way or the other instead of hanging - but it can
+  // still fail outright (no session, Twilio misconfigured, etc.), and
+  // previously that left the Call button stuck reading "Initializing..."
+  // forever with nothing shown to the user.
+  const initializeVoice = useCallback(async () => {
+    if (!user?.id || isInitialized) return;
+
+    setInitError(null);
+    try {
+      await twilioVoiceManager.initialize(user.id);
+      setIsInitialized(true);
+    } catch (error) {
+      console.error('Error initializing Twilio Voice:', error);
+      setInitError(error instanceof Error ? error.message : 'Could not set up voice calling.');
+    }
+  }, [user?.id, isInitialized]);
+
   useEffect(() => {
-    const initializeVoice = async () => {
-      if (!user?.id || isInitialized) return;
-
-      try {
-        await twilioVoiceManager.initialize(user.id);
-        setIsInitialized(true);
-      } catch (error) {
-        console.error('Error initializing Twilio Voice:', error);
-      }
-    };
-
     initializeVoice();
 
     return () => {
@@ -415,13 +425,20 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                   </div>
                   
                   <Button
-                    onClick={() => startAudioCall(match.id, match.name)}
+                    onClick={() => {
+                      if (initError) {
+                        initializeVoice();
+                        return;
+                      }
+                      startAudioCall(match.id, match.name);
+                    }}
                     className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 hover:scale-105 transition-all duration-300"
                     type="button"
-                    disabled={match.status !== 'online' || !audioEnabled || !isInitialized || isConnecting}
+                    title={initError || undefined}
+                    disabled={match.status !== 'online' || !audioEnabled || (!isInitialized && !initError) || isConnecting}
                   >
                     <Phone className="w-4 h-4 mr-2" />
-                    {!isInitialized ? 'Initializing...' : audioEnabled ? 'Call' : 'Audio Disabled'}
+                    {initError ? 'Retry' : !isInitialized ? 'Initializing...' : audioEnabled ? 'Call' : 'Audio Disabled'}
                   </Button>
                   <div className="flex space-x-2 ml-2">
                     <Button

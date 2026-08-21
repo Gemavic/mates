@@ -7,7 +7,16 @@ export class TwilioVoiceManager {
 
   async getToken(userId: string): Promise<string> {
     try {
-      const session = await supabaseClient.auth.getSession();
+      // getSession() has no built-in timeout and can hang indefinitely on a
+      // slow/real mobile connection (see AuthContext.tsx, which hit this
+      // exact issue for the shared auth state) - race it against a timeout
+      // so a call attempt fails fast with a clear error instead of leaving
+      // the caller (AudioChat's "Initializing..." button) stuck forever.
+      const sessionPromise = supabaseClient.auth.getSession();
+      const timeoutPromise = new Promise<{ data: { session: null }; error: null }>((resolve) =>
+        setTimeout(() => resolve({ data: { session: null }, error: null }), 15000)
+      );
+      const session = await Promise.race([sessionPromise, timeoutPromise]);
       if (!session.data.session) {
         throw new Error('Not authenticated. Please sign in and try again.');
       }
