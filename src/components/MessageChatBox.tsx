@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
-import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail, Heart } from 'lucide-react';
+import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail, Heart, Flag } from 'lucide-react';
+import { ReportAbuseModal } from '@/components/ReportAbuseModal';
+import { contentModeration } from '@/lib/contentModeration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -88,6 +90,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [userBalance, setUserBalance] = useState(0);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
@@ -595,6 +598,43 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       return;
     }
 
+    // Rate limit before anything else. 10/minute, 500/day - enough that a real
+    // conversation never notices, low enough that a script cannot blast every
+    // member on the site. Fails open: a limiter outage must not block chat.
+    try {
+      const { data: limit } = await supabaseClient.rpc('check_and_update_rate_limit', {
+        p_user_id: user.id,
+        p_action_type: 'message',
+        p_increment: true,
+      });
+      if (limit && limit.allowed === false) {
+        alert(
+          limit.error_code === 'RATE_LIMIT_DAY'
+            ? "You've reached today's message limit. Please try again tomorrow."
+            : "You're sending messages too quickly. Please wait a moment."
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('Rate limit check failed, allowing message:', error);
+    }
+
+    // Keyword-based screen for the categories we refuse outright. Fails open by
+    // design (see contentModeration.scanText) so a moderation outage cannot
+    // silently swallow ordinary messages.
+    try {
+      const verdict = await contentModeration.scanText(trimmed, user.id, 'message');
+      if (verdict.shouldBlock) {
+        alert(
+          verdict.reason ||
+            'This message cannot be sent because it appears to break our community rules.'
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('Message moderation failed, allowing message:', error);
+    }
+
     const optimisticMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       senderId: user.id,
@@ -1011,12 +1051,16 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               >
                 <Mail className="w-6 h-6 text-orange-500 flex-shrink-0" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="5" r="2"/>
-                  <circle cx="12" cy="12" r="2"/>
-                  <circle cx="12" cy="19" r="2"/>
-                </svg>
+              {/* Was a dead three-dot button. Reporting is the one control a
+                  user needs at the exact moment something goes wrong, and it
+                  had no entry point anywhere in the app. */}
+              <button
+                onClick={() => setShowReportModal(true)}
+                title={`Report ${thread.participantName}`}
+                aria-label={`Report ${thread.participantName}`}
+                className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
+              >
+                <Flag className="w-6 h-6 text-gray-600 flex-shrink-0" />
               </button>
             </div>
           </div>
@@ -1218,6 +1262,18 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             </div>
           </div>
         </div>
+
+        {user && (
+          <ReportAbuseModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            reportedUserId={thread.participantId}
+            reportedUserName={thread.participantName}
+            contextType="message"
+            contextId={thread.id}
+            reporterId={user.id}
+          />
+        )}
       </div>
     );
   };
