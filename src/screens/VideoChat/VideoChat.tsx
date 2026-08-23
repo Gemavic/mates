@@ -33,6 +33,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
+  const [callError, setCallError] = useState<string | null>(null);
   const { user } = useAuth();
   const { checkAccess, recordUpgradePrompt, daysRemaining } = useSubscription();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
@@ -80,6 +81,19 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     loadMatches();
   }, [user?.id]);
 
+  // Release the camera and mic if the screen is left while a call (or a failed
+  // attempt) still holds them. Without this, navigating away mid-call leaves the
+  // camera light on until the tab is closed.
+  useEffect(() => {
+    return () => {
+      twilioVideoManager.leaveRoom();
+      if ((window as any).callTimer) {
+        clearInterval((window as any).callTimer);
+        (window as any).callTimer = null;
+      }
+    };
+  }, []);
+
   const startVideoCall = async (matchId: string, matchName: string) => {
     if (!user) {
       alert('Please sign in to make video calls');
@@ -106,6 +120,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
     try {
       setIsConnecting(true);
+      setCallError(null);
       setCurrentMatchName(matchName);
 
       const localVideo = await twilioVideoManager.startLocalVideo();
@@ -163,9 +178,24 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     } catch (error: any) {
       console.error('Error starting video call:', error);
       setIsConnecting(false);
+
+      // The camera and mic are acquired above, before the room is joined. If
+      // joining then fails we must hand them back - otherwise the camera light
+      // stays on after a failed call, and a retry acquires a second track on
+      // top of the orphaned one.
+      twilioVideoManager.leaveRoom();
+
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-md';
       const errorText = error.message || 'Failed to start video call. Please try again.';
+
+      // Also keep the reason on screen after the toast auto-dismisses, so the
+      // user is not left with a Call button that silently did nothing.
+      setCallError(
+        errorText.includes('credentials not configured')
+          ? 'Video calling is not configured yet. Please contact support.'
+          : errorText
+      );
 
       if (errorText.includes('credentials not configured')) {
         errorMessage.innerHTML = `<strong>Twilio Not Configured</strong><br><small>Please check TWILIO_TROUBLESHOOTING.md or contact support.</small>`;
@@ -448,6 +478,19 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
             )}
           </div>
           
+          {callError && (
+            <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-red-400/40 bg-red-500/20 p-4">
+              <p className="text-sm text-white">{callError}</p>
+              <button
+                type="button"
+                onClick={() => setCallError(null)}
+                className="shrink-0 text-sm font-medium text-white/80 underline hover:text-white"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           <div className="space-y-3">
             {activeMatches.map((match) => (
               <div

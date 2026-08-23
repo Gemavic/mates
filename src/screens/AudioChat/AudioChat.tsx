@@ -57,9 +57,12 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     initializeVoice();
 
     return () => {
-      if (isInitialized) {
-        twilioVoiceManager.destroy();
-      }
+      // Unconditional: this cleanup closes over `isInitialized` from the render
+      // the effect ran in, which is always false on mount - so guarding on it
+      // meant destroy() never ran and the Twilio Device stayed registered
+      // (holding the mic) after leaving the screen. destroy() no-ops when there
+      // is no device.
+      void twilioVoiceManager.destroy();
     };
   }, [user?.id]);
 
