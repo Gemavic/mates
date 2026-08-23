@@ -6,16 +6,9 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { supabaseClient } from '@/lib/supabase';
+import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
 import { twilioVideoManager } from '@/lib/twilioVideo';
-import type { RemoteParticipant, RemoteTrack, RemoteVideoTrack } from 'twilio-video';
-
-interface ActiveMatch {
-  id: string;
-  name: string;
-  image: string;
-  status: string;
-}
+import type { LocalVideoTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack } from 'twilio-video';
 
 interface VideoChatProps {
   onNavigate: (screen: string) => void;
@@ -37,42 +30,19 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const { checkAccess, recordUpgradePrompt, daysRemaining } = useSubscription();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
-  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
+  const [activeMatches, setActiveMatches] = useState<CallableMatch[]>([]);
   const localVideoRef = useRef<HTMLDivElement>(null);
   const remoteVideoRef = useRef<HTMLDivElement>(null);
+  // Tracks arrive before the in-call view is rendered, so hold them here and
+  // attach once the containers exist (see the effect below).
+  const localTrackRef = useRef<LocalVideoTrack | null>(null);
+  const pendingRemoteTracks = useRef<RemoteVideoTrack[]>([]);
 
   useEffect(() => {
     const loadMatches = async () => {
       if (!user?.id) return;
-
       try {
-        const { data: profiles } = await supabaseClient
-          .from('user_profiles')
-          .select('user_id, first_name, full_name, is_online')
-          .neq('user_id', user.id)
-          .eq('profile_visibility', 'public')
-          .limit(5);
-
-        if (profiles && profiles.length > 0) {
-          const matches = await Promise.all(
-            profiles.map(async (profile: any) => {
-              const { data: photo } = await supabaseClient
-                .from('user_photos')
-                .select('photo_url')
-                .eq('user_id', profile.user_id)
-                .eq('is_primary', true)
-                .maybeSingle();
-
-              return {
-                id: profile.user_id,
-                name: profile.first_name || profile.full_name || 'User',
-                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-                status: profile.is_online ? 'online' : 'offline'
-              };
-            })
-          );
-          setActiveMatches(matches);
-        }
+        setActiveMatches(await loadCallableMatches(user.id));
       } catch (error) {
         console.error('Error loading matches:', error);
       }
@@ -80,6 +50,24 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
     loadMatches();
   }, [user?.id]);
+
+  // Attach video once the in-call view is on screen. Both containers live
+  // inside the `isInCall` branch, so nothing can be attached until this runs.
+  useEffect(() => {
+    if (!isInCall) return;
+
+    if (localVideoRef.current && localTrackRef.current) {
+      localVideoRef.current.replaceChildren();
+      twilioVideoManager.attachTrack(localTrackRef.current, localVideoRef.current);
+    }
+
+    if (remoteVideoRef.current && pendingRemoteTracks.current.length) {
+      for (const track of pendingRemoteTracks.current) {
+        twilioVideoManager.attachTrack(track, remoteVideoRef.current);
+      }
+      pendingRemoteTracks.current = [];
+    }
+  }, [isInCall]);
 
   // Release the camera and mic if the screen is left while a call (or a failed
   // attempt) still holds them. Without this, navigating away mid-call leaves the
@@ -126,9 +114,11 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       const localVideo = await twilioVideoManager.startLocalVideo();
       await twilioVideoManager.startLocalAudio();
 
-      if (localVideoRef.current) {
-        twilioVideoManager.attachTrack(localVideo, localVideoRef.current);
-      }
+      // Do NOT attach here: localVideoRef lives inside the `isInCall` branch,
+      // which has not rendered yet, so ref.current is null and the preview was
+      // silently never attached. The effect below attaches once it exists.
+      localTrackRef.current = localVideo;
+      pendingRemoteTracks.current = [];
 
       const roomName = `room_${[user.id, matchId].sort().join('_')}`;
 
@@ -142,8 +132,14 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
           console.log('Participant disconnected:', participant.identity);
         },
         (track: RemoteTrack, _participant: RemoteParticipant) => {
-          if (remoteVideoRef.current && track.kind === 'video') {
-            twilioVideoManager.attachTrack(track as RemoteVideoTrack, remoteVideoRef.current);
+          if (track.kind !== 'video') return;
+          const videoTrack = track as RemoteVideoTrack;
+          if (remoteVideoRef.current) {
+            twilioVideoManager.attachTrack(videoTrack, remoteVideoRef.current);
+          } else {
+            // Anyone already in the room publishes during joinRoom(), i.e.
+            // before the in-call view renders. Queue them instead of dropping.
+            pendingRemoteTracks.current.push(videoTrack);
           }
         }
       );
@@ -184,6 +180,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       // stays on after a failed call, and a retry acquires a second track on
       // top of the orphaned one.
       twilioVideoManager.leaveRoom();
+      localTrackRef.current = null;
+      pendingRemoteTracks.current = [];
 
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-md';
@@ -216,6 +214,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
   const endCall = () => {
     twilioVideoManager.leaveRoom();
+    localTrackRef.current = null;
+    pendingRemoteTracks.current = [];
     setIsInCall(false);
     setIsConnecting(false);
     if ((window as any).callTimer) {
