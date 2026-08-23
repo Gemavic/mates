@@ -3,6 +3,7 @@ import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
 import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail, Heart, Flag } from 'lucide-react';
 import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { contentModeration } from '@/lib/contentModeration';
+import { moderateImage } from '@/lib/imageModeration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -819,6 +820,18 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
         const { data: pub } = supabaseClient.storage.from('chat-media').getPublicUrl(path);
         const fileUrl = pub.publicUrl;
+
+        // Sending an explicit photo straight to someone is the other half of
+        // the nudity problem - profile photos are only the public half. Refused
+        // media is deleted rather than left addressable in the bucket.
+        if (type === 'image') {
+          const verdict = await moderateImage(fileUrl, user.id, 'chat_media');
+          if (!verdict.allowed) {
+            await supabaseClient.storage.from('chat-media').remove([path]);
+            alert(verdict.reason ?? 'This image does not meet our content rules.');
+            return;
+          }
+        }
 
         const optimisticMessage: ChatMessage = {
           id: `temp-${Date.now()}`,

@@ -1,4 +1,5 @@
 import { supabaseClient } from '@/lib/supabase';
+import { moderateImage } from '@/lib/imageModeration';
 
 const MAX_DIMENSION = 1200; // plenty for both grid thumbnails and full profile view
 const JPEG_QUALITY = 0.85;
@@ -54,5 +55,16 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
   if (uploadError) throw uploadError;
 
   const { data } = supabaseClient.storage.from('profile-photos').getPublicUrl(path);
+
+  // Scan before the URL is handed back, so a refused photo never reaches a
+  // profile row. Vision needs to fetch the image, hence scanning after upload
+  // rather than before - and a refusal deletes the object again so nothing is
+  // left addressable in the bucket.
+  const verdict = await moderateImage(data.publicUrl, userId, 'photo');
+  if (!verdict.allowed) {
+    await supabaseClient.storage.from('profile-photos').remove([path]);
+    throw new Error(verdict.reason ?? 'This photo does not meet our content rules.');
+  }
+
   return data.publicUrl;
 }
