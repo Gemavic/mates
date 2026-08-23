@@ -4,15 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
-import { supabaseClient } from '@/lib/supabase';
+import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
 import { twilioVoiceManager } from '@/lib/twilioVoice';
-
-interface ActiveMatch {
-  id: string;
-  name: string;
-  image: string;
-  status: string;
-}
 
 interface AudioChatProps {
   onNavigate: (screen: string) => void;
@@ -31,7 +24,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [initError, setInitError] = useState<string | null>(null);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
-  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
+  const [activeMatches, setActiveMatches] = useState<CallableMatch[]>([]);
 
   // Pulled out of the effect so a failed attempt can be retried from the
   // "Retry" button below, not just on mount. initialize() itself now races
@@ -69,35 +62,8 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   useEffect(() => {
     const loadMatches = async () => {
       if (!user?.id) return;
-
       try {
-        const { data: profiles } = await supabaseClient
-          .from('user_profiles')
-          .select('user_id, first_name, full_name, is_online')
-          .neq('user_id', user.id)
-          .eq('profile_visibility', 'public')
-          .limit(5);
-
-        if (profiles && profiles.length > 0) {
-          const matches = await Promise.all(
-            profiles.map(async (profile: any) => {
-              const { data: photo } = await supabaseClient
-                .from('user_photos')
-                .select('photo_url')
-                .eq('user_id', profile.user_id)
-                .eq('is_primary', true)
-                .maybeSingle();
-
-              return {
-                id: profile.user_id,
-                name: profile.first_name || profile.full_name || 'User',
-                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
-                status: profile.is_online ? 'online' : 'offline'
-              };
-            })
-          );
-          setActiveMatches(matches);
-        }
+        setActiveMatches(await loadCallableMatches(user.id));
       } catch (error) {
         console.error('Error loading matches:', error);
       }
@@ -417,8 +383,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                       <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                        match.status === 'online' ? 'bg-green-500' : 
-                        match.status === 'busy' ? 'bg-red-500' : 'bg-yellow-500'
+                        match.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
                       }`}></div>
                     </div>
                     <div>

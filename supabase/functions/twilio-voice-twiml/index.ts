@@ -73,21 +73,30 @@ async function signatureIsValid(
 }
 
 /**
- * The signature covers the URL exactly as Twilio requested it. Supabase sits
- * behind a proxy, so trust the forwarded headers when present. TWILIO_VOICE_WEBHOOK_URL
- * is an escape hatch: set it to the literal URL configured in the TwiML App if
- * reconstruction ever disagrees with what Twilio signed.
+ * Twilio signs the URL exactly as configured in the TwiML App, i.e.
+ *   https://<ref>.supabase.co/functions/v1/twilio-voice-twiml
+ * but the edge runtime strips the /functions/v1 prefix before the function sees
+ * the request, so req.url is https://<ref>.supabase.co/twilio-voice-twiml.
+ * Signing that produced a mismatch and rejected every real Twilio call.
+ *
+ * Rather than assume one shape, build every URL that legitimately addresses
+ * this endpoint and accept a signature matching any of them. All candidates are
+ * this same function, so this widens nothing security-wise - the HMAC still has
+ * to verify under TWILIO_AUTH_TOKEN.
  */
-function requestUrl(req: Request): string {
+function candidateUrls(req: Request): string[] {
   const override = Deno.env.get('TWILIO_VOICE_WEBHOOK_URL');
-  if (override) return override;
+  if (override) return [override];
 
   const url = new URL(req.url);
-  const forwardedHost = req.headers.get('x-forwarded-host');
-  const forwardedProto = req.headers.get('x-forwarded-proto');
-  if (forwardedHost) url.host = forwardedHost;
-  url.protocol = `${forwardedProto ?? 'https'}:`;
-  return url.toString();
+  const host = req.headers.get('x-forwarded-host') ?? url.host;
+  const search = url.search;
+  const path = url.pathname.replace(/^\/functions\/v1/, '');
+
+  return [
+    `https://${host}/functions/v1${path}${search}`,
+    `https://${host}${path}${search}`,
+  ];
 }
 
 Deno.serve(async (req: Request) => {
@@ -123,15 +132,23 @@ Deno.serve(async (req: Request) => {
   }
 
   const signature = req.headers.get('X-Twilio-Signature') ?? '';
-  const signedUrl = requestUrl(req);
-  const valid = signature
-    ? await signatureIsValid(authToken, signedUrl, req.method === 'POST' ? params : {}, signature)
-    : false;
+  const signedParams = req.method === 'POST' ? params : {};
+  const candidates = candidateUrls(req);
+
+  let valid = false;
+  if (signature) {
+    for (const candidate of candidates) {
+      if (await signatureIsValid(authToken, candidate, signedParams, signature)) {
+        valid = true;
+        break;
+      }
+    }
+  }
 
   if (!valid) {
     console.error('Rejected voice webhook: bad or missing X-Twilio-Signature', {
       hasSignature: !!signature,
-      signedUrl,
+      triedUrls: candidates,
     });
     return new Response('Forbidden', { status: 403 });
   }
