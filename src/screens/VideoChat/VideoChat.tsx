@@ -15,6 +15,7 @@ import {
   watchInvite,
   type CallInvite,
 } from '@/lib/callSignals';
+import { startRingtone } from '@/lib/ringtone';
 import { twilioVideoManager } from '@/lib/twilioVideo';
 import type { LocalVideoTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack } from 'twilio-video';
 
@@ -49,6 +50,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const inviteRef = useRef<CallInvite | null>(null);
   const unwatchInviteRef = useRef<(() => void) | null>(null);
   const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopRingbackRef = useRef<(() => void) | null>(null);
   const [peerConnected, setPeerConnected] = useState(false);
 
   useEffect(() => {
@@ -143,6 +145,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     if (unwatchInviteRef.current) {
       unwatchInviteRef.current();
       unwatchInviteRef.current = null;
+    }
+    if (stopRingbackRef.current) {
+      stopRingbackRef.current();
+      stopRingbackRef.current = null;
     }
   };
 
@@ -251,6 +257,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       const invite = await ringUser(matchId, 'video');
       inviteRef.current = invite;
 
+      // Ringback for the caller. Pressing Call is the user gesture that lets
+      // the browser start audio, so this side always sounds.
+      stopRingbackRef.current = startRingtone('outgoing');
+
       unwatchInviteRef.current = watchInvite(invite.id, (status) => {
         if (status === 'accepted') return; // they will appear as a participant
         clearSignalling();
@@ -279,6 +289,15 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     } catch (error: any) {
       console.error('Error starting video call:', error);
       setIsConnecting(false);
+
+      // If we already rang before failing, withdraw it. Otherwise the ringback
+      // plays on, the timeout stays armed, and - worst of all - the other
+      // person's phone keeps ringing for a call that no longer exists.
+      if (inviteRef.current) {
+        void resolveInvite(inviteRef.current.id, 'cancelled');
+        inviteRef.current = null;
+      }
+      clearSignalling();
 
       // The camera and mic are acquired above, before the room is joined. If
       // joining then fails we must hand them back - otherwise the camera light
