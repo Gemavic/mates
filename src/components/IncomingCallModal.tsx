@@ -8,6 +8,7 @@ import {
   type CallInvite,
   type CallerPreview,
 } from '@/lib/callSignals';
+import { startRingtone } from '@/lib/ringtone';
 
 interface IncomingCallModalProps {
   invite: CallInvite;
@@ -37,6 +38,11 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
       cancelled = true;
     };
   }, [invite.caller_id]);
+
+  // Ring audibly and vibrate for as long as this screen is up. The cleanup runs
+  // on accept, decline, timeout and withdrawal alike, so the tone can never
+  // outlive the call.
+  useEffect(() => startRingtone('incoming'), []);
 
   // Stop ringing on the callee's side too. The caller runs its own timeout, but
   // this side must not be left with a dead modal if the caller's tab is closed.
