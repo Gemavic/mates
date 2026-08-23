@@ -141,7 +141,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
             <div className="space-y-2">
               <h4 className="font-semibold text-white mb-2">Chat Features</h4>
               <div className="flex justify-between">
-                <span>💬 Live chat (per minute)</span>
+                <span>💬 Live chat (per message)</span>
                 <span className="font-medium">2 Credits</span>
               </div>
               <div className="flex justify-between">

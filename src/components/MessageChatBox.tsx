@@ -107,40 +107,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   chatThreadsRef.current = chatThreads;
   userProfileImageRef.current = userProfileImage;
 
-  // Real per-minute billing for the time an active chat is open — replaces
-  // the old flat per-message charge, which made Chat indistinguishable
-  // from Mail's pricing. Sending itself is free; this ambient timer is
-  // the actual charge, exactly matching the documented "Live chat:
-  // 2 credits/min" pricing, and mirrors the proven pattern already used
-  // for Video/Audio calls (deduct every 60 ticked seconds, stop cleanly
-  // on insufficient credits without forcing the person out of the
-  // conversation the way ending a call would).
-  useEffect(() => {
-    if (!activeThread || !user) return;
-
-    let seconds = 0;
-    let cancelled = false;
-
-    const timer = setInterval(() => {
-      seconds += 1;
-      if (seconds % 60 === 0 && !cancelled) {
-        void (async () => {
-          const success = await creditManager.deductCredits(user.id, 2, 'live_chat_minute');
-          if (success) {
-            setUserBalance(creditManager.getTotalCredits(user.id));
-          } else if (!cancelled) {
-            cancelled = true;
-            alert(
-              "You're out of credits — this conversation will pause billing here. Top up to keep chatting, your messages so far are saved."
-            );
-            onNavigate('credits');
-          }
-        })();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [activeThread, user, onNavigate]);
+  // Chat is charged per message sent, never per minute. The previous ambient
+  // timer billed 2 credits for every minute a thread was merely open, so a
+  // reader who left the tab up paid for doing nothing. Pricing is now: first 2
+  // messages in a thread free, 10 credits each after that, free for monthly
+  // subscribers, and reading is always free. Enforced server-side in
+  // spend_message().
 
   useEffect(() => {
     const loadCredits = async () => {
@@ -635,6 +607,19 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       console.error('Message moderation failed, allowing message:', error);
     }
 
+    // Charge for the message itself, server-side. First 2 per thread are free,
+    // subscribers always are, and a refusal must stop the send rather than let
+    // an unpaid message through.
+    const charge = await creditManager.sendMessage(user.id, activeThreadData.id, trimmed);
+    if (!charge.success) {
+      alert(
+        `You need ${charge.cost} credits to send this message. Your first 2 messages in each conversation are free.`
+      );
+      onNavigate('credits');
+      return;
+    }
+    setUserBalance(creditManager.getTotalCredits(user.id));
+
     const optimisticMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       senderId: user.id,
@@ -665,7 +650,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           sender_id: user.id,
           subject: 'Chat Message',
           message_text: trimmed,
-          credits_spent: 0,
+          credits_spent: charge.cost,
           has_photos: false,
           is_delivered: true,
           delivered_at: new Date().toISOString(),
@@ -912,7 +897,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <span className="font-bold text-pink-900">{formatCredits(userBalance)}</span>
           </div>
         </div>
-        <p className="text-xs text-pink-600 mt-1">2 credits or 1 kobo per minute</p>
+        <p className="text-xs text-pink-600 mt-1">First 2 messages free, then 10 credits each</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-pink-50">
@@ -1000,7 +985,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <span className="text-xs sm:text-sm">Audio</span>
           </button>
         </div>
-        <p className="text-xs text-blue-600 mt-1">Chat: 2 credits/min | Mail: 10 credits | Super Like: 5 credits</p>
+        <p className="text-xs text-blue-600 mt-1">Chat: first 2 free, then 10 credits | Mail: 10 credits | Super Like: 5 credits</p>
         <p className="text-xs text-green-600">FREE: Likes, Blinks, Messages</p>
       </div>
     </div>
@@ -1170,7 +1155,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           )}
 
           <p className="text-xs text-gray-400 text-center mb-1.5">
-            Live chat: 2 credits/min while this conversation is open · included free with any subscription
+            Live chat: first 2 messages in each conversation are free, then 10 credits per message · reading is always free · included free with any subscription
           </p>
 
           <div className="flex items-center space-x-2">

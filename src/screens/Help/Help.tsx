@@ -85,7 +85,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         },
         {
           question: 'What\'s the difference between Chat and Mail?',
-          answer: 'Chat is real-time messaging (2 credits/minute), Mail is like email (10-30 credits per message).'
+          answer: 'Chat is real-time messaging (first 2 messages in each conversation are free, then 10 credits per message), Mail is like email (10-30 credits per message).'
         }
       ]
     }
@@ -162,7 +162,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         {
           title: 'Credit Pricing',
           items: [
-            'Chat: 2 credits per minute',
+            'Chat: first 2 messages free, then 10 credits per message',
             'Mail: 10-30 credits per message',
             'Video calls: 60 credits per minute',
             'Virtual gifts: 3-1000 credits'
