@@ -77,15 +77,27 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
             return;
           }
 
-          const { data, error } = await supabaseClient.rpc('award_bonus_credits', {
+          // award_bonus_credits wrote to user_credits, which the app never
+          // reads - get_my_credits and spend_credits both use
+          // app_credit_accounts - so awards here changed nothing the user could
+          // see or spend. admin_grant_credits writes the table actually in use
+          // and records the change in app_credit_ledger.
+          const { data, error } = await supabaseClient.rpc('admin_grant_credits', {
             p_user_id: targetUserId,
             p_amount: amount,
-            p_reason: reason,
-            p_staff_id: staffId,
-            p_awarded_by: 'staff'
+            p_reason: reason || 'bonus credits'
           });
 
           if (error) throw error;
+          if (data && data.success === false) {
+            onError(
+              data.error === 'not_admin'
+                ? 'Only an admin can allocate credits.'
+                : `Could not allocate credits: ${data.error}`
+            );
+            setIsProcessing(false);
+            return;
+          }
           result = data;
           break;
         }
@@ -98,14 +110,25 @@ export const RewardPanel: React.FC<RewardPanelProps> = ({
             return;
           }
 
-          const { data, error } = await supabaseClient.rpc('award_purchased_credits', {
+          // Same table problem as bonus_credits above. Both land in the live
+          // balance now; the bonus/purchased distinction was only ever a column
+          // in the unused table.
+          const { data, error } = await supabaseClient.rpc('admin_grant_credits', {
             p_user_id: targetUserId,
             p_amount: amount,
-            p_reason: reason,
-            p_staff_id: staffId
+            p_reason: reason || 'purchased credits'
           });
 
           if (error) throw error;
+          if (data && data.success === false) {
+            onError(
+              data.error === 'not_admin'
+                ? 'Only an admin can allocate credits.'
+                : `Could not allocate credits: ${data.error}`
+            );
+            setIsProcessing(false);
+            return;
+          }
           result = data;
           break;
         }
