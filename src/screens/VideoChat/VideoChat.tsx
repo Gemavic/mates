@@ -7,6 +7,14 @@ import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
+import {
+  RING_TIMEOUT_MS,
+  resolveInvite,
+  ringUser,
+  takeAcceptedCall,
+  watchInvite,
+  type CallInvite,
+} from '@/lib/callSignals';
 import { twilioVideoManager } from '@/lib/twilioVideo';
 import type { LocalVideoTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack } from 'twilio-video';
 
@@ -37,6 +45,11 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   // attach once the containers exist (see the effect below).
   const localTrackRef = useRef<LocalVideoTrack | null>(null);
   const pendingRemoteTracks = useRef<RemoteVideoTrack[]>([]);
+  // Signalling state for the outgoing invite.
+  const inviteRef = useRef<CallInvite | null>(null);
+  const unwatchInviteRef = useRef<(() => void) | null>(null);
+  const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [peerConnected, setPeerConnected] = useState(false);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -49,6 +62,39 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     };
 
     loadMatches();
+  }, [user?.id]);
+
+  // Arriving here from an accepted incoming call: join the room the caller is
+  // already waiting in, instead of starting a fresh outgoing call.
+  useEffect(() => {
+    const accepted = takeAcceptedCall();
+    if (!accepted || !user?.id) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setIsConnecting(true);
+        setCurrentMatchName(accepted.peerName);
+        await joinCallRoom(accepted.roomName, user.id);
+        if (cancelled) return;
+        setIsInCall(true);
+        setIsConnecting(false);
+        setCallDuration(0);
+      } catch (error: any) {
+        if (cancelled) return;
+        console.error('Error joining accepted call:', error);
+        twilioVideoManager.leaveRoom();
+        localTrackRef.current = null;
+        setIsConnecting(false);
+        setCallError(error?.message || 'Could not join the call.');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Runs once on mount; takeAcceptedCall() is read-once by design.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   // Attach video once the in-call view is on screen. Both containers live
@@ -74,13 +120,102 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   // camera light on until the tab is closed.
   useEffect(() => {
     return () => {
+      // Leaving the screen mid-ring must also stop the other phone ringing.
+      if (inviteRef.current) {
+        void resolveInvite(inviteRef.current.id, 'cancelled');
+        inviteRef.current = null;
+      }
+      clearSignalling();
       twilioVideoManager.leaveRoom();
       if ((window as any).callTimer) {
         clearInterval((window as any).callTimer);
         (window as any).callTimer = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const clearSignalling = () => {
+    if (ringTimeoutRef.current) {
+      clearTimeout(ringTimeoutRef.current);
+      ringTimeoutRef.current = null;
+    }
+    if (unwatchInviteRef.current) {
+      unwatchInviteRef.current();
+      unwatchInviteRef.current = null;
+    }
+  };
+
+  /**
+   * Billing starts when the other person actually arrives - not when we join the
+   * room. Previously the meter ran from the moment joinRoom() returned, so an
+   * unanswered call still charged 60 credits a minute for an empty room.
+   */
+  const beginBilling = (userId: string) => {
+    if ((window as any).callTimer) return;
+
+    const timer = setInterval(() => {
+      setCallDuration((prev) => {
+        const newDuration = prev + 1;
+        if (newDuration % 60 === 0) {
+          void (async () => {
+            const success = await creditManager.deductCredits(userId, 60);
+            if (success) {
+              setUserBalance(creditManager.getTotalCredits(userId));
+            } else if (!(await creditManager.hasFreeCallingAccess(userId))) {
+              endCall();
+              const errorMessage = document.createElement('div');
+              errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+              errorMessage.textContent = 'Insufficient credits for video call!';
+              document.body.appendChild(errorMessage);
+              setTimeout(() => document.body.removeChild(errorMessage), 3000);
+            }
+          })();
+        }
+        return newDuration;
+      });
+    }, 1000);
+
+    (window as any).callTimer = timer;
+  };
+
+  const joinCallRoom = async (roomName: string, userId: string) => {
+    const localVideo = await twilioVideoManager.startLocalVideo();
+    await twilioVideoManager.startLocalAudio();
+
+    // Do NOT attach here: localVideoRef lives inside the `isInCall` branch,
+    // which has not rendered yet, so ref.current is null and the preview was
+    // silently never attached. The effect below attaches once it exists.
+    localTrackRef.current = localVideo;
+    pendingRemoteTracks.current = [];
+
+    await twilioVideoManager.joinRoom(
+      roomName,
+      userId,
+      (participant: RemoteParticipant) => {
+        console.log('Participant connected:', participant.identity);
+        // They answered and arrived: stop ringing, start the meter.
+        clearSignalling();
+        setPeerConnected(true);
+        beginBilling(userId);
+      },
+      (participant: RemoteParticipant) => {
+        console.log('Participant disconnected:', participant.identity);
+        setPeerConnected(false);
+      },
+      (track: RemoteTrack, _participant: RemoteParticipant) => {
+        if (track.kind !== 'video') return;
+        const videoTrack = track as RemoteVideoTrack;
+        if (remoteVideoRef.current) {
+          twilioVideoManager.attachTrack(videoTrack, remoteVideoRef.current);
+        } else {
+          // Anyone already in the room publishes during joinRoom(), i.e.
+          // before the in-call view renders. Queue them instead of dropping.
+          pendingRemoteTracks.current.push(videoTrack);
+        }
+      }
+    );
+  };
 
   const startVideoCall = async (matchId: string, matchName: string) => {
     if (!user) {
@@ -111,65 +246,35 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       setCallError(null);
       setCurrentMatchName(matchName);
 
-      const localVideo = await twilioVideoManager.startLocalVideo();
-      await twilioVideoManager.startLocalAudio();
+      // Ring them first. Without this the callee is never told anything and the
+      // caller just sits alone in a room the other side never opens.
+      const invite = await ringUser(matchId, 'video');
+      inviteRef.current = invite;
 
-      // Do NOT attach here: localVideoRef lives inside the `isInCall` branch,
-      // which has not rendered yet, so ref.current is null and the preview was
-      // silently never attached. The effect below attaches once it exists.
-      localTrackRef.current = localVideo;
-      pendingRemoteTracks.current = [];
+      unwatchInviteRef.current = watchInvite(invite.id, (status) => {
+        if (status === 'accepted') return; // they will appear as a participant
+        clearSignalling();
+        inviteRef.current = null;
+        setCallError(
+          status === 'declined'
+            ? `${matchName} declined the call.`
+            : `${matchName} is not available right now.`
+        );
+        endCall();
+      });
 
-      const roomName = `room_${[user.id, matchId].sort().join('_')}`;
+      ringTimeoutRef.current = setTimeout(() => {
+        void resolveInvite(invite.id, 'missed');
+        inviteRef.current = null;
+        setCallError(`${matchName} did not answer.`);
+        endCall();
+      }, RING_TIMEOUT_MS);
 
-      await twilioVideoManager.joinRoom(
-        roomName,
-        user.id,
-        (participant: RemoteParticipant) => {
-          console.log('Participant connected:', participant.identity);
-        },
-        (participant: RemoteParticipant) => {
-          console.log('Participant disconnected:', participant.identity);
-        },
-        (track: RemoteTrack, _participant: RemoteParticipant) => {
-          if (track.kind !== 'video') return;
-          const videoTrack = track as RemoteVideoTrack;
-          if (remoteVideoRef.current) {
-            twilioVideoManager.attachTrack(videoTrack, remoteVideoRef.current);
-          } else {
-            // Anyone already in the room publishes during joinRoom(), i.e.
-            // before the in-call view renders. Queue them instead of dropping.
-            pendingRemoteTracks.current.push(videoTrack);
-          }
-        }
-      );
+      await joinCallRoom(invite.room_name, user.id);
 
       setIsInCall(true);
       setIsConnecting(false);
       setCallDuration(0);
-
-      const timer = setInterval(() => {
-        setCallDuration(prev => {
-          const newDuration = prev + 1;
-          if (newDuration % 60 === 0) {
-            void (async () => {
-              const success = await creditManager.deductCredits(user.id, 60);
-              if (success) {
-                setUserBalance(creditManager.getTotalCredits(user.id));
-              } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
-                endCall();
-                const errorMessage = document.createElement('div');
-                errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                errorMessage.textContent = 'Insufficient credits for video call!';
-                document.body.appendChild(errorMessage);
-                setTimeout(() => document.body.removeChild(errorMessage), 3000);
-              }
-            })();
-          }
-          return newDuration;
-        });
-      }, 1000);
-      (window as any).callTimer = timer;
 
     } catch (error: any) {
       console.error('Error starting video call:', error);
@@ -213,13 +318,22 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   };
 
   const endCall = () => {
+    // Hanging up while it is still ringing must stop the other phone ringing.
+    if (inviteRef.current) {
+      void resolveInvite(inviteRef.current.id, 'cancelled');
+      inviteRef.current = null;
+    }
+    clearSignalling();
+
     twilioVideoManager.leaveRoom();
     localTrackRef.current = null;
     pendingRemoteTracks.current = [];
+    setPeerConnected(false);
     setIsInCall(false);
     setIsConnecting(false);
     if ((window as any).callTimer) {
       clearInterval((window as any).callTimer);
+      (window as any).callTimer = null;
     }
   };
 
@@ -247,16 +361,28 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
           {/* Remote Video */}
           <div className="absolute inset-0 bg-gray-900">
             <div ref={remoteVideoRef} className="w-full h-full" />
-            {isConnecting && (
+            {(isConnecting || !peerConnected) && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <div className="text-white text-center">
                   <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-                  <p>Connecting to {currentMatchName}...</p>
+                  <p>
+                    {isConnecting
+                      ? `Connecting to ${currentMatchName}...`
+                      : `Ringing ${currentMatchName}...`}
+                  </p>
+                  {!isConnecting && (
+                    <p className="mt-2 text-sm text-white/70">
+                      Waiting for them to answer — you are not charged until they do.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
             <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-              {currentMatchName} • {Math.floor(callDuration / 60).toString().padStart(2, '0')}:{(callDuration % 60).toString().padStart(2, '0')}
+              {currentMatchName}
+              {peerConnected
+                ? ` • ${Math.floor(callDuration / 60).toString().padStart(2, '0')}:${(callDuration % 60).toString().padStart(2, '0')}`
+                : ' • ringing'}
             </div>
             <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
               {formatCredits(userBalance)} remaining

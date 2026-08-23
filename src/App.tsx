@@ -3,6 +3,7 @@ import { trackPageView } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import { Menu } from '@/components/Menu';
 import { SEO } from '@/components/SEO';
+import { IncomingCallHost } from '@/components/IncomingCallHost';
 import { Welcome } from '@/screens/Welcome/Welcome';
 
 // Lazy-loaded screens: split out of the main bundle so the first paint
@@ -525,6 +526,9 @@ const App: React.FC = () => {
             </React.Suspense>
           </div>
         </div>
+
+        {/* Ringing must reach the user on any screen, so this lives at the root. */}
+        <IncomingCallHost onNavigate={handleNavigate} />
       </div>
     </ErrorBoundary>
   );
