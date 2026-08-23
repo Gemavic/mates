@@ -22,6 +22,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [isAnswered, setIsAnswered] = useState(false);
   const { user } = useAuth();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [activeMatches, setActiveMatches] = useState<CallableMatch[]>([]);
@@ -93,30 +94,43 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       setIsConnecting(true);
       setCurrentMatchName(matchName);
 
-      await twilioVoiceManager.makeCall(matchId);
+      // Billing starts on answer, not on dial. device.connect() resolves as
+      // soon as the call is placed, so the meter used to run while the other
+      // phone was still ringing - and charged in full for calls nobody picked
+      // up. Matches what VideoChat does with its remote-participant event.
+      const beginBilling = () => {
+        if ((window as any).callTimer) return;
+        setIsAnswered(true);
+        setCallDuration(0);
+
+        const timer = setInterval(() => {
+          setCallDuration(prev => {
+            const newDuration = prev + 1;
+            if (newDuration % 60 === 0) {
+              void (async () => {
+                const success = await creditManager.deductCredits(user.id, 50);
+                if (success) {
+                  setUserBalance(creditManager.getTotalCredits(user.id));
+                } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
+                  endCall();
+                  alert('Insufficient credits for audio call!');
+                }
+              })();
+            }
+            return newDuration;
+          });
+        }, 1000);
+        (window as any).callTimer = timer;
+      };
+
+      await twilioVoiceManager.makeCall(matchId, {
+        onAnswered: beginBilling,
+        onEnded: () => endCall(),
+      });
 
       setIsInCall(true);
       setIsConnecting(false);
       setCallDuration(0);
-
-      const timer = setInterval(() => {
-        setCallDuration(prev => {
-          const newDuration = prev + 1;
-          if (newDuration % 60 === 0) {
-            void (async () => {
-              const success = await creditManager.deductCredits(user.id, 50);
-              if (success) {
-                setUserBalance(creditManager.getTotalCredits(user.id));
-              } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
-                endCall();
-                alert('Insufficient credits for audio call!');
-              }
-            })();
-          }
-          return newDuration;
-        });
-      }, 1000);
-      (window as any).callTimer = timer;
 
     } catch (error: any) {
       console.error('Error starting audio call:', error);
@@ -137,8 +151,10 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     twilioVoiceManager.endCall();
     setIsInCall(false);
     setIsConnecting(false);
+    setIsAnswered(false);
     if ((window as any).callTimer) {
       clearInterval((window as any).callTimer);
+      (window as any).callTimer = null;
     }
   };
 
@@ -166,8 +182,15 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
             <p className="text-white/80 text-lg">{Math.floor(callDuration / 60).toString().padStart(2, '0')}:{(callDuration % 60).toString().padStart(2, '0')}</p>
             {isConnecting ? (
               <p className="text-white/60 text-sm mt-2">Connecting...</p>
-            ) : (
+            ) : isAnswered ? (
               <p className="text-white/60 text-sm mt-2">Voice call in progress...</p>
+            ) : (
+              <>
+                <p className="text-white/60 text-sm mt-2">Ringing…</p>
+                <p className="text-white/50 text-xs mt-1">
+                  You are not charged until they answer.
+                </p>
+              </>
             )}
             <p className="text-white/60 text-sm mt-1">{formatCredits(userBalance)} remaining</p>
           </div>

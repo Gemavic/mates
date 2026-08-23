@@ -78,7 +78,16 @@ export class TwilioVoiceManager {
     }
   }
 
-  async makeCall(toUserId: string): Promise<void> {
+  /**
+   * @param handlers.onAnswered fires when the callee actually picks up.
+   *   device.connect() resolves as soon as the call is *placed*, so anything
+   *   that keyed off it - notably the per-minute billing timer - started while
+   *   the other phone was still ringing, and charged for calls nobody answered.
+   */
+  async makeCall(
+    toUserId: string,
+    handlers: { onAnswered?: () => void; onEnded?: () => void } = {}
+  ): Promise<void> {
     if (!this.device) {
       throw new Error('Device not initialized');
     }
@@ -94,21 +103,25 @@ export class TwilioVoiceManager {
 
       call.on('accept', () => {
         console.log('Call accepted');
+        handlers.onAnswered?.();
       });
 
       call.on('disconnect', () => {
         console.log('Call disconnected');
         this.currentCall = null;
+        handlers.onEnded?.();
       });
 
       call.on('cancel', () => {
         console.log('Call cancelled');
         this.currentCall = null;
+        handlers.onEnded?.();
       });
 
       call.on('reject', () => {
         console.log('Call rejected');
         this.currentCall = null;
+        handlers.onEnded?.();
       });
 
     } catch (error) {
