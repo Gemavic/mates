@@ -581,11 +581,17 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         p_increment: true,
       });
       if (limit && limit.allowed === false) {
-        alert(
-          limit.error_code === 'RATE_LIMIT_DAY'
-            ? "You've reached today's message limit. Please try again tomorrow."
-            : "You're sending messages too quickly. Please wait a moment."
-        );
+        if (limit.error_code === 'RATE_LIMIT_DAY') {
+          // Name the number and, for a free account, say what raises it -
+          // "try again tomorrow" leaves the user with no idea why or what to do.
+          alert(
+            limit.tier === 'free'
+              ? `You've reached today's limit of ${limit.limit} messages. Subscribers get ${500} a day, or you can continue tomorrow.`
+              : `You've reached today's limit of ${limit.limit} messages. Please try again tomorrow.`
+          );
+        } else {
+          alert("You're sending messages too quickly. Please wait a moment.");
+        }
         return;
       }
     } catch (error) {
