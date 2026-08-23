@@ -1,4 +1,5 @@
 import { supabaseClient } from './supabase';
+import { isOnlineFrom } from './presence';
 
 export interface CallableMatch {
   id: string;
@@ -64,12 +65,14 @@ export async function loadCallableMatches(
   currentUserId: string,
   limit = 5
 ): Promise<CallableMatch[]> {
+  // Order by last_active, not is_online: the flag is not maintained reliably,
+  // so presence is derived from recency instead (see ./presence).
   const { data: profiles, error } = await supabaseClient
     .from('user_profiles')
-    .select('user_id, first_name, full_name, is_online')
+    .select('user_id, first_name, full_name, is_online, last_active')
     .neq('user_id', currentUserId)
     .eq('profile_visibility', 'public')
-    .order('is_online', { ascending: false })
+    .order('last_active', { ascending: false, nullsFirst: false })
     .limit(60);
 
   if (error || !profiles?.length) {
@@ -95,14 +98,14 @@ export async function loadCallableMatches(
     .map((profile: any) => {
       const { name, isReal } = displayName(profile);
       const photo = photoFor.get(profile.user_id);
+      const online = isOnlineFrom(profile.last_active);
       return {
         id: profile.user_id,
         name,
         image: photo ?? initialsAvatar(name),
-        status: profile.is_online ? ('online' as const) : ('offline' as const),
+        status: online ? ('online' as const) : ('offline' as const),
         hasRealPhoto: !!photo,
-        _rank:
-          (profile.is_online ? 4 : 0) + (photo ? 2 : 0) + (isReal ? 1 : 0),
+        _rank: (online ? 4 : 0) + (photo ? 2 : 0) + (isReal ? 1 : 0),
       };
     })
     .sort((a: any, b: any) => b._rank - a._rank)
