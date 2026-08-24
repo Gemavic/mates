@@ -3,11 +3,12 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
 import { QuickNavBar } from '@/components/QuickNavBar';
+import { MissedCallsNotice } from '@/components/MissedCallsNotice';
 import { Button } from '@/components/ui/button';
 import {
   MessageCircle, Mail as MailIcon, User, Users,
   Newspaper, MessageSquare, CreditCard, ArrowLeft, Send,
-  Smile, Gift
+  Smile, Gift, X
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
@@ -71,6 +72,7 @@ interface ChatMessage {
   timestamp: Date;
   isDelivered?: boolean;
   isRead?: boolean;
+  replyToId?: string | null;
 }
 
 interface MatchesProps {
@@ -87,6 +89,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   const [messageText, setMessageText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickMessages, setShowQuickMessages] = useState(false);
+  // The message this one is answering. mail_messages already had a
+  // reply_to_message_id column - nothing had ever written to it.
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -197,7 +202,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
       try {
         const { data, error } = await supabaseClient
           .from('mail_messages')
-          .select('id, sender_id, message_text, created_at, is_read, is_delivered')
+          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id')
           .eq('thread_id', selectedThread)
           .eq('subject', 'Chat Message')
           .order('created_at', { ascending: true });
@@ -232,6 +237,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             timestamp: new Date(msg.created_at),
             isDelivered: msg.is_delivered ?? true,
             isRead: msg.is_read ?? false,
+            replyToId: msg.reply_to_message_id ?? null,
           };
         });
 
@@ -268,7 +274,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               senderName: thread?.participantName || 'User',
               senderImage: thread?.participantImage || DEFAULT_AVATAR,
               message: msg.message_text, timestamp: new Date(msg.created_at),
-              isDelivered: true, isRead: false
+              isDelivered: true, isRead: false,
+              replyToId: msg.reply_to_message_id ?? null
             }];
           });
         }
@@ -321,11 +328,12 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     const optimistic: ChatMessage = {
       id: `temp-${Date.now()}`, senderId: user.id, senderName: 'You',
       senderImage: userProfileImage, message: trimmed, timestamp: new Date(),
-      isDelivered: false, isRead: false
+      isDelivered: false, isRead: false, replyToId: replyingTo?.id ?? null
     };
 
     setMessages(prev => [...prev, optimistic]);
     setMessageText('');
+    setReplyingTo(null);
     setShowEmojiPicker(false);
 
     try {
@@ -334,6 +342,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         .insert({
           thread_id: selectedThread, sender_id: user.id,
           subject: 'Chat Message', message_text: trimmed,
+          reply_to_message_id: replyingTo?.id ?? null,
           credits_spent: charge.cost, has_photos: false, is_delivered: true,
           delivered_at: new Date().toISOString(), is_read: false
         })
@@ -358,7 +367,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       alert('Failed to send message. Please try again.');
     }
-  }, [messageText, selectedThread, user, userProfileImage, threads]);
+  }, [messageText, selectedThread, user, userProfileImage, threads, replyingTo]);
 
   const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
@@ -421,9 +430,30 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                   {!isMe && <img src={msg.senderImage || DEFAULT_AVATAR} alt={msg.senderName} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />}
                   <div className="max-w-[75%]">
                     <div className={cn("rounded-2xl px-4 py-3 shadow-sm", isMe ? 'bg-gradient-to-br from-pink-400 to-pink-500 text-white' : 'bg-white dark:bg-night-800 text-gray-800 dark:text-slate-100 border border-pink-100 dark:border-night-700')}>
+                      {/* Quoted original, so a reply arriving long after the
+                          message it answers still makes sense in context. */}
+                      {msg.replyToId && (() => {
+                        const quoted = messages.find((m) => m.id === msg.replyToId);
+                        return (
+                          <div className={cn(
+                            "mb-2 border-l-2 pl-2 py-0.5 rounded-sm text-xs",
+                            isMe ? 'border-white/70 bg-white/15 text-white/90' : 'border-pink-400 bg-pink-50 dark:bg-night-700 text-gray-600 dark:text-slate-300'
+                          )}>
+                            <p className="font-medium truncate">{quoted ? quoted.senderName : 'Message'}</p>
+                            <p className="truncate">{quoted ? quoted.message : 'Original message unavailable'}</p>
+                          </div>
+                        );
+                      })()}
                       <p className="text-sm leading-relaxed">{msg.message}</p>
                     </div>
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
+                      <button
+                        onClick={() => setReplyingTo(msg)}
+                        aria-label="Reply to this message"
+                        className="text-[11px] text-pink-500 hover:text-pink-600 dark:text-pink-300 font-medium"
+                      >
+                        Reply
+                      </button>
                       <span className="text-[11px] text-gray-500 dark:text-slate-400">{msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                       {isMe && (
                         msg.isRead ? (
@@ -481,6 +511,25 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           )}
 
           <div className="bg-pink-50 dark:bg-night-900 border-t border-pink-200 dark:border-night-700 px-3 pt-2 flex flex-col gap-1.5 safe-area-inset-bottom flex-shrink-0">
+            {replyingTo && (
+              <div className="flex items-center gap-2 rounded-lg bg-white dark:bg-night-800 border-l-4 border-pink-400 px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-pink-600 dark:text-pink-300">
+                    Replying to {replyingTo.senderName}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-slate-300 truncate">
+                    {replyingTo.message}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReplyingTo(null)}
+                  aria-label="Cancel reply"
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <p className="text-xs text-gray-400 text-center">
               Live chat: first 2 messages in each conversation are free, then 10 credits per message · reading is always free · included free with any subscription
             </p>
@@ -537,6 +586,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           </div>
 
           <QuickNavBar onNavigate={onNavigate} activeScreen="matches" />
+<MissedCallsNotice onNavigate={onNavigate} />
 
           <div className="flex-1 overflow-y-auto pb-20">
             {isLoading ? (
