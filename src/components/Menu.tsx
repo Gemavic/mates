@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { whatsappSupportLink } from '@/lib/config';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
@@ -271,11 +273,13 @@ export const Menu: React.FC<MenuProps> = ({
             </div>
             <div className="text-center mb-4">
               <a
-                href="tel:+1-289-270-9919"
+                href={whatsappSupportLink()}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm font-bold bg-white/15 text-white px-4 py-2 rounded-full hover:bg-white/25 transition-colors"
               >
-                <Phone className="w-3.5 h-3.5" />
-                Need help? 1-289-270-9919
+                <WhatsAppIcon className="w-4 h-4" />
+                Need help? Chat on WhatsApp
               </a>
             </div>
             <div className="text-center text-white/50 text-xs space-y-0.5 mb-4">

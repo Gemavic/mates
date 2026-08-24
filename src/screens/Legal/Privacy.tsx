@@ -123,7 +123,7 @@ export const Privacy: React.FC<PrivacyProps> = ({ onNavigate = () => {} }) => {
                   </div>
                   <div className="flex items-center mb-2">
                     <Phone className="w-4 h-4 mr-2 text-green-500" />
-                    <span><strong>Phone:</strong> +1-289-270-9919</span>
+                    <span><strong>Phone:</strong> +1-209-348-6842</span>
                   </div>
                 </div>
                 <div>

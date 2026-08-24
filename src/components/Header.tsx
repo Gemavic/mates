@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeftIcon, XIcon, Settings, User, LogOut } from 'lucide-react';
+import { whatsappSupportLink } from '@/lib/config';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -79,10 +81,12 @@ export const Header: React.FC<HeaderProps> = ({
                 Dates
               </h1>
               <a
-                href="tel:+12892709919"
+                href={whatsappSupportLink()}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hover:text-pink-600 underline transition-colors"
               >
-                📞 Support
+                <WhatsAppIcon className="w-3.5 h-3.5 inline mr-1" />Support
               </a>
             </div>
           </div>
@@ -93,10 +97,12 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
         {/* Quick Support Access */}
         <a
-          href="tel:+1-289-270-9919"
+          href={whatsappSupportLink()}
+          target="_blank"
+          rel="noopener noreferrer"
           className="hidden md:flex items-center space-x-1 bg-green-500 hover:bg-green-600 rounded-lg px-3 py-1.5 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
         >
-          <span className="text-white text-xs">📞</span>
+          <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
           <span className="text-white text-xs font-medium">Support</span>
         </a>
 

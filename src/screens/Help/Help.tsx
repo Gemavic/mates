@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { HelpCircle, MessageCircle, Phone, Mail, Shield, CreditCard, Users, Video, Search, Book } from 'lucide-react';
+import { APP_CONFIG, whatsappSupportLink } from '@/lib/config';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 
 interface HelpProps {
   onNavigate: (screen: string) => void;
@@ -100,10 +102,19 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       responseTime: '24-48 hours'
     },
     {
+      icon: WhatsAppIcon,
+      title: 'WhatsApp Support',
+      description: 'Fastest way to reach us',
+      // Deliberately not the number: the logo and a tap are the whole point,
+      // and a printed number invites people to dial it instead.
+      contact: 'Chat on WhatsApp',
+      responseTime: 'Usually within an hour'
+    },
+    {
       icon: Phone,
       title: 'Phone Support',
       description: 'Speak with our team',
-      contact: '+1-289-270-9919',
+      contact: APP_CONFIG.phone,
       responseTime: 'Mon-Fri 9AM-6PM EST'
     },
     {
@@ -253,7 +264,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             'Check internet connection',
             'Allow camera/microphone permissions',
             'Refresh browser if issues persist',
-            'Contact support: +1-289-270-9919'
+            'Contact support: +1-209-348-6842'
           ]
         }
       ]
@@ -511,29 +522,16 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
           <p className="text-white/80">We're here to help you succeed</p>
         </div>
 
-        {/* Quick Customer Support Section */}
-        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 mb-8 text-center text-white shadow-xl">
-          <h3 className="text-xl font-bold mb-2">Need Help?</h3>
-          <p className="text-white/90 mb-4">Call our support team:</p>
-          <a 
-            href="tel:+1-289-270-9919" 
-            className="inline-flex items-center space-x-3 bg-white/20 hover:bg-white/30 rounded-xl px-6 py-4 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
-          >
-            <Phone className="w-6 h-6 text-white" />
-            <span className="text-xl font-bold">1-289-270-9919</span>
-          </a>
-          <p className="text-white/90 text-sm mt-4">Mon-Fri 9AM-9PM EST</p>
-        </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Button
-            onClick={() => window.open('tel:+12892709919')}
+            onClick={() => window.open(whatsappSupportLink(), '_blank', 'noopener')}
             className="bg-green-500 text-white font-semibold hover:bg-green-600 py-3"
             type="button"
           >
-            <Phone className="w-4 h-4 mr-2" />
-            Call Us
+            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            Chat on WhatsApp
           </Button>
           <Button
             onClick={() => window.open('mailto:support@dates.care')}
@@ -589,7 +587,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
           </p>
           <div className="flex space-x-3">
             <Button
-              onClick={() => window.open('tel:+12892709919')}
+              onClick={() => window.open('tel:+12093486842')}
               className="flex-1 bg-red-500 text-white font-semibold hover:bg-red-600"
               type="button"
             >

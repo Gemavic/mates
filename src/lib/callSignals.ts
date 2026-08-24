@@ -265,3 +265,66 @@ export function takePendingCall(): PendingCall | null {
   pendingCall = null;
   return call;
 }
+
+export interface MissedCall {
+  id: string;
+  callerId: string;
+  kind: CallKind;
+  at: string;
+  name: string;
+  image: string;
+}
+
+/**
+ * Calls you did not answer.
+ *
+ * The 'missed' status was already being written when a ring timed out, but
+ * nothing ever read it - so a call you missed left no trace anywhere in the
+ * app and the caller appeared never to have tried.
+ */
+export async function fetchMissedCalls(userId: string): Promise<MissedCall[]> {
+  const { data, error } = await supabaseClient
+    .from('call_invites')
+    .select('id, caller_id, kind, created_at')
+    .eq('callee_id', userId)
+    .eq('status', 'missed')
+    .is('callee_seen_at', null)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error) {
+    console.error('Could not load missed calls:', error);
+    return [];
+  }
+  if (!data?.length) return [];
+
+  // One profile lookup per distinct caller, not per call - somebody who tried
+  // six times should not cost six queries.
+  const callerIds = [...new Set(data.map((row) => row.caller_id))];
+  const previews = await Promise.all(callerIds.map((id) => fetchCallerPreview(id)));
+  const previewById = new Map(callerIds.map((id, i) => [id, previews[i]]));
+
+  return data.map((row) => ({
+    id: row.id,
+    callerId: row.caller_id,
+    kind: row.kind as CallKind,
+    at: row.created_at,
+    name: previewById.get(row.caller_id)?.name ?? 'Someone',
+    image: previewById.get(row.caller_id)?.image ?? initialsAvatar('Someone'),
+  }));
+}
+
+/**
+ * Dismiss the notice. The call itself stays on record.
+ *
+ * Goes through dismiss_missed_call rather than a direct update: the invite's
+ * status must not be writable from here, and a plain UPDATE would have been
+ * allowed to change it by the existing resolve-invite policy.
+ */
+export async function markMissedCallSeen(inviteId: string): Promise<void> {
+  const { error } = await supabaseClient.rpc('dismiss_missed_call', {
+    p_invite_id: inviteId,
+  });
+
+  if (error) console.error('Could not dismiss missed call:', error);
+}

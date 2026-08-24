@@ -343,7 +343,7 @@ class UserVerificationManager {
         <p>We've reviewed your verification documents and need some updates before we can approve your account.</p>
         <p><strong>Reason:</strong> ${reason}</p>
         <p>Please log into your account and resubmit the required documents. Our team is here to help if you have any questions.</p>
-        <p>Contact us at verification@dates.care or call +1-289-270-9919 for assistance.</p>
+        <p>Contact us at verification@dates.care or call +1-209-348-6842 for assistance.</p>
         <p>Best regards,<br>The Dates.care Team</p>
       `
     };
@@ -355,7 +355,7 @@ class UserVerificationManager {
   sendPhoneVerification(phoneNumber: string): string {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    console.log(`📱 SMS verification code sent to ${phoneNumber}: ${code} (via +1-289-270-9919)`);
+    console.log(`📱 SMS verification code sent to ${phoneNumber}: ${code} (via +1-209-348-6842)`);
     
     // In a real app, this would use Twilio or similar service
     return code;

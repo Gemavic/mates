@@ -182,7 +182,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     {
       title: 'Privacy & Safety',
       items: [
-        { icon: AlertTriangle, label: 'Block & Report', action: () => { setShowBlockedUsers(true); loadBlockedUsers(); } },
+        // Was "Block & Report", which reads as an action you take against
+        // someone rather than the list of people you have already blocked -
+        // so the only route to unblocking was invisible.
+        { icon: AlertTriangle, label: 'Blocked users', action: () => { setShowBlockedUsers(true); loadBlockedUsers(); } },
         {
           icon: Lock,
           label: 'Two-Factor Authentication',

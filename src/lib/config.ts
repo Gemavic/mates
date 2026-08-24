@@ -7,8 +7,24 @@ export const APP_CONFIG = {
   legalEmail: 'legal@dates.care',
   privacyEmail: 'privacy@dates.care',
   disputeEmail: 'disputes@dates.care',
-  phone: '+1-289-270-9919'
+  phone: '+1-209-348-6842',
+  // WhatsApp is the primary support channel: free for members wherever they
+  // are, written rather than spoken so a scam or payment report arrives with
+  // screenshots, and asynchronous so nobody is lost to voicemail.
+  //
+  // Digits only, no + or dashes - that is the format wa.me requires.
+  whatsapp: '14377888011',
 };
+
+/**
+ * A wa.me link that opens a chat with support, with the message already
+ * started so the person does not have to explain themselves twice.
+ */
+export function whatsappSupportLink(
+  message = 'Hi Dates Care, I need help with '
+): string {
+  return `https://wa.me/${APP_CONFIG.whatsapp}?text=${encodeURIComponent(message)}`;
+}
 
 // Supabase Configuration
 // SECURITY: Only client-safe keys are exposed here

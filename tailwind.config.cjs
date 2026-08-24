@@ -35,6 +35,20 @@ module.exports = {
         'safe-right': 'env(safe-area-inset-right)',
       },
       colors: {
+        // Dark-mode surfaces for chat.
+        //
+        // Slate alone reads as near-black beside the pink brand. These are
+        // tinted into the same purple the rest of the app already uses for
+        // dark mode (from-slate-900 via-purple-950), so chat matches Discovery
+        // instead of introducing a third palette. The steps are spaced far
+        // enough apart that a bubble is visibly raised off the page.
+        night: {
+          950: '#1a0f2e', // deepest - page gradient ends
+          900: '#241640', // page background
+          800: '#32204f', // bars, panels, incoming bubbles
+          700: '#432d63', // hover, borders
+          600: '#573b7d', // subtle dividers
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
