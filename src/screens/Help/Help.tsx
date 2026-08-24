@@ -522,23 +522,6 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
           <p className="text-white/80">We're here to help you succeed</p>
         </div>
 
-        {/* Quick Customer Support Section */}
-        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 mb-8 text-center text-white shadow-xl">
-          <h3 className="text-xl font-bold mb-2">Need Help?</h3>
-          <p className="text-white/90 mb-4">Message our support team on WhatsApp:</p>
-          <a
-            href={whatsappSupportLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center space-x-3 bg-white/20 hover:bg-white/30 rounded-xl px-6 py-4 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
-          >
-            <WhatsAppIcon className="w-6 h-6 text-white" />
-            <span className="text-xl font-bold">Chat on WhatsApp</span>
-          </a>
-          <p className="text-white/90 text-sm mt-4">
-            Mon-Fri 9AM-9PM EST · or call {APP_CONFIG.phone}
-          </p>
-        </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -548,7 +531,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             type="button"
           >
             <WhatsAppIcon className="w-4 h-4 mr-2" />
-            WhatsApp
+            Chat on WhatsApp
           </Button>
           <Button
             onClick={() => window.open('mailto:support@dates.care')}
