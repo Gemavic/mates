@@ -204,3 +204,27 @@ export function takeAcceptedCall(): AcceptedCall | null {
   acceptedCall = null;
   return call;
 }
+
+/**
+ * Outgoing equivalent: "call THIS person", set by a Call button on someone's
+ * profile before navigating to the call screen. Without it the profile's call
+ * buttons only opened the call screen's list of members, leaving the user to
+ * find again the person whose profile they were already looking at.
+ */
+export interface PendingCall {
+  peerId: string;
+  peerName: string;
+}
+
+let pendingCall: PendingCall | null = null;
+
+export function setPendingCall(call: PendingCall): void {
+  pendingCall = call;
+}
+
+/** Read-once, so returning to the screen later does not redial. */
+export function takePendingCall(): PendingCall | null {
+  const call = pendingCall;
+  pendingCall = null;
+  return call;
+}

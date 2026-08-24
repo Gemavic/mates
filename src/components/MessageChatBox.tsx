@@ -905,7 +905,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
   const renderThreadList = () => (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-pink-200 bg-gradient-to-r from-pink-500 to-pink-400 text-white">
+      <div className="p-4 border-b border-pink-200 dark:border-slate-700 bg-gradient-to-r from-pink-500 to-pink-400 text-white">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-lg">Messages</h3>
           <button
@@ -918,7 +918,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         <p className="text-sm opacity-90">{totalUnread} unread messages</p>
       </div>
 
-      <div className="p-3 bg-pink-50 border-b border-pink-200">
+      <div className="p-3 bg-pink-50 dark:bg-slate-900 border-b border-pink-200 dark:border-slate-700">
         <div className="flex items-center justify-between text-sm">
           <span className="text-pink-700">Chat Balance:</span>
           <div className="flex items-center space-x-2">
@@ -928,19 +928,19 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         <p className="text-xs text-pink-600 mt-1">First 2 messages free, then 10 credits each</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-pink-50">
+      <div className="flex-1 overflow-y-auto bg-pink-50 dark:bg-slate-900">
         {chatThreads.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center">
             <MessageCircle className="w-16 h-16 text-pink-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Conversations Yet</h3>
-            <p className="text-sm text-gray-500">Start chatting with someone to see your messages here!</p>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-300 mb-2">No Conversations Yet</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Start chatting with someone to see your messages here!</p>
           </div>
         ) : (
           chatThreads.map((thread) => (
             <button
               key={thread.id}
               onClick={() => setActiveThread(thread.id)}
-              className="w-full p-4 border-b border-pink-100 hover:bg-pink-100 transition-colors text-left cursor-pointer touch-manipulation active:scale-95"
+              className="w-full p-4 border-b border-pink-100 dark:border-slate-700 hover:bg-pink-100 dark:bg-slate-800 transition-colors text-left cursor-pointer touch-manipulation active:scale-95"
               type="button"
             >
               <div className="flex items-center space-x-3">
@@ -962,7 +962,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{thread.participantName}</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-slate-100 text-sm sm:text-base truncate">{thread.participantName}</h4>
                       {thread.matched && (
                         <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-semibold flex-shrink-0">
                           <Heart className="w-2.5 h-2.5" fill="currentColor" />
@@ -970,14 +970,14 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                    <span className="text-xs text-gray-500 dark:text-slate-400 flex-shrink-0 ml-2">
                       {thread.lastMessage?.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className={cn(
                       "text-xs sm:text-sm truncate",
-                      thread.unreadCount > 0 ? 'font-semibold text-gray-900' : 'text-gray-600'
+                      thread.unreadCount > 0 ? 'font-semibold text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400'
                     )}>
                       {thread.isTyping ? (
                         <span className="text-blue-500 italic">typing...</span>
@@ -996,7 +996,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         )}
       </div>
 
-      <div className="p-3 border-t border-pink-200 bg-pink-100">
+      <div className="p-3 border-t border-pink-200 dark:border-slate-700 bg-pink-100 dark:bg-slate-800">
         <div className="flex justify-center space-x-3">
           <button
             onClick={() => onNavigate('video-chat')}
@@ -1025,14 +1025,14 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
     return (
       <div className="h-full flex flex-col">
-        <div className="p-3 border-b border-pink-200 bg-gradient-to-r from-pink-100 to-pink-50 flex-shrink-0">
+        <div className="p-3 border-b border-pink-200 dark:border-slate-700 bg-gradient-to-r from-pink-100 dark:from-slate-900 to-pink-50 dark:to-slate-900 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1">
               <button
                 onClick={() => setActiveThread(null)}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -1047,7 +1047,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 }`} />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 text-lg">{thread.participantName}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-slate-100 text-lg">{thread.participantName}</h3>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -1073,13 +1073,13 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 aria-label={`Report ${thread.participantName}`}
                 className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
               >
-                <Flag className="w-6 h-6 text-gray-600 flex-shrink-0" />
+                <Flag className="w-6 h-6 text-gray-600 dark:text-slate-400 flex-shrink-0" />
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-100 to-pink-200">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-100 dark:from-slate-900 to-pink-200 dark:to-slate-950">
           <div className="flex justify-center my-6">
             <div className="bg-pink-400/80 text-white px-6 py-2 rounded-full text-sm font-medium shadow-md">
               Today
@@ -1099,8 +1099,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                   <div className="flex flex-col space-y-1">
                     <div className={`rounded-2xl p-4 shadow-md ${
                       isCurrentUser
-                        ? 'bg-gradient-to-br from-pink-200 to-pink-300 text-gray-800 border border-pink-400'
-                        : 'bg-white text-gray-800 border border-pink-200'
+                        ? 'bg-gradient-to-br from-pink-200 dark:from-slate-900 to-pink-300 dark:to-slate-950 text-gray-800 dark:text-slate-200 border border-pink-400'
+                        : 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 border border-pink-200 dark:border-slate-700'
                     }`}>
                       {looksLikeImage(msg.message) ? (
                         <ProtectedMedia
@@ -1115,7 +1115,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                     <div className={`flex items-center space-x-2 px-2 ${
                       isCurrentUser ? 'justify-end' : 'justify-start'
                     }`}>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-slate-400">
                         {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </p>
                       {isCurrentUser && (
@@ -1152,7 +1152,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                   alt={thread.participantName}
                   className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-md"
                 />
-                <div className="bg-white border border-pink-200 rounded-2xl p-4 shadow-md">
+                <div className="bg-white dark:bg-slate-900 border border-pink-200 dark:border-slate-700 rounded-2xl p-4 shadow-md">
                   <div className="flex space-x-1.5">
                     <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1165,15 +1165,15 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-3 border-t border-pink-200 bg-pink-50 flex-shrink-0">
+        <div className="p-3 border-t border-pink-200 dark:border-slate-700 bg-pink-50 dark:bg-slate-900 flex-shrink-0">
           {showEmojiPicker && (
-            <div className="mb-3 bg-white rounded-lg p-3 border border-pink-300">
+            <div className="mb-3 bg-white dark:bg-slate-900 rounded-lg p-3 border border-pink-300 dark:border-slate-600">
               <div className="grid grid-cols-8 gap-2">
                 {EMOJIS.map((emoji, index) => (
                   <button
                     key={index}
                     onClick={() => addEmoji(emoji)}
-                    className="text-xl hover:bg-pink-100 rounded p-1 transition-colors"
+                    className="text-xl hover:bg-pink-100 dark:bg-slate-800 rounded p-1 transition-colors"
                   >
                     {emoji}
                   </button>
@@ -1198,7 +1198,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
             <button
               onClick={() => setMessage('Hi')}
-              className="bg-white text-pink-600 px-4 py-2 rounded-full border-2 border-pink-600 hover:bg-pink-50 transition-colors flex-shrink-0 touch-manipulation active:scale-95 font-bold text-lg"
+              className="bg-white dark:bg-slate-900 text-pink-600 px-4 py-2 rounded-full border-2 border-pink-600 hover:bg-pink-50 dark:bg-slate-900 transition-colors flex-shrink-0 touch-manipulation active:scale-95 font-bold text-lg"
               type="button"
             >
               Hi
@@ -1220,12 +1220,12 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                   }
                 }}
                 placeholder="Type your message"
-                className="w-full h-[48px] py-3 px-4 pr-12 rounded-full border-2 border-pink-300 focus:border-pink-400 focus:outline-none text-base bg-white"
+                className="w-full h-[48px] py-3 px-4 pr-12 rounded-full border-2 border-pink-300 dark:border-slate-600 focus:border-pink-400 focus:outline-none text-base bg-white dark:bg-slate-900"
                 autoComplete="off"
               />
               <button
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-pink-400 hover:text-pink-600 transition-colors rounded-full hover:bg-pink-100 touch-manipulation"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-pink-400 hover:text-pink-600 transition-colors rounded-full hover:bg-pink-100 dark:bg-slate-800 touch-manipulation"
               >
                 <Smile className="w-6 h-6 flex-shrink-0" />
               </button>
@@ -1234,7 +1234,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <Button
               onClick={handleSendMessage}
               disabled={!message.trim()}
-              className="bg-pink-500 text-white p-4 rounded-full hover:bg-pink-600 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation flex-shrink-0 cursor-pointer"
+              className="bg-pink-50 dark:bg-slate-9000 text-white p-4 rounded-full hover:bg-pink-600 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation flex-shrink-0 cursor-pointer"
               type="button"
             >
               <Send className="w-6 h-6 flex-shrink-0" />
@@ -1242,7 +1242,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           </div>
         </div>
 
-        <div className="border-t border-pink-200 bg-pink-50 flex-shrink-0">
+        <div className="border-t border-pink-200 dark:border-slate-700 bg-pink-50 dark:bg-slate-900 flex-shrink-0">
           <div className="flex items-center justify-between px-2 py-3 overflow-x-auto">
             <div className="flex items-center space-x-4">
               <button onClick={() => sendGift(QUICK_GIFTS[0])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
@@ -1269,7 +1269,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 <div className="text-3xl mb-1">💎</div>
                 <span className="text-xs font-bold text-pink-700">529</span>
               </button>
-              <button className="flex items-center justify-center w-10 h-10 bg-pink-100 rounded-full touch-manipulation active:scale-95">
+              <button className="flex items-center justify-center w-10 h-10 bg-pink-100 dark:bg-slate-800 rounded-full touch-manipulation active:scale-95">
                 <span className="text-xl text-pink-600">⋯</span>
               </button>
             </div>
@@ -1328,7 +1328,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             "w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[420px] xl:w-[480px]",
             "max-w-[600px]",
             "h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[500px]",
-            "bg-pink-50 rounded-2xl shadow-2xl border-2 border-pink-400 overflow-hidden",
+            "bg-pink-50 dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-pink-400 overflow-hidden",
             "animate-slide-up pointer-events-auto"
           )}
         >

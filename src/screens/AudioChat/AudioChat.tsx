@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
+import { takePendingCall } from '@/lib/callSignals';
 import { twilioVoiceManager } from '@/lib/twilioVoice';
 
 interface AudioChatProps {
@@ -72,6 +73,23 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
 
     loadMatches();
   }, [user?.id]);
+
+  // Arriving from a Call button on someone's profile. Captured on mount but
+  // dialled only once the Twilio Device is ready - startAudioCall refuses while
+  // isInitialized is false, so calling it immediately would just tell the user
+  // to wait, which is exactly what they pressed the button to avoid.
+  const pendingCallRef = useRef<{ peerId: string; peerName: string } | null>(null);
+  useEffect(() => {
+    pendingCallRef.current = takePendingCall();
+  }, []);
+
+  useEffect(() => {
+    const target = pendingCallRef.current;
+    if (!target || !isInitialized || !user?.id) return;
+    pendingCallRef.current = null;
+    void startAudioCall(target.peerId, target.peerName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized, user?.id]);
 
   const startAudioCall = async (matchId: string, matchName: string) => {
     if (!user) {
