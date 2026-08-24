@@ -379,8 +379,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
     return (
       <PageTransition direction="slide-left">
-        <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100 dark:from-night-950 dark:to-night-900 flex flex-col max-h-screen h-screen">
-          <div className="bg-gradient-to-r from-pink-100 dark:from-night-900 to-pink-50 dark:to-night-900 border-b border-pink-200 dark:border-night-700 px-3 py-3 flex items-center gap-3 safe-area-inset-top flex-shrink-0">
+        <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100 dark:from-slate-900 dark:via-purple-950 dark:to-slate-900 flex flex-col max-h-screen h-screen">
+          <div className="bg-gradient-to-r from-pink-100 dark:from-night-800 to-pink-50 dark:to-night-800 border-b border-pink-200 dark:border-night-700 px-3 py-3 flex items-center gap-3 safe-area-inset-top flex-shrink-0">
             <button
               onClick={() => { setSelectedThread(null); setMessages([]); setShowEmojiPicker(false); loadThreads(); }}
               className="p-1.5 hover:bg-pink-200 rounded-full transition-colors"
@@ -514,7 +514,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
   return (
     <PageTransition direction="slide-left">
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 dark:from-night-950 dark:via-night-900 dark:to-night-950 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 dark:from-slate-900 dark:via-purple-950 dark:to-slate-900 overflow-x-hidden">
         <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative">
           <div className="bg-white/95 dark:bg-night-900/95 backdrop-blur-sm shadow-sm border-b border-white/20 dark:border-night-700 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
             <div className="flex items-center justify-between">

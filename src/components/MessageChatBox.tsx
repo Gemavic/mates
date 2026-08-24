@@ -1025,7 +1025,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
     return (
       <div className="h-full flex flex-col">
-        <div className="p-3 border-b border-pink-200 dark:border-night-700 bg-gradient-to-r from-pink-100 dark:from-night-900 to-pink-50 dark:to-night-900 flex-shrink-0">
+        <div className="p-3 border-b border-pink-200 dark:border-night-700 bg-gradient-to-r from-pink-100 dark:from-night-800 to-pink-50 dark:to-night-800 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1">
               <button
@@ -1079,7 +1079,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-100 dark:from-night-900 to-pink-200 dark:to-night-950">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-100 dark:from-slate-900 to-pink-200 dark:via-purple-950 dark:to-slate-900">
           <div className="flex justify-center my-6">
             <div className="bg-pink-400/80 text-white px-6 py-2 rounded-full text-sm font-medium shadow-md">
               Today
