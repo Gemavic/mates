@@ -120,12 +120,29 @@ Deno.serve(async (req: Request) => {
     for (const [k, v] of url.searchParams.entries()) params[k] = v;
   }
 
-  // A bare visit, for confirming the URL pasted into the console is reachable.
+  // A bare visit, for confirming the URL pasted into the console is reachable
+  // and that the forward number is configured.
+  //
+  // Reports only whether the secret is present and well-formed, never the
+  // number itself: it is a personal mobile and this URL is public.
   if (!params.CallSid) {
-    return new Response(
-      'support-voice is deployed. Twilio POSTs here when someone calls the support number.',
-      { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
-    );
+    const configured = (Deno.env.get('SUPPORT_FORWARD_NUMBER') ?? '').trim();
+    let state: string;
+    if (!configured) {
+      state = 'SUPPORT_FORWARD_NUMBER: NOT SET - calls go to voicemail';
+    } else if (E164.test(configured)) {
+      state = 'SUPPORT_FORWARD_NUMBER: set, valid E.164 - calls forward';
+    } else {
+      state =
+        'SUPPORT_FORWARD_NUMBER: set but NOT valid E.164 - calls go to voicemail. ' +
+        `Length ${configured.length}, first character "${configured.slice(0, 1)}". ` +
+        'It must look like +14165551234: a leading +, country code, digits only.';
+    }
+
+    return new Response(`support-voice is deployed.\n${state}\n`, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
   }
 
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
