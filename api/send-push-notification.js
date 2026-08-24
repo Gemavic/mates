@@ -45,12 +45,46 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'missing_target_or_title' });
     }
 
-    // For now, only allow sending to yourself (a real "send me a test
-    // notification" button) or from a genuine server-side trigger that
-    // already validated its own reason for notifying targetUserId.
-    // Widen this check if/when more trigger points are added.
+    // targetUserId is interpolated into PostgREST query strings below. Anything
+    // other than a plain uuid could smuggle in extra "&" filters and rewrite
+    // the authorisation check into one that always matches.
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (typeof targetUserId !== 'string' || !UUID.test(targetUserId)) {
+      return res.status(400).json({ error: 'invalid_target' });
+    }
+
+    // Sending to yourself is always allowed (the "send me a test notification"
+    // button in Settings).
+    //
+    // Sending to someone else is allowed ONLY when the server can verify a
+    // reason for it. Right now the single reason is an incoming call: there
+    // must be a call_invites row that is still ringing, created by this caller,
+    // addressed to this target, in the last two minutes. That check is done
+    // here with the service role - the client cannot assert it.
+    //
+    // Without this, "notify any user" would be an open spam relay: anyone with
+    // an account could push arbitrary text to any member's lock screen.
     if (targetUserId !== caller.id) {
-      return res.status(403).json({ error: 'not_authorized_for_target' });
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const inviteResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/call_invites` +
+          `?caller_id=eq.${caller.id}` +
+          `&callee_id=eq.${targetUserId}` +
+          `&status=eq.ringing` +
+          `&created_at=gt.${encodeURIComponent(twoMinutesAgo)}` +
+          `&select=id&limit=1`,
+        {
+          headers: {
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+      const invites = await inviteResp.json().catch(() => []);
+
+      if (!Array.isArray(invites) || invites.length === 0) {
+        return res.status(403).json({ error: 'not_authorized_for_target' });
+      }
     }
 
     webpush.setVapidDetails('mailto:support@dates.care', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -70,7 +104,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ sent: 0, message: 'no_subscriptions' });
     }
 
-    const payload = JSON.stringify({ title, body: body || '', url: url || '/' });
+    // tag/requireInteraction/vibrate let a ringing call behave like a call -
+    // it stays on screen until acted on, and replaces itself rather than
+    // stacking one notification per retry.
+    const { tag, requireInteraction, vibrate } = req.body || {};
+    const payload = JSON.stringify({
+      title,
+      body: body || '',
+      url: url || '/',
+      tag,
+      requireInteraction: !!requireInteraction,
+      vibrate,
+    });
     let sent = 0;
 
     for (const sub of subscriptions) {

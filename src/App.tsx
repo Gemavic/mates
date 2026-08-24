@@ -5,6 +5,7 @@ import { Menu } from '@/components/Menu';
 import { SEO } from '@/components/SEO';
 import { IncomingCallHost } from '@/components/IncomingCallHost';
 import { PresenceHeartbeat } from '@/components/PresenceHeartbeat';
+import { EnablePushPrompt } from '@/components/EnablePushPrompt';
 import { Welcome } from '@/screens/Welcome/Welcome';
 
 // Lazy-loaded screens: split out of the main bundle so the first paint
@@ -165,8 +166,20 @@ const App: React.FC = () => {
       setCurrentScreen(hash);
     }
 
+    // Tapping a notification for a tab that is already open is a same-document
+    // navigation - the hash changes but nothing reloads. Without this listener
+    // the tab just sits on whatever screen it was already showing.
+    const handleHashChange = () => {
+      const next = window.location.hash.slice(1);
+      if (next) setCurrentScreen(next);
+    };
+
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, [currentScreen]);
 
   // Show configuration error if Supabase isn't set up
@@ -535,6 +548,7 @@ const App: React.FC = () => {
         {/* Ringing must reach the user on any screen, so this lives at the root. */}
         <IncomingCallHost onNavigate={handleNavigate} />
         <PresenceHeartbeat />
+        <EnablePushPrompt />
       </div>
     </ErrorBoundary>
   );

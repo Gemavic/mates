@@ -29,6 +29,11 @@ self.addEventListener('push', (event) => {
     badge: '/pwa-192x192.png',
     data: { url: payload.url || '/' },
     tag: payload.tag || undefined,
+    // A call has to stay on screen until it is answered or dismissed; a normal
+    // notification is free to auto-dismiss after a few seconds.
+    requireInteraction: !!payload.requireInteraction,
+    vibrate: payload.vibrate || undefined,
+    renotify: payload.tag ? true : undefined,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
