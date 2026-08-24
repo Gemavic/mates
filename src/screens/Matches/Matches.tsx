@@ -17,6 +17,11 @@ import { creditManager } from '@/lib/creditSystem';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
 
+// A conversation opens on its most recent messages, not its entire history.
+// Loading every message meant a long thread sent megabytes over mobile data
+// before the first bubble appeared.
+const MESSAGE_PAGE_SIZE = 50;
+
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
 const EMOJIS = [
@@ -92,6 +97,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   // The message this one is answering. mail_messages already had a
   // reply_to_message_id column - nothing had ever written to it.
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -133,12 +140,10 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           .select('user_id, photo_url')
           .in('user_id', otherUserIds)
           .eq('is_primary', true),
-        supabaseClient
-          .from('mail_messages')
-          .select('thread_id, message_text, created_at, is_read, sender_id')
-          .in('thread_id', threadIds)
-          .eq('subject', 'Chat Message')
-          .order('created_at', { ascending: false })
+        // One aggregated row per thread instead of every message in every
+        // thread. RLS still decides what counts - the function runs as the
+        // caller, so it can only see what they could already read.
+        supabaseClient.rpc('thread_summaries')
       ]);
 
       const profileMap = (profilesRes.data || []).reduce((acc, p) => {
@@ -151,13 +156,13 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         return acc;
       }, {} as Record<string, string>);
 
-      const messagesByThread = (messagesRes.data || []).reduce((acc, msg) => {
-        if (!acc[msg.thread_id]) {
-          acc[msg.thread_id] = { latest: msg, unreadCount: 0 };
-        }
-        if (!msg.is_read && msg.sender_id !== user.id) {
-          acc[msg.thread_id].unreadCount++;
-        }
+      const messagesByThread = (messagesRes.data || []).reduce((acc, row: any) => {
+        acc[row.thread_id] = {
+          latest: row.last_message
+            ? { message_text: row.last_message, created_at: row.last_created_at }
+            : null,
+          unreadCount: Number(row.unread_count) || 0,
+        };
         return acc;
       }, {} as Record<string, any>);
 
@@ -200,12 +205,18 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
     const loadMessages = async () => {
       try {
-        const { data, error } = await supabaseClient
+        // Newest first so the limit takes the most recent page, then flipped
+        // back to chronological order for display.
+        const { data: page, error } = await supabaseClient
           .from('mail_messages')
           .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id')
           .eq('thread_id', selectedThread)
           .eq('subject', 'Chat Message')
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: false })
+          .limit(MESSAGE_PAGE_SIZE);
+
+        const data = (page || []).slice().reverse();
+        setHasOlderMessages((page || []).length === MESSAGE_PAGE_SIZE);
 
         if (error) throw error;
         if (cancelled) return;
@@ -305,6 +316,48 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  /** Fetch the page of messages just before the oldest one on screen. */
+  const loadOlderMessages = useCallback(async () => {
+    if (!user || !selectedThread || messages.length === 0 || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const oldest = messages[0].timestamp.toISOString();
+      const thread = threads.find(t => t.id === selectedThread);
+
+      const { data, error } = await supabaseClient
+        .from('mail_messages')
+        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id')
+        .eq('thread_id', selectedThread)
+        .eq('subject', 'Chat Message')
+        .lt('created_at', oldest)
+        .order('created_at', { ascending: false })
+        .limit(MESSAGE_PAGE_SIZE);
+
+      if (error) throw error;
+
+      const older: ChatMessage[] = (data || []).slice().reverse().map(msg => {
+        const isMe = msg.sender_id === user.id;
+        return {
+          id: msg.id,
+          senderId: msg.sender_id,
+          senderName: isMe ? 'You' : (thread?.participantName || 'User'),
+          senderImage: isMe ? userProfileImage : (thread?.participantImage || DEFAULT_AVATAR),
+          message: msg.message_text,
+          timestamp: new Date(msg.created_at),
+          isDelivered: msg.is_delivered ?? true,
+          isRead: msg.is_read ?? false,
+          replyToId: msg.reply_to_message_id ?? null,
+        };
+      });
+
+      setHasOlderMessages((data || []).length === MESSAGE_PAGE_SIZE);
+      setMessages(prev => [...older, ...prev]);
+    } catch (err) {
+      console.error('Could not load earlier messages:', err);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [user, selectedThread, messages, threads, userProfileImage, loadingOlder]);
   const handleSendMessage = useCallback(async () => {
     const trimmed = messageText.trim();
     if (!trimmed || !user || !selectedThread) return;
@@ -423,6 +476,17 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               <div className="bg-pink-400/70 text-white px-5 py-1.5 rounded-full text-xs font-medium shadow">Today</div>
             </div>
 
+            {hasOlderMessages && (
+              <div className="flex justify-center pb-2">
+                <button
+                  onClick={loadOlderMessages}
+                  disabled={loadingOlder}
+                  className="text-xs font-medium text-pink-600 dark:text-pink-300 bg-white/80 dark:bg-night-800 border border-pink-200 dark:border-night-700 rounded-full px-4 py-1.5 disabled:opacity-60"
+                >
+                  {loadingOlder ? 'Loading…' : 'Load earlier messages'}
+                </button>
+              </div>
+            )}
             {messages.map((msg) => {
               const isMe = msg.senderId === user?.id;
               return (

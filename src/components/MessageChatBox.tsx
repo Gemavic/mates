@@ -55,6 +55,9 @@ interface ChatThread {
   matched?: boolean;
 }
 
+// A conversation opens on its most recent messages, not its whole history.
+const MESSAGE_PAGE_SIZE = 50;
+
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
 const QUICK_GIFTS: GiftItem[] = [
@@ -100,6 +103,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
   const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatThreadsRef = useRef<ChatThread[]>([]);
   const userProfileImageRef = useRef('');
@@ -178,27 +183,23 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           }
         }
 
-        const { data: allMessages } = await supabaseClient
-          .from('mail_messages')
-          .select('thread_id, message_text, created_at, is_read, sender_id')
-          .in('thread_id', threads.map((t: any) => t.id))
-          .order('created_at', { ascending: false });
+        // One aggregated row per thread rather than every message in every
+        // thread. RLS still decides what counts - the function runs as the
+        // caller, so it sees nothing they could not already read.
+        const { data: allMessages } = await supabaseClient.rpc('thread_summaries');
 
         const profileMap = (profiles || []).reduce((acc, p) => {
           acc[p.user_id] = p;
           return acc;
         }, {} as Record<string, any>);
 
-        const messagesByThread = (allMessages || []).reduce((acc, msg) => {
-          if (!acc[msg.thread_id]) {
-            acc[msg.thread_id] = {
-              latest: msg,
-              unreadCount: 0
-            };
-          }
-          if (!msg.is_read && msg.sender_id !== user.id) {
-            acc[msg.thread_id].unreadCount++;
-          }
+        const messagesByThread = (allMessages || []).reduce((acc: Record<string, any>, row: any) => {
+          acc[row.thread_id] = {
+            latest: row.last_message
+              ? { message_text: row.last_message, created_at: row.last_created_at }
+              : null,
+            unreadCount: Number(row.unread_count) || 0,
+          };
           return acc;
         }, {} as Record<string, any>);
 
@@ -274,11 +275,17 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
     const loadMessages = async () => {
       try {
-        const { data: messagesData, error } = await supabaseClient
+        // Most recent page only, newest-first for the limit then flipped back
+        // to chronological order. A long thread used to arrive in full.
+        const { data: messagePage, error } = await supabaseClient
           .from('mail_messages')
           .select('id, sender_id, message_text, created_at, is_read, is_delivered, thread_id')
           .eq('thread_id', activeThread)
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: false })
+          .limit(MESSAGE_PAGE_SIZE);
+
+        const messagesData = (messagePage || []).slice().reverse();
+        setHasOlderMessages((messagePage || []).length === MESSAGE_PAGE_SIZE);
 
         if (error) throw error;
         if (cancelled) return;
@@ -1080,6 +1087,50 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             </div>
           </div>
 
+          {hasOlderMessages && (
+            <div className="flex justify-center pb-2">
+              <button
+                onClick={async () => {
+                  if (!activeThread || messages.length === 0 || loadingOlder) return;
+                  setLoadingOlder(true);
+                  try {
+                    const oldest = messages[0].timestamp.toISOString();
+                    const thread = threads.find(t => t.id === activeThread);
+                    const { data } = await supabaseClient
+                      .from('mail_messages')
+                      .select('id, sender_id, message_text, created_at, is_read, is_delivered')
+                      .eq('thread_id', activeThread)
+                      .lt('created_at', oldest)
+                      .order('created_at', { ascending: false })
+                      .limit(MESSAGE_PAGE_SIZE);
+                    const older: ChatMessage[] = (data || []).slice().reverse().map((m: any) => ({
+                      id: m.id,
+                      senderId: m.sender_id,
+                      senderName: m.sender_id === user?.id ? 'You' : (thread?.participantName || 'User'),
+                      senderImage: m.sender_id === user?.id
+                        ? (profile?.photo_url || DEFAULT_AVATAR)
+                        : (thread?.participantImage || DEFAULT_AVATAR),
+                      message: m.message_text,
+                      timestamp: new Date(m.created_at),
+                      type: 'text',
+                      isDelivered: m.is_delivered ?? true,
+                      isRead: m.is_read ?? false,
+                    }));
+                    setHasOlderMessages((data || []).length === MESSAGE_PAGE_SIZE);
+                    setMessages(prev => [...older, ...prev]);
+                  } catch (err) {
+                    console.error('Could not load earlier messages:', err);
+                  } finally {
+                    setLoadingOlder(false);
+                  }
+                }}
+                disabled={loadingOlder}
+                className="text-xs font-medium text-pink-600 dark:text-pink-300 bg-white/80 dark:bg-night-800 border border-pink-200 dark:border-night-700 rounded-full px-4 py-1.5 disabled:opacity-60"
+              >
+                {loadingOlder ? 'Loading…' : 'Load earlier messages'}
+              </button>
+            </div>
+          )}
           {messages.map((msg) => {
             const isCurrentUser = msg.senderId === user?.id;
             return (
