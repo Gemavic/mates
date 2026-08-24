@@ -5,7 +5,6 @@ import {
   Heart,
   MessageCircle,
   Video,
-  Phone,
   MapPin,
   Briefcase,
   GraduationCap,
@@ -344,15 +343,6 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     onNavigate('video-chat');
   };
 
-  const handleAudioCall = () => {
-    if (!user) {
-      alert('Please sign in for audio calls');
-      onNavigate('signin');
-      return;
-    }
-    setPendingCall({ peerId: userId, peerName: profile?.full_name || 'Member' });
-    onNavigate('audio-chat');
-  };
 
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) =>
@@ -529,12 +519,8 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
               >
                 <Video className="w-5 h-5" />
               </Button>
-              <Button
-                onClick={handleAudioCall}
-                className="bg-white/20 text-white hover:bg-white/30"
-              >
-                <Phone className="w-5 h-5" />
-              </Button>
+              {/* Audio calling is hidden until incoming calls can be answered -
+                  see FEATURES.audioChat in config.ts */}
               {/* Report and block belong here, next to the actions, not buried
                   in a menu - this is the screen someone is on when they decide
                   a person is a problem. */}

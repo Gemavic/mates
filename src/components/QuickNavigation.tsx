@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Heart, Star, Mail, Phone, Video } from 'lucide-react';
+import { Users, Heart, Star, Mail, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickNavigationProps {
@@ -13,7 +13,7 @@ export const QuickNavigation: React.FC<QuickNavigationProps> = ({ onNavigate, cl
     { id: 'matches', icon: Heart, label: 'Matches', color: 'bg-gradient-to-br from-rose-500 to-rose-600', route: 'matches' },
     { id: 'likes', icon: Star, label: 'Likes', color: 'bg-gradient-to-br from-amber-500 to-amber-600', route: 'likes' },
     { id: 'video', icon: Video, label: 'Video', color: 'bg-gradient-to-br from-purple-500 to-purple-600', route: 'video-chat' },
-    { id: 'audio', icon: Phone, label: 'Audio', color: 'bg-gradient-to-br from-green-500 to-green-600', route: 'audio-chat' },
+    // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
     { id: 'messages', icon: Mail, label: 'Messages', color: 'bg-gradient-to-br from-blue-600 to-blue-700', route: 'mail' },
   ];
 

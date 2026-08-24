@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { whatsappSupportLink } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
@@ -86,7 +86,7 @@ export const Menu: React.FC<MenuProps> = ({
         ? [{ id: 'moderation', icon: Shield, label: 'Moderation', description: 'Review flagged content and reports' }]
         : []),
       { id: 'video-chat', icon: Video, label: 'Video Chat', description: 'Face-to-face calls' },
-      { id: 'audio-chat', icon: Phone, label: 'Voice Call', description: 'Audio conversations' },
+      // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
       { id: 'match-suitor', icon: Crown, label: 'VIP Matchmaking', description: 'Personalized matching' },
       { id: 'care-blog', icon: BookOpen, label: 'Dating Advice', description: 'Tips & relationship guides' },
       { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Personality & compatibility' },

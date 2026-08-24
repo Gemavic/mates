@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Heart, Star, Mail, Phone, Video, BookOpen, FileText, HelpCircle, CreditCard, Gift, Briefcase, MessageCircle, Sparkles, UserPlus, Shield, Settings, TrendingUp, Bell } from 'lucide-react';
+import { Users, Heart, Star, Mail, Video, BookOpen, FileText, HelpCircle, CreditCard, Gift, Briefcase, MessageCircle, Sparkles, UserPlus, Shield, Settings, TrendingUp, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CategoryNavigationProps {
@@ -14,7 +14,7 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({ onNaviga
     { label: 'Likes', route: 'likes', icon: Star, color: 'bg-amber-500', hoverColor: 'hover:bg-amber-600' },
     { label: 'VIP Match', route: 'match-suitor', icon: Sparkles, color: 'bg-purple-500', hoverColor: 'hover:bg-purple-600' },
     { label: 'Mail', route: 'mail', icon: Mail, color: 'bg-indigo-500', hoverColor: 'hover:bg-indigo-600' },
-    { label: 'Audio', route: 'audio-chat', icon: Phone, color: 'bg-green-500', hoverColor: 'hover:bg-green-600' },
+    // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
     { label: 'Video', route: 'video-chat', icon: Video, color: 'bg-teal-500', hoverColor: 'hover:bg-teal-600' },
     { label: 'Chat', route: 'matches', icon: MessageCircle, color: 'bg-cyan-500', hoverColor: 'hover:bg-cyan-600' },
     { label: 'Credits', route: 'credits', icon: CreditCard, color: 'bg-orange-500', hoverColor: 'hover:bg-orange-600' },

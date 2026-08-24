@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Heart, Star, Video, Phone, Mail } from 'lucide-react';
+import { Users, Heart, Star, Video, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickActionCTAProps {
@@ -37,13 +37,7 @@ export const QuickActionCTA: React.FC<QuickActionCTAProps> = ({ onNavigate, clas
       color: 'bg-purple-500/90',
       hoverColor: 'hover:bg-purple-600',
     },
-    {
-      id: 'audio-chat',
-      icon: Phone,
-      label: 'Audio',
-      color: 'bg-green-500/90',
-      hoverColor: 'hover:bg-green-600',
-    },
+    // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
     {
       id: 'mail',
       icon: Mail,

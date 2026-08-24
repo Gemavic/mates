@@ -6,7 +6,6 @@ import {
   Sparkles,
   MessageCircle,
   Mail,
-  Phone,
   Video,
   BookOpen,
   Newspaper,
@@ -74,7 +73,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
       items: [
         { id: 'chat', label: 'Chat', icon: MessageCircle, route: 'matches', description: 'Live chat' },
         { id: 'message', label: 'Messages', icon: Mail, route: 'mail', description: 'Private messages' },
-        { id: 'audio', label: 'Audio', icon: Phone, route: 'audio-chat', description: 'Voice calls' },
+        // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
         { id: 'video', label: 'Video', icon: Video, route: 'video-chat', description: 'Video calls' },
       ],
     },

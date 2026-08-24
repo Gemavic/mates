@@ -292,30 +292,29 @@ export class CreditManager {
   }
 
   /**
-   * Grant small complimentary reward credits (quizzes, profile completion).
-   * Server caps this at 25 per claim / 50 per rolling 24h.
+   * No longer grants anything from the browser.
    *
-   * NOTE: Purchased credits can ONLY be added by your payment webhook via
-   * the service-role `credit_purchase()` function — never from the browser.
+   * This called claim_reward_credits, which credited whoever called it, for an
+   * amount the caller chose. The caps (25 per call, 50 per rolling 24h) limited
+   * the rate but never checked that a reward had been earned, so any member
+   * could take 50 free credits a day indefinitely. EXECUTE has been revoked
+   * from PUBLIC, so the call would now fail with a permission error anyway.
+   *
+   * Credits are granted server-side only: purchases through credit_purchase()
+   * with the service role, rewards by a server that decides eligibility.
    */
   async addCredits(
-    userId: string,
+    _userId: string,
     amount: number,
     description = 'Reward',
     _updatePurchased = false
   ): Promise<boolean> {
-    try {
-      const { data, error } = await supabaseClient.rpc('claim_reward_credits', {
-        p_amount: amount,
-        p_reason: description,
-      });
-      if (error || !data?.success) return false;
-      this.updateCacheTotal(userId, data.total_credits);
-      return true;
-    } catch (err) {
-      console.error('Reward grant failed:', err);
-      return false;
-    }
+    console.error(
+      `Refusing to grant ${amount} credits ("${description}") from the browser. ` +
+        'Credits are granted server-side only - purchases via credit_purchase() ' +
+        'with the service role.'
+    );
+    return false;
   }
 
   async hasCredits(userId: string, amount: number): Promise<boolean> {

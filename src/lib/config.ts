@@ -50,7 +50,17 @@ export const FEATURES = {
   verification: true,
   staffPanel: true,
   videoChat: true,
-  audioChat: true
+  // Off, and the entry points are removed to match.
+  //
+  // The Twilio device only registers while the Audio screen is open, and its
+  // 'incoming' handler stores the call without ever ringing the UI -
+  // acceptIncomingCall() is never called by anything. So a call to someone
+  // who is not already sitting on that screen fails on contact: the Twilio
+  // log shows these ending as No Answer after 0 seconds.
+  //
+  // Re-enabling needs the device registered app-wide and an accept/reject
+  // surface, then a real two-device test. Video calling is unaffected.
+  audioChat: false
 };
 
 // Validation

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
-import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail, Heart, Flag } from 'lucide-react';
+import { MessageCircle, X, Send, Smile, Video, Gift, Mail, Heart, Flag } from 'lucide-react';
 import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { contentModeration } from '@/lib/contentModeration';
 import { moderateImage } from '@/lib/imageModeration';
@@ -1005,13 +1005,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <Video className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="text-xs sm:text-sm">Video</span>
           </button>
-          <button
-            onClick={() => onNavigate('audio-chat')}
-            className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors touch-manipulation active:scale-95"
-          >
-            <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm">Audio</span>
-          </button>
+          {/* Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts */}
         </div>
         <p className="text-xs text-blue-600 mt-1">Chat: first 2 free, then 10 credits | Mail: 10 credits | Super Like: 5 credits</p>
         <p className="text-xs text-green-600">FREE: Likes, Blinks, Messages</p>
