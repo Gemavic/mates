@@ -1,5 +1,6 @@
 import { supabaseClient } from './supabase';
 import { initialsAvatar } from './callMatches';
+import { sendPushToUser } from './pushNotifications';
 
 /**
  * Video call signalling.
@@ -62,7 +63,43 @@ export async function ringUser(
     .single();
 
   if (error) throw new Error(error.message || 'Could not start the call.');
+
+  // Realtime only rings a page that is actually open. If the callee has the
+  // app closed, or their phone is locked, nothing above reaches them - which
+  // is exactly the "it never rang on my side" report. Push is the only
+  // channel that survives a closed app.
+  //
+  // Fire-and-forget on purpose: the caller should not wait on a notification
+  // round-trip before their own call screen appears, and a failed push must
+  // never abort a call that is otherwise working.
+  void notifyCalleeByPush(callerId, calleeId, kind);
+
   return data as CallInvite;
+}
+
+/** Best-effort lock-screen alert for a call that is ringing right now. */
+async function notifyCalleeByPush(
+  callerId: string,
+  calleeId: string,
+  kind: CallKind
+): Promise<void> {
+  try {
+    const { name } = await fetchCallerPreview(callerId);
+    await sendPushToUser(calleeId, {
+      title: `${name} is calling`,
+      body: kind === 'audio' ? 'Incoming voice call' : 'Incoming video call',
+      // The app routes on the URL hash, so this opens straight into the call
+      // screen rather than dumping them on the home screen.
+      url: kind === 'audio' ? '/#audio-chat' : '/#video-chat',
+      // One notification per caller, replaced rather than stacked if they
+      // try again, and it stays put until answered or dismissed.
+      tag: `call-${callerId}`,
+      requireInteraction: true,
+      vibrate: [600, 400, 600],
+    });
+  } catch (err) {
+    console.error('Could not send call push notification:', err);
+  }
 }
 
 /**
