@@ -7,7 +7,7 @@ export const APP_CONFIG = {
   legalEmail: 'legal@dates.care',
   privacyEmail: 'privacy@dates.care',
   disputeEmail: 'disputes@dates.care',
-  phone: '+1-289-270-9919'
+  phone: '+1-209-348-6842'
 };
 
 // Supabase Configuration

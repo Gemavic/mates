@@ -103,7 +103,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       icon: Phone,
       title: 'Phone Support',
       description: 'Speak with our team',
-      contact: '+1-289-270-9919',
+      contact: '+1-209-348-6842',
       responseTime: 'Mon-Fri 9AM-6PM EST'
     },
     {
@@ -253,7 +253,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             'Check internet connection',
             'Allow camera/microphone permissions',
             'Refresh browser if issues persist',
-            'Contact support: +1-289-270-9919'
+            'Contact support: +1-209-348-6842'
           ]
         }
       ]
@@ -516,11 +516,11 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
           <h3 className="text-xl font-bold mb-2">Need Help?</h3>
           <p className="text-white/90 mb-4">Call our support team:</p>
           <a 
-            href="tel:+1-289-270-9919" 
+            href="tel:+1-209-348-6842" 
             className="inline-flex items-center space-x-3 bg-white/20 hover:bg-white/30 rounded-xl px-6 py-4 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
           >
             <Phone className="w-6 h-6 text-white" />
-            <span className="text-xl font-bold">1-289-270-9919</span>
+            <span className="text-xl font-bold">1-209-348-6842</span>
           </a>
           <p className="text-white/90 text-sm mt-4">Mon-Fri 9AM-9PM EST</p>
         </div>
@@ -528,7 +528,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Button
-            onClick={() => window.open('tel:+12892709919')}
+            onClick={() => window.open('tel:+12093486842')}
             className="bg-green-500 text-white font-semibold hover:bg-green-600 py-3"
             type="button"
           >
@@ -589,7 +589,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
           </p>
           <div className="flex space-x-3">
             <Button
-              onClick={() => window.open('tel:+12892709919')}
+              onClick={() => window.open('tel:+12093486842')}
               className="flex-1 bg-red-500 text-white font-semibold hover:bg-red-600"
               type="button"
             >

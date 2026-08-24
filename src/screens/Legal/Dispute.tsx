@@ -151,7 +151,7 @@ export const Dispute: React.FC<DisputeProps> = ({ onNavigate = () => {} }) => {
               <Phone className="w-4 h-4" />
               <div>
                 <p className="font-medium">Emergency Line:</p>
-                <p>+1-289-270-9919</p>
+                <p>+1-209-348-6842</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">

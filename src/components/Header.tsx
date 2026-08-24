@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Dates
               </h1>
               <a
-                href="tel:+12892709919"
+                href="tel:+12093486842"
                 className="hover:text-pink-600 underline transition-colors"
               >
                 📞 Support
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
         {/* Quick Support Access */}
         <a
-          href="tel:+1-289-270-9919"
+          href="tel:+1-209-348-6842"
           className="hidden md:flex items-center space-x-1 bg-green-500 hover:bg-green-600 rounded-lg px-3 py-1.5 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
         >
           <span className="text-white text-xs">📞</span>

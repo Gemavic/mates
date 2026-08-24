@@ -140,11 +140,11 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="text-center pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-500 mb-2">Need help? Contact support</p>
               <a
-                href="tel:+1-289-270-9919"
+                href="tel:+1-209-348-6842"
                 className="inline-flex items-center gap-1.5 text-sm font-bold bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full hover:from-pink-600 hover:to-purple-700 transition-all"
               >
                 <Phone className="w-3.5 h-3.5" />
-                1-289-270-9919
+                1-209-348-6842
               </a>
             </div>
 
