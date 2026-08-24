@@ -3,13 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CreditCard, Bitcoin, Smartphone, Shield, Lock, CheckCircle, Loader2, X, Wallet, Copy, QrCode, Clock } from 'lucide-react';
 import { DATES_CRYPTO_WALLETS, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
-import { startCryptoCheckout, resolveCreditPackageId } from '@/lib/cryptoCheckout';
+import { startCryptoCheckout, type CheckoutKind } from '@/lib/cryptoCheckout';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PaymentGatewayProps {
   amount: number;
   packageName: string;
   credits: number;
+  /**
+   * What is actually being bought, taken straight from the product.
+   *
+   * This used to be guessed backwards from the credit count, which meant
+   * subscriptions - which carry no credit count at all - could never be paid
+   * for with crypto, and any change to a package's size silently broke its
+   * checkout.
+   */
+  checkoutKind: CheckoutKind;
+  checkoutId: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -18,6 +28,8 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   amount,
   packageName,
   credits,
+  checkoutKind,
+  checkoutId,
   onSuccess: _onSuccess,
   onCancel,
 }) => {
@@ -47,8 +59,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
       return;
     }
 
-    const packageId = resolveCreditPackageId(credits);
-    if (!packageId) {
+    if (!checkoutId) {
       alert('This package is temporarily unavailable. Please choose another.');
       return;
     }
@@ -56,7 +67,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
     setIsProcessing(true);
     // Redirects to a hosted invoice with a unique payment address.
     // Credits are added automatically after blockchain confirmation.
-    const result = await startCryptoCheckout('credits', packageId);
+    const result = await startCryptoCheckout(checkoutKind, checkoutId);
     if (!result.ok) {
       setIsProcessing(false);
       alert(result.error || 'Could not start checkout.');

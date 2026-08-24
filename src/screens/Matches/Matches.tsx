@@ -379,7 +379,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
     return (
       <PageTransition direction="slide-left">
-        <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100 flex flex-col max-h-screen h-screen">
+        <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100 dark:from-slate-950 dark:to-slate-900 flex flex-col max-h-screen h-screen">
           <div className="bg-gradient-to-r from-pink-100 dark:from-slate-900 to-pink-50 dark:to-slate-900 border-b border-pink-200 dark:border-slate-700 px-3 py-3 flex items-center gap-3 safe-area-inset-top flex-shrink-0">
             <button
               onClick={() => { setSelectedThread(null); setMessages([]); setShowEmojiPicker(false); loadThreads(); }}
@@ -420,7 +420,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 <div key={msg.id} className={cn("flex items-end gap-2", isMe ? 'justify-end' : 'justify-start')}>
                   {!isMe && <img src={msg.senderImage || DEFAULT_AVATAR} alt={msg.senderName} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />}
                   <div className="max-w-[75%]">
-                    <div className={cn("rounded-2xl px-4 py-3 shadow-sm", isMe ? 'bg-gradient-to-br from-pink-400 to-pink-50 dark:to-slate-9000 text-white' : 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 border border-pink-100 dark:border-slate-700')}>
+                    <div className={cn("rounded-2xl px-4 py-3 shadow-sm", isMe ? 'bg-gradient-to-br from-pink-400 to-pink-500 text-white' : 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 border border-pink-100 dark:border-slate-700')}>
                       <p className="text-sm leading-relaxed">{msg.message}</p>
                     </div>
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
@@ -461,7 +461,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-8 gap-1.5">
                 {EMOJIS.map((emoji, i) => (
                   <button key={i} onClick={() => { setMessageText(prev => prev + emoji); setShowEmojiPicker(false); }}
-                    className="text-xl hover:bg-pink-100 dark:bg-slate-800 rounded p-1.5 transition-colors text-center">{emoji}</button>
+                    className="text-xl hover:bg-pink-100 dark:hover:bg-slate-800 rounded p-1.5 transition-colors text-center">{emoji}</button>
                 ))}
               </div>
             </div>
@@ -482,11 +482,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
           <div className="bg-pink-50 dark:bg-slate-900 border-t border-pink-200 dark:border-slate-700 px-3 pt-2 flex flex-col gap-1.5 safe-area-inset-bottom flex-shrink-0">
             <p className="text-xs text-gray-400 text-center">
-              Live chat: 2 credits/min while this conversation is open · included free with any subscription
+              Live chat: first 2 messages in each conversation are free, then 10 credits per message · reading is always free · included free with any subscription
             </p>
             <div className="flex items-center gap-2 pb-3">
             <button onClick={() => { setShowQuickMessages(!showQuickMessages); setShowEmojiPicker(false); }}
-              className="bg-white dark:bg-slate-900 text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 dark:bg-slate-900 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
+              className="bg-white dark:bg-slate-900 text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 dark:hover:bg-slate-800 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
               Hi
             </button>
             <div className="flex-1 relative flex items-center">
@@ -502,7 +502,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               </button>
             </div>
             <Button onClick={handleSendMessage} disabled={!messageText.trim()}
-              className="bg-pink-50 dark:bg-slate-9000 text-white p-3 rounded-full hover:bg-pink-600 transition-all active:scale-95 flex-shrink-0 disabled:opacity-40">
+              className="bg-pink-500 text-white p-3 rounded-full hover:bg-pink-600 transition-all active:scale-95 flex-shrink-0 disabled:opacity-40">
               <Send className="w-5 h-5" />
             </Button>
             </div>
@@ -514,9 +514,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
   return (
     <PageTransition direction="slide-left">
-      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-x-hidden">
         <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative">
-          <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-sm border-b border-white/20 dark:border-slate-700 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
             <div className="flex items-center justify-between">
               <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">Chat</h1>
               <div className="flex items-center space-x-2">
@@ -546,7 +546,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 description="Start discovering incredible people who share your values and interests."
                 actionText="Start Discovering" onAction={() => onNavigate('discovery')} />
             ) : (
-              <div className="bg-white/90 backdrop-blur-sm py-2 px-3 sm:px-4 border-t border-white/20">
+              <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm py-2 px-3 sm:px-4 border-t border-white/20 dark:border-slate-700">
                 {/* Active / Requests — separates ongoing conversations from
                     new mutual matches nobody has messaged yet, so a full
                     inbox doesn't bury the matches still waiting for a
@@ -584,7 +584,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                     .filter((t) => (threadFilter === 'active' ? t.hasMessages : !t.hasMessages))
                     .map((thread) => (
                   <button key={thread.id} onClick={() => setSelectedThread(thread.id)}
-                    className="w-full py-3 px-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 dark:bg-slate-900 transition-all rounded-lg text-left active:scale-[0.98]">
+                    className="w-full py-3 px-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all rounded-lg text-left active:scale-[0.98]">
                     <div className="flex items-start gap-3">
                       <div className="relative flex-shrink-0"
                         onClick={(e) => { e.stopPropagation(); onNavigate('view-profile', { userId: thread.participantId }); }}>
@@ -621,7 +621,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             )}
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 w-full max-w-xs sm:max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-white/20 shadow-lg safe-area-inset-bottom">
+          <div className="fixed bottom-0 left-0 right-0 w-full max-w-xs sm:max-w-md mx-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-t border-white/20 dark:border-slate-700 shadow-lg safe-area-inset-bottom">
             <div className="flex justify-around py-1.5 px-1">
               {[
                 { id: 'search', icon: Users, label: 'Search', screen: 'discovery' },
@@ -635,7 +635,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 return (
                   <button key={tab.id} onClick={() => { if (!tab.active) onNavigate(tab.screen); }}
                     className={cn("flex flex-col items-center py-1 px-1.5 rounded-lg transition-all active:scale-95 min-w-0",
-                      tab.active ? 'text-pink-600' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:text-slate-300')}>
+                      tab.active ? 'text-pink-600' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200')}>
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] mt-0.5 font-medium hidden sm:block">{tab.label}</span>
                   </button>

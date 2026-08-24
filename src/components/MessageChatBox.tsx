@@ -940,7 +940,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <button
               key={thread.id}
               onClick={() => setActiveThread(thread.id)}
-              className="w-full p-4 border-b border-pink-100 dark:border-slate-700 hover:bg-pink-100 dark:bg-slate-800 transition-colors text-left cursor-pointer touch-manipulation active:scale-95"
+              className="w-full p-4 border-b border-pink-100 dark:border-slate-700 hover:bg-pink-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer touch-manipulation active:scale-95"
               type="button"
             >
               <div className="flex items-center space-x-3">
@@ -1030,7 +1030,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <div className="flex items-center space-x-3 flex-1">
               <button
                 onClick={() => setActiveThread(null)}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
               >
                 <svg className="w-6 h-6 text-gray-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1053,14 +1053,14 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowGiftPicker(!showGiftPicker)}
-                className="relative p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
+                className="relative p-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200 dark:border-slate-700"
               >
                 <Gift className="w-6 h-6 text-orange-500 flex-shrink-0" />
                 <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
               </button>
               <button
                 onClick={() => onNavigate('mail')}
-                className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
+                className="p-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200 dark:border-slate-700"
               >
                 <Mail className="w-6 h-6 text-orange-500 flex-shrink-0" />
               </button>
@@ -1071,7 +1071,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 onClick={() => setShowReportModal(true)}
                 title={`Report ${thread.participantName}`}
                 aria-label={`Report ${thread.participantName}`}
-                className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200"
+                className="p-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200 dark:border-slate-700"
               >
                 <Flag className="w-6 h-6 text-gray-600 dark:text-slate-400 flex-shrink-0" />
               </button>
@@ -1173,7 +1173,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                   <button
                     key={index}
                     onClick={() => addEmoji(emoji)}
-                    className="text-xl hover:bg-pink-100 dark:bg-slate-800 rounded p-1 transition-colors"
+                    className="text-xl hover:bg-pink-100 dark:hover:bg-slate-800 rounded p-1 transition-colors"
                   >
                     {emoji}
                   </button>
@@ -1198,7 +1198,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
 
             <button
               onClick={() => setMessage('Hi')}
-              className="bg-white dark:bg-slate-900 text-pink-600 px-4 py-2 rounded-full border-2 border-pink-600 hover:bg-pink-50 dark:bg-slate-900 transition-colors flex-shrink-0 touch-manipulation active:scale-95 font-bold text-lg"
+              className="bg-white dark:bg-slate-900 text-pink-600 px-4 py-2 rounded-full border-2 border-pink-600 hover:bg-pink-50 dark:hover:bg-slate-800 transition-colors flex-shrink-0 touch-manipulation active:scale-95 font-bold text-lg"
               type="button"
             >
               Hi
@@ -1225,7 +1225,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
               />
               <button
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-pink-400 hover:text-pink-600 transition-colors rounded-full hover:bg-pink-100 dark:bg-slate-800 touch-manipulation"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-pink-400 hover:text-pink-600 transition-colors rounded-full hover:bg-pink-100 dark:hover:bg-slate-800 touch-manipulation"
               >
                 <Smile className="w-6 h-6 flex-shrink-0" />
               </button>
@@ -1234,7 +1234,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <Button
               onClick={handleSendMessage}
               disabled={!message.trim()}
-              className="bg-pink-50 dark:bg-slate-9000 text-white p-4 rounded-full hover:bg-pink-600 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation flex-shrink-0 cursor-pointer"
+              className="bg-pink-500 text-white p-4 rounded-full hover:bg-pink-600 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation flex-shrink-0 cursor-pointer"
               type="button"
             >
               <Send className="w-6 h-6 flex-shrink-0" />

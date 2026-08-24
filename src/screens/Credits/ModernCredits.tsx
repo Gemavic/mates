@@ -561,8 +561,15 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
         {showPaymentGateway && selectedPackage && (
           <PaymentGateway
             amount={selectedPackage.price_usd || parseFloat(selectedPackage.monthly_price_usd || selectedPackage.annual_price_usd)}
-            packageName={selectedPackage.name || selectedPackage.display_name}
-            credits={selectedPackage.credits}
+            packageName={
+              selectedPackage.package_name || selectedPackage.display_name || 'Purchase'
+            }
+            credits={selectedPackage.credits || 0}
+            // Subscription tiers are identified by tier_name, credit packages
+            // by id. This screen sells both through the same modal, so the
+            // kind has to come from the product rather than be assumed.
+            checkoutKind={selectedPackage.tier_name ? 'sub' : 'credits'}
+            checkoutId={selectedPackage.tier_name || selectedPackage.id}
             onSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancel}
           />
