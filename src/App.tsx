@@ -37,6 +37,7 @@ const CancelPage = React.lazy(() => import('@/screens/Cancel/CancelPage').then(m
 const CheckoutPage = React.lazy(() => import('@/screens/Checkout/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const StaffPanel = React.lazy(() => import('@/screens/StaffPanel/StaffPanel').then(m => ({ default: m.StaffPanel })));
 const MenuShowcase = React.lazy(() => import('@/screens/MenuShowcase/MenuShowcase').then(m => ({ default: m.MenuShowcase })));
+const ModerationQueue = React.lazy(() => import('@/screens/Moderation/ModerationQueue').then(m => ({ default: m.ModerationQueue })));
 const VideoChat = React.lazy(() => import('@/screens/VideoChat/VideoChat').then(m => ({ default: m.VideoChat })));
 const AudioChat = React.lazy(() => import('@/screens/AudioChat/AudioChat').then(m => ({ default: m.AudioChat })));
 const RelationshipServices = React.lazy(() => import('@/screens/RelationshipServices/RelationshipServices').then(m => ({ default: m.RelationshipServices })));
@@ -430,6 +431,9 @@ const App: React.FC = () => {
       case 'menu-showcase':
         return <MenuShowcase onNavigate={handleNavigate} />;
       
+      case 'moderation':
+        return <ModerationQueue onNavigate={handleNavigate} />;
+
       case 'video-chat':
         return <VideoChat onNavigate={handleNavigate} />;
       
