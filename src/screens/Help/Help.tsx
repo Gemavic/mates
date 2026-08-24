@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { HelpCircle, MessageCircle, Phone, Mail, Shield, CreditCard, Users, Video, Search, Book } from 'lucide-react';
+import { APP_CONFIG, whatsappSupportLink } from '@/lib/config';
 
 interface HelpProps {
   onNavigate: (screen: string) => void;
@@ -100,10 +101,17 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       responseTime: '24-48 hours'
     },
     {
+      icon: MessageCircle,
+      title: 'WhatsApp Support',
+      description: 'Fastest way to reach us',
+      contact: APP_CONFIG.whatsappDisplay,
+      responseTime: 'Usually within an hour'
+    },
+    {
       icon: Phone,
       title: 'Phone Support',
       description: 'Speak with our team',
-      contact: '+1-209-348-6842',
+      contact: APP_CONFIG.phone,
       responseTime: 'Mon-Fri 9AM-6PM EST'
     },
     {
@@ -514,26 +522,30 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         {/* Quick Customer Support Section */}
         <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 mb-8 text-center text-white shadow-xl">
           <h3 className="text-xl font-bold mb-2">Need Help?</h3>
-          <p className="text-white/90 mb-4">Call our support team:</p>
-          <a 
-            href="tel:+1-209-348-6842" 
+          <p className="text-white/90 mb-4">Message our support team on WhatsApp:</p>
+          <a
+            href={whatsappSupportLink()}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center space-x-3 bg-white/20 hover:bg-white/30 rounded-xl px-6 py-4 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
           >
-            <Phone className="w-6 h-6 text-white" />
-            <span className="text-xl font-bold">1-209-348-6842</span>
+            <MessageCircle className="w-6 h-6 text-white" />
+            <span className="text-xl font-bold">Chat on WhatsApp</span>
           </a>
-          <p className="text-white/90 text-sm mt-4">Mon-Fri 9AM-9PM EST</p>
+          <p className="text-white/90 text-sm mt-4">
+            Mon-Fri 9AM-9PM EST · or call {APP_CONFIG.phone}
+          </p>
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Button
-            onClick={() => window.open('tel:+12093486842')}
+            onClick={() => window.open(whatsappSupportLink(), '_blank', 'noopener')}
             className="bg-green-500 text-white font-semibold hover:bg-green-600 py-3"
             type="button"
           >
-            <Phone className="w-4 h-4 mr-2" />
-            Call Us
+            <MessageCircle className="w-4 h-4 mr-2" />
+            WhatsApp
           </Button>
           <Button
             onClick={() => window.open('mailto:support@dates.care')}
