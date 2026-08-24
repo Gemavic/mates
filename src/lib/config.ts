@@ -14,7 +14,6 @@ export const APP_CONFIG = {
   //
   // Digits only, no + or dashes - that is the format wa.me requires.
   whatsapp: '14377888011',
-  whatsappDisplay: '+1 (437) 788-8011',
 };
 
 /**

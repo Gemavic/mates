@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronUp, Search, User, Mail, MessageCircle, MessageSquare, CreditCard, Facebook, Twitter, Instagram, Linkedin, Heart, X } from 'lucide-react';
 import { whatsappSupportLink } from '@/lib/config';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 
 interface FooterProps {
@@ -146,7 +147,7 @@ export const Footer: React.FC<FooterProps> = ({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm font-bold bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full hover:from-pink-600 hover:to-purple-700 transition-all"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
+                <WhatsAppIcon className="w-4 h-4" />
                 Chat on WhatsApp
               </a>
             </div>

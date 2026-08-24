@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { HelpCircle, MessageCircle, Phone, Mail, Shield, CreditCard, Users, Video, Search, Book } from 'lucide-react';
 import { APP_CONFIG, whatsappSupportLink } from '@/lib/config';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 
 interface HelpProps {
   onNavigate: (screen: string) => void;
@@ -101,10 +102,12 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       responseTime: '24-48 hours'
     },
     {
-      icon: MessageCircle,
+      icon: WhatsAppIcon,
       title: 'WhatsApp Support',
       description: 'Fastest way to reach us',
-      contact: APP_CONFIG.whatsappDisplay,
+      // Deliberately not the number: the logo and a tap are the whole point,
+      // and a printed number invites people to dial it instead.
+      contact: 'Chat on WhatsApp',
       responseTime: 'Usually within an hour'
     },
     {
@@ -529,7 +532,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             rel="noopener noreferrer"
             className="inline-flex items-center space-x-3 bg-white/20 hover:bg-white/30 rounded-xl px-6 py-4 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
           >
-            <MessageCircle className="w-6 h-6 text-white" />
+            <WhatsAppIcon className="w-6 h-6 text-white" />
             <span className="text-xl font-bold">Chat on WhatsApp</span>
           </a>
           <p className="text-white/90 text-sm mt-4">
@@ -544,7 +547,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             className="bg-green-500 text-white font-semibold hover:bg-green-600 py-3"
             type="button"
           >
-            <MessageCircle className="w-4 h-4 mr-2" />
+            <WhatsAppIcon className="w-4 h-4 mr-2" />
             WhatsApp
           </Button>
           <Button

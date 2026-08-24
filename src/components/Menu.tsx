@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { whatsappSupportLink } from '@/lib/config';
+import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
@@ -277,7 +278,7 @@ export const Menu: React.FC<MenuProps> = ({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm font-bold bg-white/15 text-white px-4 py-2 rounded-full hover:bg-white/25 transition-colors"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
+                <WhatsAppIcon className="w-4 h-4" />
                 Need help? Chat on WhatsApp
               </a>
             </div>
