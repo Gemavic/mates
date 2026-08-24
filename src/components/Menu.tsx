@@ -3,6 +3,7 @@ import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, 
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
+import { creditManager } from '@/lib/creditSystem';
 
 interface SelectedChatUser {
   id: string;
@@ -77,6 +78,11 @@ export const Menu: React.FC<MenuProps> = ({
   const moreSection = {
     title: 'More',
     items: [
+      // Admin only. The queue itself is protected by RLS (can_moderate), so
+      // hiding the link is convenience, not the security boundary.
+      ...(user && creditManager.isAdmin(user.id)
+        ? [{ id: 'moderation', icon: Shield, label: 'Moderation', description: 'Review flagged content and reports' }]
+        : []),
       { id: 'video-chat', icon: Video, label: 'Video Chat', description: 'Face-to-face calls' },
       { id: 'audio-chat', icon: Phone, label: 'Voice Call', description: 'Audio conversations' },
       { id: 'match-suitor', icon: Crown, label: 'VIP Matchmaking', description: 'Personalized matching' },

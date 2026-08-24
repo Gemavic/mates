@@ -178,6 +178,11 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
     allowAnonymous: true,
   },
 
+  moderation: {
+    requireAuth: true,
+    allowAnonymous: false,
+  },
+
   'staff-panel': {
     requireAuth: false,
     allowAnonymous: true,

@@ -98,7 +98,10 @@ async function queueForReview(
     await admin().from('moderation_queue').insert({
       user_id: userId,
       content_type: contentType,
-      reason: `${reason} (${imageUrl})`,
+      // The table has a column for this; burying the URL inside `reason` meant
+      // the review screen could not render the image it is meant to judge.
+      content_url: imageUrl,
+      reason,
       severity,
       status: 'pending',
     });

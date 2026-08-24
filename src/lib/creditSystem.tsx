@@ -38,6 +38,7 @@ interface CachedAccount {
   totalCredits: number;
   kobos: number; // legacy alias for totalCredits, kept for UI compatibility
   isStaff: boolean;
+  isAdmin: boolean;
   tier: 'silver' | 'gold' | 'platinum' | 'elite' | null;
   tierExpires: string | null;
   fetchedAt: number;
@@ -73,6 +74,7 @@ export class CreditManager {
           totalCredits: row.total_credits ?? 0,
           kobos: row.total_credits ?? 0,
           isStaff: !!row.is_staff,
+          isAdmin: !!row.is_admin,
           tier: row.tier ?? null,
           tierExpires: row.tier_expires ?? null,
           fetchedAt: Date.now(),
@@ -168,6 +170,15 @@ export class CreditManager {
   /** Staff status comes from the server account row, not the user id string. */
   isStaffMember(userId: string): boolean {
     return this._cache.get(userId)?.isStaff ?? false;
+  }
+
+  /**
+   * Admin flag from app_credit_accounts. Used only to decide whether to SHOW
+   * moderation UI - the queue itself is protected by RLS (can_moderate), so a
+   * user who flips this in devtools still sees nothing.
+   */
+  isAdmin(userId: string): boolean {
+    return this._cache.get(userId)?.isAdmin ?? false;
   }
 
   /**
