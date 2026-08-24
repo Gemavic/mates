@@ -35,6 +35,17 @@ module.exports = {
         'safe-right': 'env(safe-area-inset-right)',
       },
       colors: {
+        // Dark-mode surfaces for chat. Slate reads as near-black next to the
+        // pink brand, which made messages hard to pick out; these are a softer
+        // blue, deliberately spaced far enough apart that a bubble is visible
+        // against the page behind it.
+        night: {
+          950: '#1a2540', // deepest - page gradient ends
+          900: '#22304f', // page background
+          800: '#2b3b60', // bars, panels, incoming bubbles
+          700: '#374a76', // hover, borders
+          600: '#485d8f', // subtle dividers
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

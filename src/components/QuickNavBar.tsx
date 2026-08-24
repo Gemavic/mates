@@ -23,7 +23,7 @@ export const QuickNavBar: React.FC<QuickNavBarProps> = ({ onNavigate, activeScre
 
   return (
     <div className={cn(
-      'w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 shadow-sm sticky top-0 z-20',
+      'w-full bg-white dark:bg-night-900 border-b border-gray-200 dark:border-night-700 shadow-sm sticky top-0 z-20',
       className
     )}>
       <div className="flex overflow-x-auto scrollbar-hide">
@@ -37,8 +37,8 @@ export const QuickNavBar: React.FC<QuickNavBarProps> = ({ onNavigate, activeScre
               onClick={() => onNavigate(item.id)}
               className={cn(
                 'flex flex-col items-center justify-center min-w-[80px] py-3 px-2 transition-all duration-200 touch-manipulation',
-                'hover:bg-gray-50 dark:hover:bg-slate-800 active:scale-95 cursor-pointer',
-                isActive ? item.activeColor : 'bg-white dark:bg-slate-900'
+                'hover:bg-gray-50 dark:hover:bg-night-700 active:scale-95 cursor-pointer',
+                isActive ? item.activeColor : 'bg-white dark:bg-night-900'
               )}
               type="button"
             >
