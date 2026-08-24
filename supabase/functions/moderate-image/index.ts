@@ -133,23 +133,47 @@ Deno.serve(async (req: Request) => {
       return json({ allowed: true, configured: false, review: false, reason: null });
     }
 
-    const response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
+    const annotate = async (image: Record<string, unknown>) => {
+      const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requests: [
-            {
-              image: { source: { imageUri: imageUrl } },
-              features: [{ type: 'SAFE_SEARCH_DETECTION' }],
-            },
-          ],
+          requests: [{ image, features: [{ type: 'SAFE_SEARCH_DETECTION' }] }],
         }),
-      }
-    );
+      });
+      return { res, body: await res.json() };
+    };
 
-    const result = await response.json();
+    // Ask Vision to fetch the URL itself first - cheapest path, no bytes move
+    // through this function.
+    let { res: response, body: result } = await annotate({ source: { imageUri: imageUrl } });
+
+    // Vision cannot fetch every host (it is refused by Wikimedia, for one) and
+    // says so with code 14, "We can not access the URL currently. Please
+    // download the content and pass it in." Without this fallback such an image
+    // would go unscanned, which is precisely the hole this function exists to
+    // close - so do what it asks and send the bytes.
+    const fetchFailed =
+      !response.ok ||
+      result?.responses?.[0]?.error?.code === 14 ||
+      /can not access the URL/i.test(result?.responses?.[0]?.error?.message ?? '');
+
+    if (fetchFailed) {
+      try {
+        const download = await fetch(imageUrl);
+        if (download.ok) {
+          const bytes = new Uint8Array(await download.arrayBuffer());
+          // Chunked to avoid blowing the call stack on a large image.
+          let binary = '';
+          for (let i = 0; i < bytes.length; i += 8192) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+          }
+          ({ res: response, body: result } = await annotate({ content: btoa(binary) }));
+        }
+      } catch (error) {
+        console.error('Could not download image for inline scan:', error);
+      }
+    }
 
     if (!response.ok || result?.responses?.[0]?.error) {
       // Availability over strictness: a Vision outage must not stop people

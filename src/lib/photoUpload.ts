@@ -12,7 +12,7 @@ const JPEG_QUALITY = 0.85;
  * base64 text embedded directly in the database) meant every profile
  * view downloaded far more data than the UI ever displayed.
  */
-async function compressImage(file: File): Promise<Blob> {
+export async function compressImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);
