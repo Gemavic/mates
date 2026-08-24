@@ -13,9 +13,13 @@ import {
   ChevronRight,
   Shield,
   Circle,
-  Users
+  Users,
+  Flag,
+  Ban
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { setPendingCall } from '@/lib/callSignals';
+import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { sendWinkNotification } from '@/lib/emailNotifications';
 import { supabaseClient } from '@/lib/supabase';
 
@@ -85,6 +89,8 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
   const [winking, setWinking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [blocking, setBlocking] = useState(false);
 
   useEffect(() => {
     loadUserProfile();
@@ -267,12 +273,39 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     onNavigate('mail', { userId });
   };
 
+  const handleBlock = async () => {
+    if (!user) {
+      onNavigate('signin');
+      return;
+    }
+    if (!window.confirm(`Block ${profile?.full_name || 'this member'}? They will no longer appear for you.`)) {
+      return;
+    }
+
+    setBlocking(true);
+    const { error } = await supabaseClient
+      .from('user_blocks')
+      .insert({ blocker_id: user.id, blocked_id: userId });
+    setBlocking(false);
+
+    if (error) {
+      // A repeat block is not a failure worth alarming anyone about.
+      if (!/duplicate|unique/i.test(error.message)) {
+        alert(`Could not block: ${error.message}`);
+        return;
+      }
+    }
+    alert('Blocked. You will not see each other again.');
+    onNavigate('discovery');
+  };
+
   const handleVideoCall = () => {
     if (!user) {
       alert('Please sign in for video calls');
       onNavigate('signin');
       return;
     }
+    setPendingCall({ peerId: userId, peerName: profile?.full_name || 'Member' });
     onNavigate('video-chat');
   };
 
@@ -282,6 +315,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
       onNavigate('signin');
       return;
     }
+    setPendingCall({ peerId: userId, peerName: profile?.full_name || 'Member' });
     onNavigate('audio-chat');
   };
 
@@ -466,6 +500,26 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
               >
                 <Phone className="w-5 h-5" />
               </Button>
+              {/* Report and block belong here, next to the actions, not buried
+                  in a menu - this is the screen someone is on when they decide
+                  a person is a problem. */}
+              <Button
+                onClick={() => setShowReport(true)}
+                title="Report this member"
+                aria-label="Report this member"
+                className="bg-white/20 text-white hover:bg-white/30"
+              >
+                <Flag className="w-5 h-5" />
+              </Button>
+              <Button
+                onClick={handleBlock}
+                disabled={blocking}
+                title="Block this member"
+                aria-label="Block this member"
+                className="bg-white/20 text-white hover:bg-white/30"
+              >
+                <Ban className="w-5 h-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -525,6 +579,17 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
           Message {profile.full_name.split(' ')[0]}
         </Button>
       </div>
+
+      {user && (
+        <ReportAbuseModal
+          isOpen={showReport}
+          onClose={() => setShowReport(false)}
+          reportedUserId={userId}
+          reportedUserName={profile.full_name}
+          contextType="profile"
+          reporterId={user.id}
+        />
+      )}
     </Layout>
   );
 };

@@ -12,6 +12,7 @@ import {
   resolveInvite,
   ringUser,
   takeAcceptedCall,
+  takePendingCall,
   watchInvite,
   type CallInvite,
 } from '@/lib/callSignals';
@@ -69,6 +70,15 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   // Arriving here from an accepted incoming call: join the room the caller is
   // already waiting in, instead of starting a fresh outgoing call.
   useEffect(() => {
+    // Arriving from a Call button on someone's profile: dial them straight
+    // away rather than dropping the user on a list containing the person they
+    // were already looking at.
+    const outgoing = takePendingCall();
+    if (outgoing && user?.id) {
+      void startVideoCall(outgoing.peerId, outgoing.peerName);
+      return;
+    }
+
     const accepted = takeAcceptedCall();
     if (!accepted || !user?.id) return;
 

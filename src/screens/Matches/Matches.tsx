@@ -380,12 +380,12 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     return (
       <PageTransition direction="slide-left">
         <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100 flex flex-col max-h-screen h-screen">
-          <div className="bg-gradient-to-r from-pink-100 to-pink-50 border-b border-pink-200 px-3 py-3 flex items-center gap-3 safe-area-inset-top flex-shrink-0">
+          <div className="bg-gradient-to-r from-pink-100 dark:from-slate-900 to-pink-50 dark:to-slate-900 border-b border-pink-200 dark:border-slate-700 px-3 py-3 flex items-center gap-3 safe-area-inset-top flex-shrink-0">
             <button
               onClick={() => { setSelectedThread(null); setMessages([]); setShowEmojiPicker(false); loadThreads(); }}
               className="p-1.5 hover:bg-pink-200 rounded-full transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-700" />
+              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-slate-300" />
             </button>
             <div className="relative cursor-pointer" onClick={() => onNavigate('view-profile', { userId: thread.participantId })}>
               <img src={thread.participantImage} alt={thread.participantName}
@@ -393,17 +393,17 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               {thread.isOnline && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-gray-900 text-base truncate">{thread.participantName}</h2>
-              <p className="text-xs text-gray-500">
+              <h2 className="font-semibold text-gray-900 dark:text-slate-100 text-base truncate">{thread.participantName}</h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
                 {otherUserTyping ? <span className="text-pink-500 font-medium">typing...</span> : thread.isOnline ? 'Online' : `Age ${thread.participantAge}`}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
-              <button onClick={() => onNavigate('gift-shop')} className="relative p-2 hover:bg-pink-200 rounded-lg transition-colors border border-pink-200">
+              <button onClick={() => onNavigate('gift-shop')} className="relative p-2 hover:bg-pink-200 rounded-lg transition-colors border border-pink-200 dark:border-slate-700">
                 <Gift className="w-5 h-5 text-orange-500" />
                 <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />
               </button>
-              <button onClick={() => onNavigate('mail')} className="p-2 hover:bg-pink-200 rounded-lg transition-colors border border-pink-200">
+              <button onClick={() => onNavigate('mail')} className="p-2 hover:bg-pink-200 rounded-lg transition-colors border border-pink-200 dark:border-slate-700">
                 <MailIcon className="w-5 h-5 text-orange-500" />
               </button>
             </div>
@@ -420,11 +420,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 <div key={msg.id} className={cn("flex items-end gap-2", isMe ? 'justify-end' : 'justify-start')}>
                   {!isMe && <img src={msg.senderImage || DEFAULT_AVATAR} alt={msg.senderName} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />}
                   <div className="max-w-[75%]">
-                    <div className={cn("rounded-2xl px-4 py-3 shadow-sm", isMe ? 'bg-gradient-to-br from-pink-400 to-pink-500 text-white' : 'bg-white text-gray-800 border border-pink-100')}>
+                    <div className={cn("rounded-2xl px-4 py-3 shadow-sm", isMe ? 'bg-gradient-to-br from-pink-400 to-pink-50 dark:to-slate-9000 text-white' : 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 border border-pink-100 dark:border-slate-700')}>
                       <p className="text-sm leading-relaxed">{msg.message}</p>
                     </div>
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
-                      <span className="text-[11px] text-gray-500">{msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                      <span className="text-[11px] text-gray-500 dark:text-slate-400">{msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                       {isMe && (
                         msg.isRead ? (
                           <svg className="w-3.5 h-3.5 text-blue-400" viewBox="0 0 20 20" fill="none"><path d="M1 10l3 3 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 10l3 3 9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -444,7 +444,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             {otherUserTyping && (
               <div className="flex items-end gap-2">
                 <img src={thread.participantImage} alt={thread.participantName} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />
-                <div className="bg-white border border-pink-100 rounded-2xl px-4 py-3 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-pink-100 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
                   <div className="flex gap-1.5">
                     <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -457,22 +457,22 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           </div>
 
           {showEmojiPicker && (
-            <div className="bg-white border-t border-pink-200 px-3 py-2 flex-shrink-0">
+            <div className="bg-white dark:bg-slate-900 border-t border-pink-200 dark:border-slate-700 px-3 py-2 flex-shrink-0">
               <div className="grid grid-cols-8 gap-1.5">
                 {EMOJIS.map((emoji, i) => (
                   <button key={i} onClick={() => { setMessageText(prev => prev + emoji); setShowEmojiPicker(false); }}
-                    className="text-xl hover:bg-pink-100 rounded p-1.5 transition-colors text-center">{emoji}</button>
+                    className="text-xl hover:bg-pink-100 dark:bg-slate-800 rounded p-1.5 transition-colors text-center">{emoji}</button>
                 ))}
               </div>
             </div>
           )}
 
           {showQuickMessages && (
-            <div className="bg-white border-t border-pink-200 px-3 py-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
+            <div className="bg-white dark:bg-slate-900 border-t border-pink-200 dark:border-slate-700 px-3 py-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
               <div className="flex flex-wrap gap-2">
                 {QUICK_MESSAGES.map((msg, i) => (
                   <button key={i} onClick={() => { setMessageText(msg); setShowQuickMessages(false); inputRef.current?.focus(); }}
-                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full text-sm transition-colors active:scale-95">
+                    className="px-3 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 text-gray-800 dark:text-slate-200 rounded-full text-sm transition-colors active:scale-95">
                     {msg}
                   </button>
                 ))}
@@ -480,13 +480,13 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          <div className="bg-pink-50 border-t border-pink-200 px-3 pt-2 flex flex-col gap-1.5 safe-area-inset-bottom flex-shrink-0">
+          <div className="bg-pink-50 dark:bg-slate-900 border-t border-pink-200 dark:border-slate-700 px-3 pt-2 flex flex-col gap-1.5 safe-area-inset-bottom flex-shrink-0">
             <p className="text-xs text-gray-400 text-center">
               Live chat: 2 credits/min while this conversation is open · included free with any subscription
             </p>
             <div className="flex items-center gap-2 pb-3">
             <button onClick={() => { setShowQuickMessages(!showQuickMessages); setShowEmojiPicker(false); }}
-              className="bg-white text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
+              className="bg-white dark:bg-slate-900 text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 dark:bg-slate-900 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
               Hi
             </button>
             <div className="flex-1 relative flex items-center">
@@ -494,7 +494,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); }}}
                 placeholder="Type your message..."
-                className="w-full h-[44px] py-2 px-4 pr-10 rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-sm bg-white"
+                className="w-full h-[44px] py-2 px-4 pr-10 rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-sm bg-white dark:bg-slate-900"
                 autoComplete="off" />
               <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowQuickMessages(false); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
@@ -502,7 +502,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               </button>
             </div>
             <Button onClick={handleSendMessage} disabled={!messageText.trim()}
-              className="bg-pink-500 text-white p-3 rounded-full hover:bg-pink-600 transition-all active:scale-95 flex-shrink-0 disabled:opacity-40">
+              className="bg-pink-50 dark:bg-slate-9000 text-white p-3 rounded-full hover:bg-pink-600 transition-all active:scale-95 flex-shrink-0 disabled:opacity-40">
               <Send className="w-5 h-5" />
             </Button>
             </div>
@@ -518,7 +518,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         <div className="w-full max-w-xs sm:max-w-md mx-auto min-h-screen relative">
           <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/20 px-3 sm:px-4 py-2 sm:py-3 safe-area-inset-top">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Chat</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">Chat</h1>
               <div className="flex items-center space-x-2">
                 <button onClick={() => onNavigate('mail')}
                   className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors active:scale-95">
@@ -530,7 +530,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 </button>
                 <button onClick={() => onNavigate('profile')}
                   className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors active:scale-95">
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-slate-400" />
                 </button>
               </div>
             </div>
@@ -563,7 +563,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                         className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
                           threadFilter === tab
                             ? 'bg-rose-500 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200'
                         }`}
                         type="button"
                       >
@@ -584,7 +584,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                     .filter((t) => (threadFilter === 'active' ? t.hasMessages : !t.hasMessages))
                     .map((thread) => (
                   <button key={thread.id} onClick={() => setSelectedThread(thread.id)}
-                    className="w-full py-3 px-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-all rounded-lg text-left active:scale-[0.98]">
+                    className="w-full py-3 px-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 dark:bg-slate-900 transition-all rounded-lg text-left active:scale-[0.98]">
                     <div className="flex items-start gap-3">
                       <div className="relative flex-shrink-0"
                         onClick={(e) => { e.stopPropagation(); onNavigate('view-profile', { userId: thread.participantId }); }}>
@@ -595,7 +595,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
                           <div className="flex items-center gap-1.5">
-                            <h4 className={cn("font-medium text-sm truncate", thread.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700')}>
+                            <h4 className={cn("font-medium text-sm truncate", thread.unreadCount > 0 ? 'text-gray-900 dark:text-slate-100' : 'text-gray-700 dark:text-slate-300')}>
                               {thread.participantName}, {thread.participantAge}
                             </h4>
                             {thread.isVerified && (
@@ -607,9 +607,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                               <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{thread.unreadCount}</span>
                             )}
                           </div>
-                          <span className="text-[11px] text-gray-500 flex-shrink-0">{formatTimestamp(thread.timestamp)}</span>
+                          <span className="text-[11px] text-gray-500 dark:text-slate-400 flex-shrink-0">{formatTimestamp(thread.timestamp)}</span>
                         </div>
-                        <p className={cn("text-xs truncate", thread.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-500')}>
+                        <p className={cn("text-xs truncate", thread.unreadCount > 0 ? 'font-medium text-gray-900 dark:text-slate-100' : 'text-gray-500 dark:text-slate-400')}>
                           {thread.lastMessage}
                         </p>
                       </div>
@@ -635,7 +635,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 return (
                   <button key={tab.id} onClick={() => { if (!tab.active) onNavigate(tab.screen); }}
                     className={cn("flex flex-col items-center py-1 px-1.5 rounded-lg transition-all active:scale-95 min-w-0",
-                      tab.active ? 'text-pink-600' : 'text-gray-500 hover:text-gray-700')}>
+                      tab.active ? 'text-pink-600' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:text-slate-300')}>
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] mt-0.5 font-medium hidden sm:block">{tab.label}</span>
                   </button>
