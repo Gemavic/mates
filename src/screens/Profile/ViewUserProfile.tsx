@@ -15,7 +15,7 @@ import {
   Circle,
   Users,
   Flag,
-  Ban
+  Ban, UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { setPendingCall } from '@/lib/callSignals';
@@ -91,11 +91,27 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
   const [error, setError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [blocking, setBlocking] = useState(false);
+  // Blocking used to be one-way from here: the only way back was a "Block &
+  // Report" screen buried in Settings, which nobody finds. The profile is
+  // where you blocked someone, so it is where you look to undo it.
+  const [blockId, setBlockId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserProfile();
     checkIfLiked();
+    checkIfBlocked();
   }, [userId]);
+
+  const checkIfBlocked = async () => {
+    if (!user) return;
+    const { data } = await supabaseClient
+      .from('user_blocks')
+      .select('id')
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', userId)
+      .maybeSingle();
+    setBlockId(data?.id ?? null);
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -283,9 +299,11 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     }
 
     setBlocking(true);
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('user_blocks')
-      .insert({ blocker_id: user.id, blocked_id: userId });
+      .insert({ blocker_id: user.id, blocked_id: userId })
+      .select('id')
+      .maybeSingle();
     setBlocking(false);
 
     if (error) {
@@ -295,8 +313,25 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
         return;
       }
     }
-    alert('Blocked. You will not see each other again.');
+    if (data?.id) setBlockId(data.id);
+    alert('Blocked. You can undo this from their profile, or in Settings.');
     onNavigate('discovery');
+  };
+
+  const handleUnblock = async () => {
+    if (!user || !blockId) return;
+    if (!window.confirm(`Unblock ${profile?.full_name || 'this member'}?`)) return;
+
+    setBlocking(true);
+    const { error } = await supabaseClient.from('user_blocks').delete().eq('id', blockId);
+    setBlocking(false);
+
+    if (error) {
+      alert(`Could not unblock: ${error.message}`);
+      return;
+    }
+    setBlockId(null);
+    alert('Unblocked. You will see each other again.');
   };
 
   const handleVideoCall = () => {
@@ -512,13 +547,17 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
                 <Flag className="w-5 h-5" />
               </Button>
               <Button
-                onClick={handleBlock}
+                onClick={blockId ? handleUnblock : handleBlock}
                 disabled={blocking}
-                title="Block this member"
-                aria-label="Block this member"
-                className="bg-white/20 text-white hover:bg-white/30"
+                title={blockId ? 'Unblock this member' : 'Block this member'}
+                aria-label={blockId ? 'Unblock this member' : 'Block this member'}
+                className={
+                  blockId
+                    ? 'bg-green-500/90 text-white hover:bg-green-600'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }
               >
-                <Ban className="w-5 h-5" />
+                {blockId ? <UserCheck className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
               </Button>
             </div>
           </div>

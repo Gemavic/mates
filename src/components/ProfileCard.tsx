@@ -73,12 +73,15 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       alert('Please sign in to block users');
       return;
     }
-    if (onBlock) {
-      onBlock(profile.id);
+    // SecurityManager.blockUser only writes to the console - it stores
+    // nothing. onBlock is the handler that actually records the block, so
+    // without it there is nothing to report as successful.
+    if (!onBlock) {
+      alert('Blocking is not available here yet.');
+      return;
     }
-    SecurityManager.blockUser(profile.id, user.id);
+    onBlock(profile.id);
     setShowMenu(false);
-    alert('User blocked successfully.');
   };
 
   const handleSuperLike = async () => {
