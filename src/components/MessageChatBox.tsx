@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Smile, Video, Phone, Gift, Mail, Heart, Flag } 
 import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { contentModeration } from '@/lib/contentModeration';
 import { moderateImage } from '@/lib/imageModeration';
+import { compressImage } from '@/lib/photoUpload';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
@@ -813,10 +814,18 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       }
 
       try {
-        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${file.name.split('.').pop() || 'bin'}`;
+        // Compress images before upload, as profile photos already are. Beyond
+        // saving bandwidth this keeps them under Vision's 10MB inline limit -
+        // a raw phone photo is routinely 5-12MB, and an oversized image comes
+        // back unscanned, which defeats the moderation below.
+        const isImage = type === 'image';
+        const payload: Blob = isImage ? await compressImage(file) : file;
+        const extension = isImage ? 'jpg' : file.name.split('.').pop() || 'bin';
+
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
         const { error: uploadError } = await supabaseClient.storage
           .from('chat-media')
-          .upload(path, file, { contentType: file.type });
+          .upload(path, payload, { contentType: isImage ? 'image/jpeg' : file.type });
 
         if (uploadError) {
           console.error('Attachment upload failed:', uploadError);
