@@ -268,9 +268,16 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
               <div className="bg-white/10 border border-white/20 rounded-lg p-4">
                 <h3 className="text-white font-semibold mb-3">Reset Password</h3>
                 {resetSent ? (
-                  <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
+                  <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3 space-y-2">
                     <p className="text-green-200 text-sm">
-                      Password reset link sent! Check your email inbox.
+                      If that email has a password, a reset link is on its way. Check your inbox.
+                    </p>
+                    {/* An account created with Google has no password to reset, and the
+                        reset request succeeds silently either way - so say so here rather
+                        than leave someone waiting for an email that will never arrive. */}
+                    <p className="text-green-200/80 text-xs">
+                      Signed up with Google? There is no password on that account — use
+                      Continue with Google instead.
                     </p>
                   </div>
                 ) : (

@@ -51,6 +51,8 @@ const CareBlog = React.lazy(() => import('@/screens/CareBlog/CareBlog').then(m =
 const Quizzes = React.lazy(() => import('@/screens/Quizzes/Quizzes').then(m => ({ default: m.Quizzes })));
 import { Onboarding } from '@/screens/Onboarding/Onboarding';
 import { AuthCallback } from '@/screens/Auth/AuthCallback';
+import { ResetPassword } from '@/screens/Auth/ResetPassword';
+import { supabaseClient } from '@/lib/supabase';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
 import { MonitoringDashboard } from '@/components/MonitoringDashboard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -91,6 +93,20 @@ const App: React.FC = () => {
   const { user, loading } = useAuth();
   const { staffAuth, isStaff, isAdmin, loading: staffLoading } = useStaffAccess();
 
+  // A password-reset link signs the user in and lands them wherever the app
+  // would normally send them, which was Discovery - with no way to finish
+  // setting a password. Recovery has to win over that, so it is tracked
+  // separately rather than as just another screen name.
+  const [isRecovery, setIsRecovery] = useState(
+    () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery')
+  );
+
+  useEffect(() => {
+    const { data } = supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setIsRecovery(true);
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
   const handleStaffLogout = () => {
     try {
       setCurrentScreen('discovery');
@@ -317,6 +333,22 @@ const App: React.FC = () => {
   };
 
   const renderScreen = () => {
+    // Ahead of every other route: until a new password is set, this is the
+    // only screen that makes sense.
+    if (isRecovery) {
+      return (
+        <ResetPassword
+          onNavigate={(screen) => {
+            setIsRecovery(false);
+            if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+            handleNavigate(screen);
+          }}
+        />
+      );
+    }
+
     const config = getRouteConfig(currentScreen);
 
     const renderScreenContent = () => {
