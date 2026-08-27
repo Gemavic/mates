@@ -97,6 +97,30 @@ const App: React.FC = () => {
   // would normally send them, which was Discovery - with no way to finish
   // setting a password. Recovery has to win over that, so it is tracked
   // separately rather than as just another screen name.
+  // Supabase reports auth failures by sending the user back with error=... in
+  // the URL. Nothing read it, so a failed Google sign-in looked identical to a
+  // normal page load: the app rendered as if signed out and the reason was
+  // discarded. Anyone hitting this saw a working-looking screen and no account.
+  const [authError, setAuthError] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const description = search.get('error_description') || hash.get('error_description');
+    const code = search.get('error_code') || hash.get('error_code')
+      || search.get('error') || hash.get('error');
+    if (!description && !code) return null;
+    console.error('Auth error returned to the app:', { code, description });
+    return [code, description && decodeURIComponent(description.split('+').join(' '))]
+      .filter(Boolean).join(' — ');
+  });
+
+  // Take it out of the URL so a refresh does not resurrect a stale error.
+  useEffect(() => {
+    if (!authError || typeof window === 'undefined') return;
+    if (window.location.search.includes('error') || window.location.hash.includes('error')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [authError]);
   const [isRecovery, setIsRecovery] = useState(
     () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery')
   );
@@ -577,6 +601,25 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Say out loud when sign-in failed. Silently swallowing this is why a
+            broken Google login looked like an ordinary page load. */}
+        {authError && (
+          <div className="fixed top-0 inset-x-0 z-[10000] bg-red-600 text-white px-4 py-3 shadow-lg">
+            <div className="max-w-3xl mx-auto flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Sign-in failed</p>
+                <p className="text-xs break-words opacity-95">{authError}</p>
+              </div>
+              <button
+                onClick={() => setAuthError(null)}
+                aria-label="Dismiss"
+                className="text-white/90 hover:text-white text-lg leading-none flex-shrink-0"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
         {/* Ringing must reach the user on any screen, so this lives at the root. */}
         <IncomingCallHost onNavigate={handleNavigate} />
         <PresenceHeartbeat />
