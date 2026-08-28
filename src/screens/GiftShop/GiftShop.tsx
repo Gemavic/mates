@@ -65,6 +65,16 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
   const [loadError, setLoadError] = useState<string | null>(null);
   const [brokenArt, setBrokenArt] = useState<Set<string>>(new Set());
 
+  // Who the gift is for. Opened from a profile or chat this arrives as a prop;
+  // opened from the menu it is nobody, and the shop used to charge anyway and
+  // announce success without ever asking or delivering.
+  const [recipient, setRecipient] = useState<{ id: string; name: string } | null>(
+    initialRecipientId ? { id: initialRecipientId, name: initialRecipientName || 'them' } : null
+  );
+  const [awaitingRecipient, setAwaitingRecipient] = useState<GiftItem | null>(null);
+  const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -117,7 +127,57 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
   const markArtBroken = (slug: string) =>
     setBrokenArt(prev => (prev.has(slug) ? prev : new Set(prev).add(slug)));
 
-  const sendGift = async (_giftId: string, giftName: string, price: number, emoji: string) => {
+  /** People this member already has a conversation with. */
+  const loadContacts = async () => {
+    if (!user) return;
+    setContactsLoading(true);
+    try {
+      const threads = await MessagingManager.getMailThreads(user.id);
+      const otherIds = (threads || []).map((t: any) =>
+        t.participant1_id === user.id ? t.participant2_id : t.participant1_id
+      );
+      if (otherIds.length === 0) { setContacts([]); return; }
+
+      const { data } = await supabaseClient
+        .from('user_profiles')
+        .select('user_id, first_name, full_name')
+        .in('user_id', otherIds);
+
+      setContacts((data || []).map((p: any) => ({
+        id: p.user_id,
+        name: p.first_name || p.full_name || 'Member',
+      })));
+    } catch (err) {
+      console.error('Could not load who to send to:', err);
+      setContacts([]);
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  /** Entry point from the Send Gift buttons. Never charges without a recipient. */
+  const requestSend = async (gift: GiftItem) => {
+    if (!user) {
+      alert('Please sign in to send gifts');
+      return;
+    }
+    if (!recipient) {
+      setAwaitingRecipient(gift);
+      await loadContacts();
+      return;
+    }
+    await sendGift(gift.id, gift.name, gift.credit_cost, gift.icon || '🎁');
+  };
+
+  const sendGift = async (
+    _giftId: string,
+    giftName: string,
+    price: number,
+    emoji: string,
+    /** Passed by the picker: state has not re-rendered when it calls this. */
+    to: { id: string; name: string } | null = null
+  ) => {
+    const target = to ?? recipient;
     if (!user) {
       alert('Please sign in to send gifts');
       return;
@@ -144,9 +204,9 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
     // actually deliver it into their real conversation — previously this
     // function only showed a success alert with no record of who, if
     // anyone, received anything.
-    if (initialRecipientId) {
+    if (target) {
       try {
-        const threadId = await MessagingManager.getOrCreateThread(user.id, initialRecipientId);
+        const threadId = await MessagingManager.getOrCreateThread(user.id, target.id);
         await supabaseClient.from('mail_messages').insert({
           thread_id: threadId,
           sender_id: user.id,
@@ -158,13 +218,16 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
           delivered_at: new Date().toISOString(),
           is_read: false,
         });
-        alert(`🎁 Sent ${giftName} to ${initialRecipientName || 'them'}!`);
+        alert(`🎁 Sent ${giftName} to ${target.name}!`);
       } catch (err) {
         console.error('Gift charged but failed to deliver message:', err);
         alert(`🎁 ${giftName} purchased, but delivering it to their chat failed — please try messaging them directly.`);
       }
     } else {
-      alert(`🎁 Successfully sent ${giftName} for ${formatCredits(price)}!`);
+      // Unreachable now that a recipient is required before charging, but if it
+      // ever is reached, do not claim something was sent to someone.
+      console.error('Gift charged with no recipient set:', giftName);
+      alert(`${giftName} was charged but had no recipient. Please contact support.`);
     }
   };
 
@@ -316,7 +379,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
 
                       <div className="mt-auto">
                         <Button
-                          onClick={() => sendGift(gift.id, gift.name, gift.credit_cost, gift.icon)}
+                          onClick={() => requestSend(gift)}
                           disabled={!affordable}
                           className={`w-full text-xs py-2 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
                             affordable
@@ -341,6 +404,65 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
             </>
           )}
         </div>
+
+        {/* Asked before any credits move, not after. */}
+        {awaitingRecipient && (
+          <div className="fixed inset-0 z-[9999] bg-black/60 flex items-end sm:items-center justify-center p-4">
+            <div className="w-full max-w-sm bg-white dark:bg-night-800 rounded-2xl p-5 max-h-[80vh] overflow-y-auto">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-1">
+                Who is {awaitingRecipient.name} for?
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+                {formatCredits(awaitingRecipient.credit_cost)} will be taken once you choose.
+              </p>
+
+              {contactsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 py-4">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading your conversations…
+                </div>
+              ) : contacts.length === 0 ? (
+                <div className="py-2">
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+                    You have no conversations yet. Start one, then send a gift from
+                    inside the chat.
+                  </p>
+                  <Button
+                    onClick={() => { setAwaitingRecipient(null); onNavigate('matches'); }}
+                    className="w-full bg-pink-500 hover:bg-pink-600 text-white"
+                  >
+                    Go to my chats
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {contacts.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={async () => {
+                        const gift = awaitingRecipient;
+                        setRecipient(c);
+                        setAwaitingRecipient(null);
+                        // Pass the chosen person explicitly: setRecipient has not
+                        // re-rendered yet, so sendGift would still read null.
+                        await sendGift(gift.id, gift.name, gift.credit_cost, gift.icon || '🎁', c);
+                      }}
+                      className="text-left px-3 py-2.5 rounded-lg border border-gray-200 dark:border-night-700 hover:bg-pink-50 dark:hover:bg-night-700 text-gray-900 dark:text-slate-100"
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => setAwaitingRecipient(null)}
+                className="w-full text-sm text-gray-500 dark:text-slate-400 mt-4 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
