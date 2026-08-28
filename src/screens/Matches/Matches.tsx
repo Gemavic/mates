@@ -6,6 +6,7 @@ import { QuickNavBar } from '@/components/QuickNavBar';
 import { MissedCallsNotice } from '@/components/MissedCallsNotice';
 import { QuickGiftBar } from '@/components/QuickGiftBar';
 import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
+import { StickerPicker } from '@/components/StickerPicker';
 import { Button } from '@/components/ui/button';
 import {
   MessageCircle, Mail as MailIcon, User, Users,
@@ -82,6 +83,9 @@ interface ChatMessage {
   replyToId?: string | null;
   // Set when this message IS a gift rather than text.
   gift?: GiftPayload | null;
+  // A sticker renders large and on its own, not inside a bubble.
+  stickerEmoji?: string | null;
+  stickerImage?: string | null;
   giftNote?: string | null;
   giftOpenedAt?: string | null;
 }
@@ -105,6 +109,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -214,9 +219,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         // back to chronological order for display.
         const { data: page, error } = await supabaseClient
           .from('mail_messages')
-          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
+          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost ), stickers:sticker_id ( emoji, image_url )')
           .eq('thread_id', selectedThread)
-          .in('subject', ['Chat Message', 'Gift'])
+          .in('subject', ['Chat Message', 'Gift', 'Sticker'])
           .order('created_at', { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
 
@@ -257,6 +262,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             gift: (msg as any).virtual_gifts ?? null,
             giftNote: (msg as any).gift_note ?? null,
             giftOpenedAt: (msg as any).gift_opened_at ?? null,
+            stickerEmoji: (msg as any).stickers?.emoji ?? null,
+            stickerImage: (msg as any).stickers?.image_url ?? null,
           };
         });
 
@@ -334,9 +341,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
       const { data, error } = await supabaseClient
         .from('mail_messages')
-        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
+        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost ), stickers:sticker_id ( emoji, image_url )')
         .eq('thread_id', selectedThread)
-        .in('subject', ['Chat Message', 'Gift'])
+        .in('subject', ['Chat Message', 'Gift', 'Sticker'])
         .lt('created_at', oldest)
         .order('created_at', { ascending: false })
         .limit(MESSAGE_PAGE_SIZE);
@@ -505,7 +512,14 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                   {!isMe && <img src={msg.senderImage || DEFAULT_AVATAR} alt={msg.senderName} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />}
                   <div className="max-w-[75%]">
                     {/* A gift is a package to unwrap, not a sentence in a bubble. */}
-                    {msg.gift ? (
+                    {/* A sticker is the message: large, unboxed, no bubble. */}
+                    {msg.stickerEmoji || msg.stickerImage ? (
+                      msg.stickerImage ? (
+                        <img src={msg.stickerImage} alt="" className="w-28 h-28 object-contain" />
+                      ) : (
+                        <span className="text-6xl leading-none">{msg.stickerEmoji}</span>
+                      )
+                    ) : msg.gift ? (
                       <GiftMessage
                         messageId={msg.id}
                         gift={msg.gift}
@@ -598,6 +612,29 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             </div>
           )}
 
+          {showStickers && selectedThread && (
+            <StickerPicker
+              threadId={selectedThread}
+              onClose={() => setShowStickers(false)}
+              onSent={(sticker) => {
+                if (!user) return;
+                setMessages(prev => [...prev, {
+                  id: `sticker-${Date.now()}`,
+                  senderId: user.id,
+                  senderName: 'You',
+                  senderImage: userProfileImage,
+                  message: sticker.emoji || sticker.name,
+                  timestamp: new Date(),
+                  isDelivered: true,
+                  isRead: false,
+                  replyToId: null,
+                  stickerEmoji: sticker.emoji,
+                  stickerImage: sticker.image_url,
+                }]);
+              }}
+            />
+          )}
+
           {/* Gifts within reach of the message box. Sending one used to mean
               leaving the conversation for the shop. */}
           {selectedThread && (
@@ -657,8 +694,15 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 className="w-full h-[44px] py-2 px-4 pr-10 rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-sm bg-white dark:bg-night-900"
                 autoComplete="off" />
               <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowQuickMessages(false); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
+                className="absolute right-10 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
                 <Smile className="w-5 h-5" />
+              </button>
+              {/* Stickers are a paid expression, so they get their own control
+                  rather than hiding inside the free emoji tray. */}
+              <button onClick={() => { setShowStickers(!showStickers); setShowEmojiPicker(false); setShowQuickMessages(false); }}
+                aria-label="Stickers"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600 text-lg leading-none">
+                🏷️
               </button>
             </div>
             <Button onClick={handleSendMessage} disabled={!messageText.trim()}
