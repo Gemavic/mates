@@ -94,6 +94,7 @@ export const QuickGiftBar: React.FC<QuickGiftBarProps> = ({
         sender_id: user.id,
         subject: 'Gift',
         message_text: text,
+        gift_id: gift.id,
         credits_spent: 0, // already charged above
         has_photos: false,
         is_delivered: true,

@@ -212,6 +212,7 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
           sender_id: user.id,
           subject: 'Gift',
           message_text: `${emoji} Sent you a ${giftName}!`,
+          gift_id: _giftId,
           credits_spent: 0, // already charged above via spendCredits
           has_photos: false,
           is_delivered: true,

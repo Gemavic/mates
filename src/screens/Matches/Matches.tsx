@@ -5,6 +5,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { QuickNavBar } from '@/components/QuickNavBar';
 import { MissedCallsNotice } from '@/components/MissedCallsNotice';
 import { QuickGiftBar } from '@/components/QuickGiftBar';
+import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 import { Button } from '@/components/ui/button';
 import {
   MessageCircle, Mail as MailIcon, User, Users,
@@ -79,6 +80,10 @@ interface ChatMessage {
   isDelivered?: boolean;
   isRead?: boolean;
   replyToId?: string | null;
+  // Set when this message IS a gift rather than text.
+  gift?: GiftPayload | null;
+  giftNote?: string | null;
+  giftOpenedAt?: string | null;
 }
 
 interface MatchesProps {
@@ -209,9 +214,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         // back to chronological order for display.
         const { data: page, error } = await supabaseClient
           .from('mail_messages')
-          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id')
+          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
           .eq('thread_id', selectedThread)
-          .eq('subject', 'Chat Message')
+          .in('subject', ['Chat Message', 'Gift'])
           .order('created_at', { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
 
@@ -249,6 +254,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             isDelivered: msg.is_delivered ?? true,
             isRead: msg.is_read ?? false,
             replyToId: msg.reply_to_message_id ?? null,
+            gift: (msg as any).virtual_gifts ?? null,
+            giftNote: (msg as any).gift_note ?? null,
+            giftOpenedAt: (msg as any).gift_opened_at ?? null,
           };
         });
 
@@ -326,9 +334,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
       const { data, error } = await supabaseClient
         .from('mail_messages')
-        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id')
+        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
         .eq('thread_id', selectedThread)
-        .eq('subject', 'Chat Message')
+        .in('subject', ['Chat Message', 'Gift'])
         .lt('created_at', oldest)
         .order('created_at', { ascending: false })
         .limit(MESSAGE_PAGE_SIZE);
@@ -347,6 +355,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           isDelivered: msg.is_delivered ?? true,
           isRead: msg.is_read ?? false,
           replyToId: msg.reply_to_message_id ?? null,
+          gift: (msg as any).virtual_gifts ?? null,
+          giftNote: (msg as any).gift_note ?? null,
+          giftOpenedAt: (msg as any).gift_opened_at ?? null,
         };
       });
 
@@ -493,6 +504,18 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 <div key={msg.id} className={cn("flex items-end gap-2", isMe ? 'justify-end' : 'justify-start')}>
                   {!isMe && <img src={msg.senderImage || DEFAULT_AVATAR} alt={msg.senderName} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow flex-shrink-0" />}
                   <div className="max-w-[75%]">
+                    {/* A gift is a package to unwrap, not a sentence in a bubble. */}
+                    {msg.gift ? (
+                      <GiftMessage
+                        messageId={msg.id}
+                        gift={msg.gift}
+                        note={msg.giftNote ?? null}
+                        senderName={msg.senderName}
+                        isMine={isMe}
+                        openedAt={msg.giftOpenedAt ?? null}
+                        onSendYours={() => onNavigate('gift-shop')}
+                      />
+                    ) : (
                     <div className={cn("rounded-2xl px-4 py-3 shadow-sm", isMe ? 'bg-gradient-to-br from-pink-400 to-pink-500 text-white' : 'bg-white dark:bg-night-800 text-gray-800 dark:text-slate-100 border border-pink-100 dark:border-night-700')}>
                       {/* Quoted original, so a reply arriving long after the
                           message it answers still makes sense in context. */}
@@ -510,6 +533,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                       })()}
                       <p className="text-sm leading-relaxed">{msg.message}</p>
                     </div>
+                    )}
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
                       <button
                         onClick={() => setReplyingTo(msg)}
