@@ -4,6 +4,7 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
 import { QuickNavBar } from '@/components/QuickNavBar';
 import { MissedCallsNotice } from '@/components/MissedCallsNotice';
+import { QuickGiftBar } from '@/components/QuickGiftBar';
 import { Button } from '@/components/ui/button';
 import {
   MessageCircle, Mail as MailIcon, User, Users,
@@ -573,6 +574,29 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             </div>
           )}
 
+          {/* Gifts within reach of the message box. Sending one used to mean
+              leaving the conversation for the shop. */}
+          {selectedThread && (
+            <QuickGiftBar
+              threadId={selectedThread}
+              recipientName={threads.find(t => t.id === selectedThread)?.participantName || 'them'}
+              onSent={(text) => {
+                if (!user) return;
+                setMessages(prev => [...prev, {
+                  id: `gift-${Date.now()}`,
+                  senderId: user.id,
+                  senderName: 'You',
+                  senderImage: userProfileImage,
+                  message: text,
+                  timestamp: new Date(),
+                  isDelivered: true,
+                  isRead: false,
+                  replyToId: null,
+                }]);
+              }}
+              onOpenShop={() => onNavigate('gift-shop')}
+            />
+          )}
           <div className="bg-pink-50 dark:bg-night-900 border-t border-pink-200 dark:border-night-700 px-3 pt-2 flex flex-col gap-1.5 safe-area-inset-bottom flex-shrink-0">
             {replyingTo && (
               <div className="flex items-center gap-2 rounded-lg bg-white dark:bg-night-800 border-l-4 border-pink-400 px-3 py-2">

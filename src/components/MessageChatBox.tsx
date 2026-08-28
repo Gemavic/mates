@@ -762,6 +762,27 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       type: 'text'
     };
 
+    // Charge without delivery was the old behaviour: credits were taken and
+    // the gift existed only in this browser's memory, so the recipient never
+    // saw it and a refresh erased it.
+    try {
+      const { error: deliveryError } = await supabaseClient.from('mail_messages').insert({
+        thread_id: activeThread,
+        sender_id: user.id,
+        subject: 'Gift',
+        message_text: `${gift.emoji} Sent you a ${gift.name}!`,
+        credits_spent: 0, // charged above
+        has_photos: false,
+        is_delivered: true,
+        delivered_at: new Date().toISOString(),
+        is_read: false,
+      });
+      if (deliveryError) throw deliveryError;
+    } catch (err) {
+      console.error('Gift charged but not delivered:', err);
+      alert(`${gift.name} was paid for but did not reach them. Please contact support before sending another.`);
+    }
+
     setMessages(prev => [...prev, giftMessage]);
     setShowGiftPicker(false);
 
