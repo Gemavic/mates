@@ -12,14 +12,9 @@ import { sendMessageNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { MessagingManager, CreditManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
+import { QuickGiftBar } from '@/components/QuickGiftBar';
+import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 
-interface GiftItem {
-  id: string;
-  name: string;
-  emoji: string;
-  price: number;
-  category: string;
-}
 
 interface MessageChatBoxProps {
   className?: string;
@@ -41,6 +36,10 @@ interface ChatMessage {
   editedAt?: Date;
   isDelivered?: boolean;
   isRead?: boolean;
+  // Set when this message IS a gift rather than text.
+  gift?: GiftPayload | null;
+  giftNote?: string | null;
+  giftOpenedAt?: string | null;
 }
 
 interface ChatThread {
@@ -60,20 +59,7 @@ const MESSAGE_PAGE_SIZE = 50;
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
-const QUICK_GIFTS: GiftItem[] = [
-  { id: 'red_rose', name: 'Red Rose', emoji: '🌹', price: 5, category: 'romantic' },
-  { id: 'love_heart', name: 'Love Heart', emoji: '💖', price: 3, category: 'romantic' },
-  { id: 'coffee', name: 'Coffee', emoji: '☕', price: 3, category: 'casual' },
-  { id: 'chocolate_box', name: 'Chocolate', emoji: '🍫', price: 12, category: 'romantic' },
-  { id: 'bouquet', name: 'Bouquet', emoji: '💐', price: 15, category: 'romantic' },
-  { id: 'teddy_bear', name: 'Teddy Bear', emoji: '🧸', price: 8, category: 'fun' },
-  { id: 'diamond', name: 'Diamond', emoji: '💎', price: 100, category: 'luxury' },
-  { id: 'crown', name: 'Crown', emoji: '👑', price: 50, category: 'luxury' },
-  { id: 'champagne', name: 'Champagne', emoji: '🍾', price: 35, category: 'luxury' },
-  { id: 'pizza_slice', name: 'Pizza', emoji: '🍕', price: 5, category: 'casual' },
-  { id: 'ice_cream', name: 'Ice Cream', emoji: '🍦', price: 4, category: 'casual' },
-  { id: 'birthday_cake', name: 'Cake', emoji: '🎂', price: 10, category: 'fun' }
-];
+// The 12 hardcoded gifts lived here. Gifts now come from virtual_gifts.
 
 const EMOJIS = [
   '😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '✨',
@@ -98,7 +84,6 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   const [showReportModal, setShowReportModal] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [userBalance, setUserBalance] = useState(0);
-  const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [userProfileImage, setUserProfileImage] = useState('');
   const [defaultThreads, setDefaultThreads] = useState<ChatThread[]>([]);
   const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
@@ -279,7 +264,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         // to chronological order. A long thread used to arrive in full.
         const { data: messagePage, error } = await supabaseClient
           .from('mail_messages')
-          .select('id, sender_id, message_text, created_at, is_read, is_delivered, thread_id')
+          .select('id, sender_id, message_text, created_at, is_read, is_delivered, thread_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
           .eq('thread_id', activeThread)
           .order('created_at', { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
@@ -349,7 +334,10 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             timestamp: new Date(msg.created_at),
             type: 'text' as const,
             isDelivered: msg.is_delivered ?? true,
-            isRead: msg.is_read ?? false
+            isRead: msg.is_read ?? false,
+            gift: (msg as any).virtual_gifts ?? null,
+            giftNote: (msg as any).gift_note ?? null,
+            giftOpenedAt: (msg as any).gift_opened_at ?? null
           };
         });
 
@@ -724,74 +712,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     setShowEmojiPicker(false);
   }, []);
 
-  const sendGift = useCallback(async (gift: GiftItem) => {
-    const activeThreadData = chatThreadsRef.current.find(t => t.id === activeThread);
-    if (!activeThreadData) {
-      alert('Please select a chat first');
-      return;
-    }
-
-    if (!user) {
-      alert('Please sign in to send gifts');
-      return;
-    }
-
-    const isFreeGift = gift.price === 0;
-    const isStaff = creditManager.isStaffMember(user.id);
-
-    if (!isFreeGift && !isStaff) {
-      if (!creditManager.canAfford(user.id, gift.price)) {
-        alert(`Need ${formatCredits(gift.price)} to send ${gift.name}!`);
-        return;
-      }
-      const deducted = await creditManager.deductCredits(user.id, gift.price, `Sent ${gift.name} gift`);
-      if (!deducted) {
-        alert(`Could not send ${gift.name} — insufficient credits.`);
-        return;
-      }
-      setUserBalance(creditManager.getTotalCredits(user.id));
-    }
-
-    const giftMessage: ChatMessage = {
-      id: Date.now().toString(),
-      senderId: user.id,
-      senderName: 'You',
-      senderImage: userProfileImageRef.current || DEFAULT_AVATAR,
-      message: `Sent ${gift.emoji} ${gift.name}`,
-      timestamp: new Date(),
-      type: 'text'
-    };
-
-    // Charge without delivery was the old behaviour: credits were taken and
-    // the gift existed only in this browser's memory, so the recipient never
-    // saw it and a refresh erased it.
-    try {
-      const { error: deliveryError } = await supabaseClient.from('mail_messages').insert({
-        thread_id: activeThread,
-        sender_id: user.id,
-        subject: 'Gift',
-        message_text: `${gift.emoji} Sent you a ${gift.name}!`,
-        credits_spent: 0, // charged above
-        has_photos: false,
-        is_delivered: true,
-        delivered_at: new Date().toISOString(),
-        is_read: false,
-      });
-      if (deliveryError) throw deliveryError;
-    } catch (err) {
-      console.error('Gift charged but not delivered:', err);
-      alert(`${gift.name} was paid for but did not reach them. Please contact support before sending another.`);
-    }
-
-    setMessages(prev => [...prev, giftMessage]);
-    setShowGiftPicker(false);
-
-    setChatThreads(prev => prev.map(thread =>
-      thread.id === activeThread
-        ? { ...thread, lastMessage: giftMessage, unreadCount: 0 }
-        : thread
-    ));
-  }, [activeThread, user]);
+  // sendGift lived here; QuickGiftBar now charges and delivers.
 
   const handleFileUpload = useCallback((type: 'image' | 'video' | 'file') => {
     const activeThreadData = chatThreadsRef.current.find(t => t.id === activeThread);
@@ -1074,7 +995,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => setShowGiftPicker(!showGiftPicker)}
+                onClick={() => onNavigate('gift-shop')}
                 className="relative p-2.5 hover:bg-gray-100 dark:hover:bg-night-700 rounded-lg transition-colors touch-manipulation active:scale-95 border border-gray-200 dark:border-night-700"
               >
                 <Gift className="w-6 h-6 text-orange-500 flex-shrink-0" />
@@ -1119,7 +1040,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                     const thread = chatThreads.find((t: ChatThread) => t.id === activeThread);
                     const { data } = await supabaseClient
                       .from('mail_messages')
-                      .select('id, sender_id, message_text, created_at, is_read, is_delivered')
+                      .select('id, sender_id, message_text, created_at, is_read, is_delivered, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
                       .eq('thread_id', activeThread)
                       .lt('created_at', oldest)
                       .order('created_at', { ascending: false })
@@ -1136,6 +1057,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                       type: 'text',
                       isDelivered: m.is_delivered ?? true,
                       isRead: m.is_read ?? false,
+                      gift: (m as any).virtual_gifts ?? null,
+                      giftNote: (m as any).gift_note ?? null,
+                      giftOpenedAt: (m as any).gift_opened_at ?? null,
                     }));
                     setHasOlderMessages((data || []).length === MESSAGE_PAGE_SIZE);
                     setMessages(prev => [...older, ...prev]);
@@ -1163,6 +1087,17 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                 />
                 <div className="max-w-[75%]">
                   <div className="flex flex-col space-y-1">
+                    {msg.gift ? (
+                      <GiftMessage
+                        messageId={msg.id}
+                        gift={msg.gift}
+                        note={msg.giftNote ?? null}
+                        senderName={msg.senderName}
+                        isMine={isCurrentUser}
+                        openedAt={msg.giftOpenedAt ?? null}
+                        onSendYours={() => onNavigate('gift-shop')}
+                      />
+                    ) : (
                     <div className={`rounded-2xl p-4 shadow-md ${
                       isCurrentUser
                         // Your own messages keep their pink identity in dark
@@ -1181,6 +1116,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                         <p className="text-base leading-relaxed">{msg.message}</p>
                       )}
                     </div>
+                    )}
                     <div className={`flex items-center space-x-2 px-2 ${
                       isCurrentUser ? 'justify-end' : 'justify-start'
                     }`}>
@@ -1311,39 +1247,18 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           </div>
         </div>
 
-        <div className="border-t border-pink-200 dark:border-night-700 bg-pink-50 dark:bg-night-900 flex-shrink-0">
-          <div className="flex items-center justify-between px-2 py-3 overflow-x-auto">
-            <div className="flex items-center space-x-4">
-              <button onClick={() => sendGift(QUICK_GIFTS[0])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
-                <div className="text-3xl mb-1">❤️</div>
-                <span className="text-xs font-bold text-pink-700">2500</span>
-              </button>
-              <button onClick={() => sendGift(QUICK_GIFTS[4])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
-                <div className="text-3xl mb-1">🌹</div>
-                <span className="text-xs font-bold text-pink-700">89</span>
-              </button>
-              <button onClick={() => sendGift(QUICK_GIFTS[5])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
-                <div className="text-3xl mb-1">🧸</div>
-                <span className="text-xs font-bold text-pink-700">277</span>
-              </button>
-              <button onClick={() => sendGift(QUICK_GIFTS[3])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
-                <div className="text-3xl mb-1">🍫</div>
-                <span className="text-xs font-bold text-pink-700">32</span>
-              </button>
-              <button onClick={() => sendGift(QUICK_GIFTS[4])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
-                <div className="text-3xl mb-1">💐</div>
-                <span className="text-xs font-bold text-pink-700">79</span>
-              </button>
-              <button onClick={() => sendGift(QUICK_GIFTS[6])} className="flex flex-col items-center min-w-[60px] touch-manipulation active:scale-95">
-                <div className="text-3xl mb-1">💎</div>
-                <span className="text-xs font-bold text-pink-700">529</span>
-              </button>
-              <button className="flex items-center justify-center w-10 h-10 bg-pink-100 dark:bg-night-800 rounded-full touch-manipulation active:scale-95">
-                <span className="text-xl text-pink-600">⋯</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Was six hand-written buttons whose emoji and price did not match the
+            gift they sent: the first showed 2500 and charged 5 for a Red Rose,
+            and two different-looking buttons sent the same item. This is the
+            catalogue-driven bar, so what is shown is what is charged. */}
+        {activeThread && (
+          <QuickGiftBar
+            threadId={activeThread}
+            recipientName={chatThreads.find((t: ChatThread) => t.id === activeThread)?.participantName || 'them'}
+            onSent={() => { /* it returns as a package on the next load */ }}
+            onOpenShop={() => onNavigate('gift-shop')}
+          />
+        )}
 
         {user && (
           <ReportAbuseModal
