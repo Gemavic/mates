@@ -128,7 +128,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
       const otherUserIds = threadData.map((t: any) =>
         t.participant1_id === user.id ? t.participant2_id : t.participant1_id
       );
-      const threadIds = threadData.map((t: any) => t.id);
 
       const [profilesRes, photosRes, messagesRes] = await Promise.all([
         supabaseClient
@@ -156,7 +155,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         return acc;
       }, {} as Record<string, string>);
 
-      const messagesByThread = (messagesRes.data || []).reduce((acc, row: any) => {
+      const messagesByThread = (messagesRes.data || []).reduce((acc: Record<string, any>, row: any) => {
         acc[row.thread_id] = {
           latest: row.last_message
             ? { message_text: row.last_message, created_at: row.last_created_at }

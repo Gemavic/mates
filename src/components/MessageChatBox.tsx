@@ -1095,7 +1095,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                   setLoadingOlder(true);
                   try {
                     const oldest = messages[0].timestamp.toISOString();
-                    const thread = threads.find(t => t.id === activeThread);
+                    const thread = chatThreads.find((t: ChatThread) => t.id === activeThread);
                     const { data } = await supabaseClient
                       .from('mail_messages')
                       .select('id, sender_id, message_text, created_at, is_read, is_delivered')

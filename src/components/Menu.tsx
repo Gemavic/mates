@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, MessageCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { whatsappSupportLink } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
