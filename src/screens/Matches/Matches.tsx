@@ -515,7 +515,25 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                     {/* A sticker is the message: large, unboxed, no bubble. */}
                     {msg.stickerEmoji || msg.stickerImage ? (
                       msg.stickerImage ? (
-                        <img src={msg.stickerImage} alt="" className="w-28 h-28 object-contain" />
+                        <>
+                          <img
+                            src={msg.stickerImage}
+                            alt=""
+                            className="w-28 h-28 object-contain"
+                            onError={(e) => {
+                              // Missing artwork reveals the emoji instead of an
+                              // empty frame. Both render; one starts hidden, so
+                              // there is actually something to reveal.
+                              const img = e.currentTarget;
+                              img.style.display = 'none';
+                              const next = img.nextElementSibling as HTMLElement | null;
+                              if (next) next.style.display = 'block';
+                            }}
+                          />
+                          <span className="text-6xl leading-none" style={{ display: 'none' }}>
+                            {msg.stickerEmoji}
+                          </span>
+                        </>
                       ) : (
                         <span className="text-6xl leading-none">{msg.stickerEmoji}</span>
                       )

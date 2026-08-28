@@ -38,6 +38,9 @@ export const StickerPicker: React.FC<StickerPickerProps> = ({ threadId, onClose,
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState<string | null>(null);
+  // An image_url pointing at a file that is not there rendered a broken-image
+  // icon in every tile. The emoji each row carries is the fallback.
+  const [brokenArt, setBrokenArt] = useState<Set<string>>(new Set());
   const [recent, setRecent] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
@@ -146,8 +149,13 @@ export const StickerPicker: React.FC<StickerPickerProps> = ({ threadId, onClose,
     >
       {sending === sticker.id ? (
         <Loader2 className="w-6 h-6 animate-spin text-pink-500" />
-      ) : sticker.image_url ? (
-        <img src={sticker.image_url} alt={sticker.name} className="w-12 h-12 object-contain" />
+      ) : sticker.image_url && !brokenArt.has(sticker.id) ? (
+        <img
+          src={sticker.image_url}
+          alt={sticker.name}
+          className="w-12 h-12 object-contain"
+          onError={() => setBrokenArt(prev => new Set(prev).add(sticker.id))}
+        />
       ) : (
         <span className="text-4xl">{sticker.emoji}</span>
       )}
