@@ -29,9 +29,17 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
       <div className="relative z-10 w-full max-w-lg mx-auto flex-1 flex flex-col px-5 sm:px-6">
         {/* Hero */}
         <header className="text-center pt-14 sm:pt-20 pb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-sm rounded-2xl mb-6 shadow-xl border border-white/20">
-            <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="currentColor" />
-          </div>
+          {/* The brand mark itself, not a generic heart glyph. The logo shipped
+              as a favicon and an app icon but appeared nowhere a visitor to the
+              site would ever see it - the hero drew lucide's Heart in a frosted
+              box instead. */}
+          <img
+            src="/brand/logo.svg"
+            alt="Dates.care"
+            width={80}
+            height={80}
+            className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 rounded-2xl shadow-xl"
+          />
           {/* The site never showed its own name anywhere a reader or a crawler
               could find it - only in <title>. Google's OAuth brand
               verification rejected the app for exactly that: the consent

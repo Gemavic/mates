@@ -188,7 +188,14 @@ export const Menu: React.FC<MenuProps> = ({
           {/* Menu Header */}
           <div className="mb-4 sm:mb-6 md:mb-8">
             <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">Dates Menu</h2>
+              <img
+                src="/brand/logo.svg"
+                alt=""
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg flex-none"
+              />
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">Dates.care</h2>
             </div>
             <p className="text-white/80 text-xs sm:text-sm md:text-base">Navigate to any section</p>
           </div>
