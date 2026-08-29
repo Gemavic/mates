@@ -382,9 +382,16 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               <span className="text-white font-semibold">Dates.care</span>
             </div>
             <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              {/* Real anchors, not router buttons. Google's OAuth brand check
+                  fetches these URLs without running JavaScript, so the policies
+                  have to be reachable as ordinary links to static pages. */}
+              <a href="/terms" className="text-slate-300 hover:text-white transition-colors">
+                Terms
+              </a>
+              <a href="/privacy" className="text-slate-300 hover:text-white transition-colors">
+                Privacy
+              </a>
               {[
-                ['terms', 'Terms'],
-                ['privacy', 'Privacy'],
                 ['payment-refund', 'Payments & refunds'],
                 ['help', 'Help'],
               ].map(([screen, label]) => (

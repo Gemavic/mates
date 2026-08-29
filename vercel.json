@@ -6,21 +6,29 @@
   "redirects": [
     {
       "source": "/legal",
-      "destination": "/#terms",
+      "destination": "/terms",
       "permanent": false
     },
     {
       "source": "/tos",
-      "destination": "/#terms",
+      "destination": "/terms",
       "permanent": false
     },
     {
       "source": "/pp",
-      "destination": "/#privacy",
+      "destination": "/privacy",
       "permanent": false
     }
   ],
   "rewrites": [
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
