@@ -1,0 +1,476 @@
+From ec0edac06969e2ef98c0285f044be6735bfab69d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 28 Aug 2026 02:27:33 +0000
+Subject: [PATCH 1/3] Load the gift shop from the database instead of a
+ hardcoded list
+
+The shop rendered 25 gifts hardcoded in this component, on their own
+price scale (Rose 5, Diamond 100, Mansion 1000). The virtual_gifts table
+was never read, so the 109-gift catalogue that now lives there - with
+categories, prices, VIP tiers and artwork - was invisible to users.
+
+This reads the catalogue at mount and renders it:
+
+- 109 gifts across 11 categories, ordered by sort_order (category, then
+  price ascending) rather than a hardcoded popularity number
+- Category tabs are derived from the data, so adding a category is a
+  database change and not a deploy
+- Artwork comes from image_url (public SVG in Supabase Storage), with
+  the emoji in `icon` as the per-card fallback if a file fails to load
+- Postcards (is_wide) get a double-width tile so their wording stays
+  readable
+- Loading and error states, since the grid is now asynchronous
+
+art_svg is deliberately excluded from the query. It holds the inline SVG
+for every gift, about 639 kB across the table, and would ship on every
+open of the shop; image_url points at the same artwork as a separately
+cacheable file.
+
+Sending is untouched: the same creditManager charge, the same staff-free
+path, and the same delivery into the recipient's mail thread.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01GPipWR1y6Y6pKtE8MNzisU
+---
+ src/screens/GiftShop/GiftShop.tsx | 376 +++++++++++++++++-------------
+ 1 file changed, 213 insertions(+), 163 deletions(-)
+
+diff --git a/src/screens/GiftShop/GiftShop.tsx b/src/screens/GiftShop/GiftShop.tsx
+index fcccece..4efd36f 100644
+--- a/src/screens/GiftShop/GiftShop.tsx
++++ b/src/screens/GiftShop/GiftShop.tsx
+@@ -1,20 +1,32 @@
+-import React, { useState } from 'react';
++import React, { useEffect, useMemo, useState } from 'react';
+ import { Layout } from '@/components/Layout';
+ import { Button } from '@/components/ui/button';
+-import { Gift, Heart, Star, Crown, Coffee, Flower2, CreditCard } from 'lucide-react';
++import { Gift, Heart, Star, Crown, Coffee, Flower2, CreditCard, Sparkles, Mail, Music, Palette, Gem, Loader2 } from 'lucide-react';
+ import { creditManager, formatCredits } from '@/lib/creditSystem';
+ import { useAuth } from '@/hooks/useAuth';
+ import { supabaseClient } from '@/lib/supabase';
+ import { MessagingManager } from '@/lib/database';
+ 
++/**
++ * A gift as stored in public.virtual_gifts.
++ *
++ * The catalogue is no longer hardcoded here — it is 109 rows in the database,
++ * across 11 categories, each with real artwork. Changing a price or adding a
++ * gift is now a database change, not a deploy.
++ */
+ interface GiftItem {
+   id: string;
++  slug: string;
+   name: string;
+-  emoji: string;
+-  price: number;
+-  category: 'romantic' | 'luxury' | 'fun' | 'seasonal' | 'casual';
+-  description: string;
+-  popularity: number;
++  description: string | null;
++  icon: string;              // emoji, used as the fallback if artwork fails to load
++  credit_cost: number;
++  category: string;
++  category_label: string;
++  vip_tier: 'member' | 'bronze' | 'silver' | 'gold' | 'diamond';
++  image_url: string | null;  // public SVG in Supabase Storage
++  is_wide: boolean;          // postcards are landscape and need a double-width tile
++  sort_order: number;
+ }
+ 
+ interface GiftShopProps {
+@@ -23,60 +35,87 @@ interface GiftShopProps {
+   initialRecipientName?: string | null;
+ }
+ 
++/** Icon and gradient per category slug, so the tab bar keeps its current look. */
++const CATEGORY_STYLE: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
++  all:         { icon: Gift,     color: 'from-purple-500 to-pink-500' },
++  icebreakers: { icon: Coffee,   color: 'from-amber-400 to-orange-500' },
++  flowers:     { icon: Flower2,  color: 'from-green-500 to-emerald-600' },
++  romance:     { icon: Heart,    color: 'from-pink-500 to-rose-500' },
++  western:     { icon: Star,     color: 'from-orange-600 to-amber-700' },
++  jewellery:   { icon: Gem,      color: 'from-yellow-400 to-amber-500' },
++  lifestyle:   { icon: Sparkles, color: 'from-slate-500 to-slate-700' },
++  hobby:       { icon: Palette,  color: 'from-teal-500 to-cyan-600' },
++  statement:   { icon: Crown,    color: 'from-violet-500 to-purple-600' },
++  interactive: { icon: Sparkles, color: 'from-fuchsia-500 to-pink-600' },
++  animated:    { icon: Music,    color: 'from-orange-400 to-red-500' },
++  postcards:   { icon: Mail,     color: 'from-blue-500 to-indigo-600' },
++};
++
++const TIER_LABEL: Record<string, string> = {
++  bronze: 'Bronze VIP', silver: 'Silver VIP', gold: 'Gold VIP', diamond: 'Diamond VIP',
++};
++
+ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipientId = null, initialRecipientName = null }) => {
+   const { user } = useAuth();
+   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
+   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+-  
+-  const giftCatalog: GiftItem[] = [
+-    // Romantic Gifts
+-    { id: 'red_rose', name: 'Red Rose', emoji: '🌹', price: 5, category: 'romantic', description: 'Classic symbol of love', popularity: 95 },
+-    { id: 'bouquet', name: 'Rose Bouquet', emoji: '💐', price: 15, category: 'romantic', description: 'Beautiful flower arrangement', popularity: 88 },
+-    { id: 'love_heart', name: 'Love Heart', emoji: '💖', price: 3, category: 'romantic', description: 'Express your feelings', popularity: 92 },
+-    { id: 'chocolate_box', name: 'Chocolate Box', emoji: '🍫', price: 12, category: 'romantic', description: 'Sweet treats', popularity: 87 },
+-    
+-    // Luxury Gifts
+-    { id: 'diamond', name: 'Diamond', emoji: '💎', price: 100, category: 'luxury', description: 'Ultimate luxury gift', popularity: 95 },
+-    { id: 'emerald', name: 'Emerald', emoji: '💚', price: 80, category: 'luxury', description: 'Precious green gem', popularity: 75 },
+-    { id: 'sapphire', name: 'Sapphire', emoji: '💙', price: 85, category: 'luxury', description: 'Royal blue gem', popularity: 78 },
+-    { id: 'crown', name: 'Crown', emoji: '👑', price: 50, category: 'luxury', description: 'Treat them like royalty', popularity: 88 },
+-    { id: 'champagne', name: 'Champagne', emoji: '🍾', price: 35, category: 'luxury', description: 'Celebrate in style', popularity: 85 },
+-    { id: 'luxury_watch', name: 'Luxury Watch', emoji: '⌚', price: 75, category: 'luxury', description: 'Timeless elegance', popularity: 72 },
+-    { id: 'sports_car', name: 'Sports Car', emoji: '🏎️', price: 200, category: 'luxury', description: 'Ultimate dream gift', popularity: 90 },
+-    { id: 'yacht', name: 'Luxury Yacht', emoji: '🛥️', price: 300, category: 'luxury', description: 'Sail away together', popularity: 85 },
+-    { id: 'private_jet', name: 'Private Jet', emoji: '✈️', price: 500, category: 'luxury', description: 'Fly in style', popularity: 92 },
+-    { id: 'mansion', name: 'Dream Mansion', emoji: '🏰', price: 1000, category: 'luxury', description: 'Live like royalty', popularity: 88 },
+-    
+-    // Fun & Cute Gifts
+-    { id: 'teddy_bear', name: 'Teddy Bear', emoji: '🧸', price: 8, category: 'fun', description: 'Cuddly companion', popularity: 92 },
+-    { id: 'cute_puppy', name: 'Cute Puppy', emoji: '🐶', price: 12, category: 'fun', description: 'Adorable furry friend', popularity: 95 },
+-    { id: 'birthday_cake', name: 'Birthday Cake', emoji: '🎂', price: 10, category: 'fun', description: 'Celebrate special moments', popularity: 88 },
+-    
+-    // Casual Gifts
+-    { id: 'coffee', name: 'Coffee', emoji: '☕', price: 3, category: 'casual', description: 'Morning energy boost', popularity: 90 },
+-    { id: 'pizza_slice', name: 'Pizza Slice', emoji: '🍕', price: 5, category: 'casual', description: 'Delicious comfort food', popularity: 92 },
+-    { id: 'ice_cream', name: 'Ice Cream', emoji: '🍦', price: 4, category: 'casual', description: 'Cool sweet treat', popularity: 89 },
+-    
+-    // Seasonal Gifts
+-    { id: 'christmas_tree', name: 'Christmas Tree', emoji: '🎄', price: 15, category: 'seasonal', description: 'Holiday spirit', popularity: 85 },
+-    { id: 'valentine_card', name: 'Valentine Card', emoji: '💝', price: 6, category: 'seasonal', description: 'Love day special', popularity: 90 },
+-    { id: 'fireworks', name: 'Fireworks', emoji: '🎆', price: 12, category: 'seasonal', description: 'Celebration spectacular', popularity: 88 }
+-  ];
+-  
+-  const categories = [
+-    { id: 'all', name: 'All Gifts', icon: Gift, color: 'from-purple-500 to-pink-500' },
+-    { id: 'romantic', name: 'Romantic', icon: Heart, color: 'from-pink-500 to-rose-500' },
+-    { id: 'luxury', name: 'Luxury', icon: Crown, color: 'from-yellow-400 to-orange-500' },
+-    { id: 'fun', name: 'Fun & Cute', icon: Star, color: 'from-purple-500 to-indigo-500' },
+-    { id: 'casual', name: 'Casual', icon: Coffee, color: 'from-green-500 to-teal-500' },
+-    { id: 'seasonal', name: 'Seasonal', icon: Flower2, color: 'from-orange-500 to-red-500' }
+-  ];
+ 
+-  const filteredGifts = selectedCategory === 'all' 
+-    ? giftCatalog 
+-    : giftCatalog.filter(gift => gift.category === selectedCategory);
++  const [gifts, setGifts] = useState<GiftItem[]>([]);
++  const [loading, setLoading] = useState(true);
++  const [loadError, setLoadError] = useState<string | null>(null);
++  const [brokenArt, setBrokenArt] = useState<Set<string>>(new Set());
++
++  useEffect(() => {
++    let cancelled = false;
++
++    const loadCatalogue = async () => {
++      // art_svg is deliberately not selected: it holds the inline SVG for every
++      // gift (~639 kB across the table) and would ship on every shop open.
++      // image_url points at the same artwork as a separately cacheable file.
++      const { data, error } = await supabaseClient
++        .from('virtual_gifts')
++        .select('id,slug,name,description,icon,credit_cost,category,category_label,vip_tier,image_url,is_wide,sort_order')
++        .eq('is_active', true)
++        .order('sort_order', { ascending: true });
++
++      if (cancelled) return;
+ 
+-  const sortedGifts = filteredGifts.sort((a, b) => b.popularity - a.popularity);
++      if (error) {
++        console.error('Failed to load gift catalogue:', error);
++        setLoadError('We could not load the gift shop just now.');
++      } else {
++        setGifts((data as GiftItem[]) ?? []);
++        setLoadError(null);
++      }
++      setLoading(false);
++    };
++
++    loadCatalogue();
++    return () => { cancelled = true; };
++  }, []);
++
++  /** Category tabs, derived from what is actually in the catalogue. */
++  const categories = useMemo(() => {
++    const seen = new Map<string, string>();
++    for (const g of gifts) if (!seen.has(g.category)) seen.set(g.category, g.category_label);
++    return [
++      { id: 'all', name: 'All Gifts', ...CATEGORY_STYLE.all },
++      ...Array.from(seen.entries()).map(([id, name]) => ({
++        id,
++        name,
++        ...(CATEGORY_STYLE[id] ?? { icon: Gift, color: 'from-purple-500 to-pink-500' }),
++      })),
++    ];
++  }, [gifts]);
++
++  // Already ordered by sort_order (category order, then price) from the query.
++  const visibleGifts = useMemo(
++    () => (selectedCategory === 'all' ? gifts : gifts.filter(g => g.category === selectedCategory)),
++    [gifts, selectedCategory],
++  );
++
++  const markArtBroken = (slug: string) =>
++    setBrokenArt(prev => (prev.has(slug) ? prev : new Set(prev).add(slug)));
+ 
+   const sendGift = async (_giftId: string, giftName: string, price: number, emoji: string) => {
+     if (!user) {
+@@ -129,15 +168,15 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
+     }
+   };
+ 
++  const activeCategoryName =
++    selectedCategory === 'all' ? 'All Gifts' : categories.find(c => c.id === selectedCategory)?.name;
++
+   return (
+     <Layout
+       title="Gift Shop"
+       onNavigate={onNavigate}
+       activeTab="gift-shop"
+-      onBack={() => {
+-        console.log('Gift Shop back button clicked');
+-        onNavigate('discovery');
+-      }}
++      onBack={() => onNavigate('discovery')}
+       showClose={false}
+     >
+       <div className="px-4 py-6">
+@@ -179,119 +218,130 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
+         </div>
+ 
+         {/* Category Tabs */}
+-        <div className="mb-6">
+-          <div className="flex overflow-x-auto pb-2 space-x-2">
+-            {categories.map((category) => {
+-              const Icon = category.icon;
+-              return (
+-                <button
+-                  key={category.id}
+-                  onClick={() => setSelectedCategory(category.id)}
+-                  className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
+-                    selectedCategory === category.id
+-                      ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+-                      : 'bg-white/20 text-white hover:bg-white/30'
+-                  }`}
+-                  type="button"
+-                >
+-                  <Icon className="w-4 h-4" />
+-                  <span className="text-sm font-medium">{category.name}</span>
+-                </button>
+-              );
+-            })}
+-          </div>
+-        </div>
+-
+-        {/* Gift Grid */}
+-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-8">
+-          <div className="flex items-center justify-between mb-4">
+-            <h3 className="text-white font-semibold text-lg">
+-              {selectedCategory === 'all' ? 'All Gifts' : categories.find(c => c.id === selectedCategory)?.name} 
+-              ({sortedGifts.length} items)
+-            </h3>
+-            <span className="text-white/70 text-sm">💖 Popular</span>
+-          </div>
+-          
+-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+-            {sortedGifts.map((gift) => (
+-              <div
+-                key={gift.id}
+-                className="bg-white/10 rounded-xl p-3 text-center hover:bg-white/20 transition-all duration-300 hover:scale-105 flex flex-col justify-between min-h-[180px]"
+-              >
+-                <div className="text-3xl mb-2">{gift.emoji}</div>
+-                <h4 className="text-white font-medium text-sm mb-1">{gift.name}</h4>
+-                <p className="text-white/60 text-xs mb-2">{gift.description}</p>
+-                <div className="flex items-center justify-center space-x-1 mb-3">
+-                  <span className="text-white/70 text-xs">{formatCredits(gift.price)}</span>
+-                  <div className="flex">
+-                    {[...Array(5)].map((_, i) => (
+-                      <span
+-                        key={i}
+-                        className={`text-xs ${
+-                          i < Math.floor(gift.popularity / 20) ? 'text-yellow-400' : 'text-gray-400'
+-                        }`}
+-                      >
+-                        ⭐
+-                      </span>
+-                    ))}
+-                  </div>
+-                </div>
+-                <div className="mt-auto">
+-                  <Button
+-                    onClick={() => sendGift(gift.id, gift.name, gift.price, gift.emoji)}
+-                    disabled={!creditManager.canAfford(user?.id || 'demo-user', gift.price) && !creditManager.isStaffMember(user?.id || 'demo-user')}
+-                    className={`w-full text-xs py-2 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
+-                      creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user')
+-                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:scale-105'
+-                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
++        {!loading && !loadError && (
++          <div className="mb-6">
++            <div className="flex overflow-x-auto pb-2 space-x-2">
++              {categories.map((category) => {
++                const Icon = category.icon;
++                return (
++                  <button
++                    key={category.id}
++                    onClick={() => setSelectedCategory(category.id)}
++                    className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
++                      selectedCategory === category.id
++                        ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
++                        : 'bg-white/20 text-white hover:bg-white/30'
+                     }`}
+                     type="button"
+                   >
+-                    {creditManager.canAfford(user?.id || 'demo-user', gift.price) || creditManager.isStaffMember(user?.id || 'demo-user') ? 'Send Gift' : 'Need Credits'}
+-                  </Button>
+-                </div>
+-              </div>
+-            ))}
++                    <Icon className="w-4 h-4" />
++                    <span className="text-sm font-medium">{category.name}</span>
++                  </button>
++                );
++              })}
++            </div>
+           </div>
+-        </div>
++        )}
+ 
+-        {/* Recent Gifts */}
+-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+-          <h3 className="text-white font-semibold text-lg mb-4">Recent Gifts Sent</h3>
+-          <div className="space-y-3">
+-            <div className="flex items-center justify-between">
+-              <div className="flex items-center space-x-3">
+-                <span className="text-2xl">🌹</span>
+-                <div>
+-                  <p className="text-white font-medium">Red Rose to Emma</p>
+-                  <p className="text-white/70 text-sm">2 hours ago</p>
+-                </div>
+-              </div>
+-              <span className="text-white/70 text-sm">5 Credits</span>
++        {/* Gift Grid */}
++        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-8">
++          {loading ? (
++            <div className="flex flex-col items-center justify-center py-16 text-white/80">
++              <Loader2 className="w-8 h-8 animate-spin mb-3" />
++              <p className="text-sm">Loading the gift shop…</p>
+             </div>
+-            <div className="flex items-center justify-between">
+-              <div className="flex items-center space-x-3">
+-                <span className="text-2xl">💖</span>
+-                <div>
+-                  <p className="text-white font-medium">Love Heart to Sarah</p>
+-                  <p className="text-white/70 text-sm">1 day ago</p>
+-                </div>
+-              </div>
+-              <span className="text-white/70 text-sm">3 Credits</span>
++          ) : loadError ? (
++            <div className="py-12 text-center">
++              <p className="text-white/90 mb-4">{loadError}</p>
++              <Button
++                onClick={() => window.location.reload()}
++                className="bg-white/20 text-white px-4 py-2"
++                type="button"
++              >
++                Try again
++              </Button>
+             </div>
+-            <div className="flex items-center justify-between">
+-              <div className="flex items-center space-x-3">
+-                <span className="text-2xl">🧸</span>
+-                <div>
+-                  <p className="text-white font-medium">Teddy Bear to Jessica</p>
+-                  <p className="text-white/70 text-sm">3 days ago</p>
+-                </div>
++          ) : (
++            <>
++              <div className="flex items-center justify-between mb-4">
++                <h3 className="text-white font-semibold text-lg">
++                  {activeCategoryName} ({visibleGifts.length} items)
++                </h3>
++                <span className="text-white/70 text-sm">Low to high</span>
+               </div>
+-              <span className="text-white/70 text-sm">8 Credits</span>
+-            </div>
+-          </div>
++
++              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
++                {visibleGifts.map((gift) => {
++                  const affordable =
++                    creditManager.canAfford(user?.id || 'demo-user', gift.credit_cost) ||
++                    creditManager.isStaffMember(user?.id || 'demo-user');
++                  const artFailed = brokenArt.has(gift.slug) || !gift.image_url;
++
++                  return (
++                    <div
++                      key={gift.slug}
++                      className={`bg-white/10 rounded-xl p-3 text-center hover:bg-white/20 transition-all duration-300 hover:scale-105 flex flex-col justify-between min-h-[190px] ${
++                        gift.is_wide ? 'col-span-2' : ''
++                      }`}
++                    >
++                      <div className="flex items-center justify-center mb-2 h-[76px]">
++                        {artFailed ? (
++                          <span className="text-3xl" role="img" aria-label={gift.name}>{gift.icon}</span>
++                        ) : (
++                          <img
++                            src={gift.image_url as string}
++                            alt={gift.name}
++                            loading="lazy"
++                            onError={() => markArtBroken(gift.slug)}
++                            className={gift.is_wide ? 'h-[76px] w-auto' : 'h-[72px] w-[72px]'}
++                          />
++                        )}
++                      </div>
++
++                      <h4 className="text-white font-medium text-sm mb-1">{gift.name}</h4>
++                      {gift.description && (
++                        <p className="text-white/60 text-xs mb-2">{gift.description}</p>
++                      )}
++
++                      <div className="flex flex-col items-center gap-1 mb-3">
++                        <span className="text-white font-semibold text-sm">
++                          {formatCredits(gift.credit_cost)}
++                        </span>
++                        {gift.vip_tier !== 'member' && (
++                          <span className="text-[10px] font-semibold tracking-wide text-yellow-300/90">
++                            {TIER_LABEL[gift.vip_tier]}
++                          </span>
++                        )}
++                      </div>
++
++                      <div className="mt-auto">
++                        <Button
++                          onClick={() => sendGift(gift.id, gift.name, gift.credit_cost, gift.icon)}
++                          disabled={!affordable}
++                          className={`w-full text-xs py-2 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
++                            affordable
++                              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:scale-105'
++                              : 'bg-gray-400 text-gray-200 cursor-not-allowed'
++                          }`}
++                          type="button"
++                        >
++                          {affordable ? 'Send Gift' : 'Need Credits'}
++                        </Button>
++                      </div>
++                    </div>
++                  );
++                })}
++              </div>
++
++              {visibleGifts.length === 0 && (
++                <p className="text-white/70 text-center py-10 text-sm">
++                  Nothing in this category yet.
++                </p>
++              )}
++            </>
++          )}
+         </div>
+       </div>
+     </Layout>
+   );
+-};
+\ No newline at end of file
++};
+-- 
+2.43.0
+
