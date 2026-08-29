@@ -8,6 +8,12 @@ import {
   MessageCircle,
   Sparkles,
   ArrowRight,
+  Video,
+  Phone,
+  Gift,
+  Mail,
+  Users,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -15,172 +21,395 @@ interface WelcomeProps {
   onNavigate?: (screen: string) => void;
 }
 
+/**
+ * The public front page.
+ *
+ * This used to be a sign-in gate: a logo, a tagline and two buttons. That cost
+ * real money twice over. Google's OAuth brand verification rejected the app
+ * with "your homepage is behind a login page", which is why the consent screen
+ * still shows a Supabase project ref instead of Dates.care. And a site whose
+ * only server-rendered content is meta tags is invisible in search - there was
+ * nothing for anyone to index or read.
+ *
+ * So the page now explains the product before it asks for anything: what it is,
+ * how it works, what it costs, and who is behind it. Sign-in moved to the
+ * header and to CTAs. index.html carries a plain-HTML copy of the same content
+ * for anything that does not run JavaScript - keep the two in step.
+ */
+
+const CREDIT_PACKS = [
+  { name: 'Starter', credits: 50, bonus: 10, price: '12.99' },
+  { name: 'Popular', credits: 100, bonus: 25, price: '18.99', popular: true },
+  { name: 'Premium', credits: 450, bonus: 50, price: '50.99' },
+];
+
+const SPEND = [
+  { what: 'Message after the first', cost: '10 credits' },
+  { what: 'Virtual gift', cost: 'from 5 credits' },
+  { what: 'Super like', cost: '25 credits' },
+  { what: 'Profile boost (30 min)', cost: '50 credits' },
+  { what: 'Audio call', cost: '50 credits' },
+  { what: 'Video call', cost: '100 credits' },
+];
+
+const FAQ = [
+  {
+    q: 'Is Dates.care free to join?',
+    a: 'Yes. Creating an account, building a profile and browsing other members cost nothing, and your first message to every new connection is always free. Credits are only needed for the extras listed above.',
+  },
+  {
+    q: 'What are credits for?',
+    a: 'Credits pay for optional things — continuing a conversation past the first message, sending a gift, boosting your profile, and audio or video calls. You buy them in packs and they do not expire.',
+  },
+  {
+    q: 'How do you keep fake profiles out?',
+    a: 'Photo and identity verification, automated content moderation on photos and messages, and one-tap reporting on every profile and conversation. Reports are reviewed by our moderation team.',
+  },
+  {
+    q: 'Who can see my personal information?',
+    a: 'Only what you choose to put on your profile. We do not sell personal data to anyone. The full detail is in our privacy policy.',
+  },
+  {
+    q: 'Can I use Dates.care on my phone?',
+    a: 'Yes. The site works in any mobile browser, and you can install it to your home screen from Chrome or Safari for a full-screen app experience.',
+  },
+];
+
 export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
   const { user, getFirstName } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-600 via-rose-500 to-purple-700 flex flex-col">
-      {/* Subtle decorative glow — no stock photos, no bouncing elements */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-pink-400/20 blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-purple-400/20 blur-3xl" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-lg mx-auto flex-1 flex flex-col px-5 sm:px-6">
-        {/* Hero */}
-        <header className="text-center pt-14 sm:pt-20 pb-8">
-          {/* The brand mark itself, not a generic heart glyph. The logo shipped
-              as a favicon and an app icon but appeared nowhere a visitor to the
-              site would ever see it - the hero drew lucide's Heart in a frosted
-              box instead. */}
-          <img
-            src="/brand/logo.svg"
-            alt="Dates.care"
-            width={80}
-            height={80}
-            className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 rounded-2xl shadow-xl"
-          />
-          {/* The site never showed its own name anywhere a reader or a crawler
-              could find it - only in <title>. Google's OAuth brand
-              verification rejected the app for exactly that: the consent
-              screen name did not match the homepage. */}
-          <p className="text-white/90 text-lg sm:text-xl font-semibold tracking-wide mb-2">
-            Dates.care
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-            Dating, done
-            <span className="block">properly.</span>
-          </h1>
-          <p className="text-white/85 text-base sm:text-lg max-w-sm mx-auto leading-relaxed">
-            Verified profiles, thoughtful matching, and real conversations —
-            built for people who are serious about connection.
-          </p>
-        </header>
-
-        {/* Primary actions */}
-        <div className="space-y-3 mb-10">
-          {user ? (
-            <>
-              <Button
-                onClick={() => onNavigate('discovery')}
-                className="w-full h-13 py-4 bg-white text-rose-600 hover:bg-white/90 font-semibold text-base rounded-xl shadow-lg"
-              >
-                Welcome back, {getFirstName()} — start browsing
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button
-                onClick={() => onNavigate('profile')}
-                className="w-full py-4 bg-white/10 text-white hover:bg-white/20 font-medium text-base rounded-xl border border-white/25"
-              >
-                View my profile
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                onClick={() => onNavigate('signup')}
-                className="w-full py-4 bg-white text-rose-600 hover:bg-white/90 font-semibold text-base rounded-xl shadow-lg"
-              >
-                Create your free account
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button
-                onClick={() => onNavigate('signin')}
-                className="w-full py-4 bg-white/10 text-white hover:bg-white/20 font-medium text-base rounded-xl border border-white/25"
-              >
-                Sign in
-              </Button>
-              <p className="text-center text-white/60 text-xs pt-1">
-                Free to join. Browsing and your first message to every
-                connection are always free.
-              </p>
-            </>
-          )}
-        </div>
-
-        {/* Trust & safety — the reason to choose this platform */}
-        <section className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-5 sm:p-6 mb-8">
-          <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
-            Built on trust
-          </h2>
-          <ul className="space-y-4">
-            <li className="flex items-start gap-3">
-              <BadgeCheck className="w-5 h-5 text-emerald-300 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-white font-medium text-sm">Verified profiles</p>
-                <p className="text-white/70 text-xs leading-relaxed">
-                  Photo and identity verification keeps fake accounts out.
-                </p>
-              </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-300 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-white font-medium text-sm">Active moderation</p>
-                <p className="text-white/70 text-xs leading-relaxed">
-                  Content moderation and one-tap reporting on every profile
-                  and conversation.
-                </p>
-              </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-emerald-300 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-white font-medium text-sm">Your data stays yours</p>
-                <p className="text-white/70 text-xs leading-relaxed">
-                  We never sell personal data. Read our{' '}
-                  <button
-                    onClick={() => onNavigate('privacy')}
-                    className="underline underline-offset-2 hover:text-white"
+    <div className="min-h-screen bg-white">
+      {/* ---------------------------------------------------------------- header */}
+      <header className="bg-gradient-to-br from-rose-600 via-rose-500 to-purple-700">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+          <nav className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/brand/logo.svg"
+                alt=""
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-lg"
+              />
+              <span className="text-white font-bold text-lg tracking-tight">Dates.care</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <Button
+                  onClick={() => onNavigate('discovery')}
+                  className="bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold text-sm rounded-lg px-4 py-2"
+                >
+                  Open the app
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => onNavigate('signin')}
+                    className="bg-none bg-transparent text-white hover:bg-white/15 font-medium text-sm rounded-lg px-3 py-2"
                   >
-                    privacy policy
-                  </button>
-                  .
-                </p>
+                    Sign in
+                  </Button>
+                  <Button
+                    onClick={() => onNavigate('signup')}
+                    className="bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold text-sm rounded-lg px-4 py-2"
+                  >
+                    Join free
+                  </Button>
+                </>
+              )}
+            </div>
+          </nav>
+
+          {/* -------------------------------------------------------------- hero */}
+          <div className="relative py-14 sm:py-20 text-center">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-pink-400/20 blur-3xl" />
+              <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-400/20 blur-3xl" />
+            </div>
+            <div className="relative">
+              <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-5">
+                Dating, done
+                <span className="block">properly.</span>
+              </h1>
+              <p className="text-white/90 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-8">
+                Dates.care is an online dating service for people who are serious
+                about connection. Verified profiles, thoughtful matching, and
+                real conversations — with video and audio calls, private
+                messaging, and relationship support when you want it.
+              </p>
+
+              {user ? (
+                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                  <Button
+                    onClick={() => onNavigate('discovery')}
+                    className="flex-1 py-3.5 bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold rounded-xl shadow-lg"
+                  >
+                    Welcome back, {getFirstName()} — start browsing
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                    <Button
+                      onClick={() => onNavigate('signup')}
+                      className="flex-1 py-3.5 bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold rounded-xl shadow-lg"
+                    >
+                      Create your free account
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                    <Button
+                      onClick={() => onNavigate('signin')}
+                      className="flex-1 py-3.5 bg-none bg-white/10 text-white hover:bg-white/20 font-medium rounded-xl border border-white/25"
+                    >
+                      Sign in
+                    </Button>
+                  </div>
+                  <p className="text-white/70 text-sm mt-4">
+                    Free to join. Browsing and your first message to every
+                    connection are always free.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ------------------------------------------------------------ how it works */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-3">
+          How Dates.care works
+        </h2>
+        <p className="text-slate-600 text-center max-w-xl mx-auto mb-10">
+          Three steps, no games, and nothing hidden behind a paywall until you
+          decide it is worth paying for.
+        </p>
+        <ol className="grid sm:grid-cols-3 gap-5">
+          {[
+            { n: '1', icon: Sparkles, t: 'Create a real profile',
+              d: 'Add your photos and verify who you are. Verification is what keeps this a community of real people.' },
+            { n: '2', icon: Heart, t: 'Match on what matters',
+              d: 'Browse and like freely. Matching weighs what you are actually looking for, not just who swiped fastest.' },
+            { n: '3', icon: MessageCircle, t: 'Talk, meet, connect',
+              d: 'Message, call, or send a gift. Your first message to every new connection is free, so conversations start easily.' },
+          ].map(s => (
+            <li key={s.n} className="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-8 h-8 rounded-full bg-rose-600 text-white text-sm font-bold flex items-center justify-center flex-none">
+                  {s.n}
+                </span>
+                <s.icon className="w-5 h-5 text-rose-600" />
               </div>
+              <h3 className="font-semibold text-slate-900 mb-1.5">{s.t}</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">{s.d}</p>
             </li>
-          </ul>
-        </section>
+          ))}
+        </ol>
+      </section>
 
-        {/* How it works */}
-        <section className="mb-10">
-          <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4 px-1">
-            How it works
+      {/* --------------------------------------------------------------- features */}
+      <section className="bg-slate-50 border-y border-slate-200">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-10">
+            What you can do
           </h2>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/10 rounded-xl border border-white/15 p-4 text-center">
-              <Sparkles className="w-5 h-5 text-white mx-auto mb-2" />
-              <p className="text-white text-xs font-medium">Create a real profile</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { icon: MessageCircle, t: 'Private messaging', d: 'One-to-one conversations with photo sharing. The first message to each connection is free.' },
+              { icon: Video, t: 'Video calls', d: 'Meet face to face before you meet in person — the safest way to know who you are talking to.' },
+              { icon: Phone, t: 'Audio calls', d: 'A voice call when video feels like too much, too soon.' },
+              { icon: Gift, t: 'Virtual gifts', d: 'Over a hundred hand-drawn gifts, from a simple hello to something genuinely memorable.' },
+              { icon: Mail, t: 'Mail', d: 'Longer letters for the conversations that deserve more than a chat window.' },
+              { icon: Users, t: 'Relationship support', d: 'Couple therapy and counselling from qualified practitioners, for members who want it.' },
+            ].map(f => (
+              <div key={f.t} className="bg-white rounded-2xl border border-slate-200 p-6">
+                <f.icon className="w-6 h-6 text-rose-600 mb-3" />
+                <h3 className="font-semibold text-slate-900 mb-1.5">{f.t}</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">{f.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ trust */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-3">
+          Built on trust
+        </h2>
+        <p className="text-slate-600 text-center max-w-xl mx-auto mb-10">
+          Online dating only works if the people are real and the platform is on
+          your side.
+        </p>
+        <div className="grid sm:grid-cols-3 gap-5">
+          {[
+            { icon: BadgeCheck, t: 'Verified profiles', d: 'Photo and identity verification keeps fake accounts out. Verified members carry a badge.' },
+            { icon: ShieldCheck, t: 'Active moderation', d: 'Automated moderation on photos and messages, plus one-tap reporting on every profile and conversation.' },
+            { icon: Lock, t: 'Your data stays yours', d: 'We never sell personal data. You control what appears on your profile and can delete your account at any time.' },
+          ].map(t => (
+            <div key={t.t} className="text-center px-2">
+              <t.icon className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
+              <h3 className="font-semibold text-slate-900 mb-1.5">{t.t}</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">{t.d}</p>
             </div>
-            <div className="bg-white/10 rounded-xl border border-white/15 p-4 text-center">
-              <Heart className="w-5 h-5 text-white mx-auto mb-2" />
-              <p className="text-white text-xs font-medium">Match on what matters</p>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------- pricing */}
+      <section className="bg-slate-50 border-y border-slate-200">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-3">
+            What it costs
+          </h2>
+          <p className="text-slate-600 text-center max-w-xl mx-auto mb-10">
+            No subscription. You buy credits only if and when you want the
+            extras, and they do not expire.
+          </p>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8 max-w-2xl mx-auto">
+            <h3 className="font-semibold text-slate-900 mb-4">Always free</h3>
+            <ul className="space-y-2.5">
+              {[
+                'Creating an account and building your profile',
+                'Browsing and liking other members',
+                'Your first message to every new connection',
+              ].map(x => (
+                <li key={x} className="flex items-start gap-2.5 text-slate-700 text-sm">
+                  <Check className="w-4 h-4 text-emerald-600 flex-none mt-0.5" />
+                  {x}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-900 mb-4">What credits buy</h3>
+              <dl className="space-y-2.5">
+                {SPEND.map(s => (
+                  <div key={s.what} className="flex justify-between gap-4 text-sm">
+                    <dt className="text-slate-700">{s.what}</dt>
+                    <dd className="text-slate-900 font-medium whitespace-nowrap">{s.cost}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            <div className="bg-white/10 rounded-xl border border-white/15 p-4 text-center">
-              <MessageCircle className="w-5 h-5 text-white mx-auto mb-2" />
-              <p className="text-white text-xs font-medium">Talk, meet, connect</p>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-900 mb-4">Credit packs</h3>
+              <ul className="space-y-3">
+                {CREDIT_PACKS.map(p => (
+                  <li
+                    key={p.name}
+                    className={`flex items-center justify-between gap-4 rounded-xl px-4 py-3 border ${
+                      p.popular ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-medium text-slate-900 text-sm">
+                        {p.name}
+                        {p.popular && (
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-rose-600">
+                            Most popular
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-slate-600 text-xs">
+                        {p.credits} credits + {p.bonus} bonus
+                      </p>
+                    </div>
+                    <span className="font-bold text-slate-900 whitespace-nowrap">
+                      ${p.price}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-slate-500 text-xs mt-4">
+                Prices in US dollars. Tax is calculated at checkout for your
+                country.
+              </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* -------------------------------------------------------------------- faq */}
+      <section className="max-w-3xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-10">
+          Common questions
+        </h2>
+        <dl className="space-y-6">
+          {FAQ.map(f => (
+            <div key={f.q} className="border-b border-slate-200 pb-6 last:border-0">
+              <dt className="font-semibold text-slate-900 mb-2">{f.q}</dt>
+              <dd className="text-slate-600 text-sm leading-relaxed">{f.a}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* ------------------------------------------------------------- closing cta */}
+      {!user && (
+        <section className="bg-gradient-to-br from-rose-600 via-rose-500 to-purple-700">
+          <div className="max-w-3xl mx-auto px-5 sm:px-8 py-14 sm:py-16 text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              Ready when you are
+            </h2>
+            <p className="text-white/85 mb-7 max-w-md mx-auto">
+              Join free, browse as long as you like, and only spend a credit
+              when something is worth it.
+            </p>
+            <Button
+              onClick={() => onNavigate('signup')}
+              className="bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold rounded-xl px-8 py-3.5 shadow-lg"
+            >
+              Create your free account
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </section>
+      )}
 
-        {/* Footer */}
-        <footer className="mt-auto pb-8 text-center">
-          <div className="flex items-center justify-center gap-4 text-white/60 text-xs">
-            <button onClick={() => onNavigate('terms')} className="hover:text-white transition-colors">
-              Terms
-            </button>
-            <span aria-hidden="true">·</span>
-            <button onClick={() => onNavigate('privacy')} className="hover:text-white transition-colors">
-              Privacy
-            </button>
-            <span aria-hidden="true">·</span>
-            <button onClick={() => onNavigate('help')} className="hover:text-white transition-colors">
-              Help
-            </button>
+      {/* ----------------------------------------------------------------- footer */}
+      <footer className="bg-slate-900">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="flex items-center gap-2.5">
+              <img src="/brand/logo.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-md" />
+              <span className="text-white font-semibold">Dates.care</span>
+            </div>
+            <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              {[
+                ['terms', 'Terms'],
+                ['privacy', 'Privacy'],
+                ['payment-refund', 'Payments & refunds'],
+                ['help', 'Help'],
+              ].map(([screen, label]) => (
+                <button
+                  key={screen}
+                  onClick={() => onNavigate(screen)}
+                  className="text-slate-300 hover:text-white transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+              <a
+                href="mailto:support@dates.care"
+                className="text-slate-300 hover:text-white transition-colors"
+              >
+                support@dates.care
+              </a>
+            </nav>
           </div>
-          <p className="text-white/40 text-xs mt-3">© 2026 Dates. All rights reserved.</p>
-        </footer>
-      </div>
+          <p className="text-slate-500 text-xs mt-8">
+            © 2026 Dates.care. All rights reserved. Dates.care is an online
+            dating service. You must be 18 or older to create an account.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
