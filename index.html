@@ -38,6 +38,19 @@
     <link rel="alternate" hreflang="en" href="https://dates.care/" />
     <link rel="alternate" hreflang="x-default" href="https://dates.care/" />
 
+    <!-- Icons. The site shipped with none, so every browser tab showed a blank
+         page glyph and an installed shortcut had nothing to display. Two
+         artworks, deliberately: the full mark carries the two rings and the
+         D/C, which need room, while the favicon drops to the heart alone
+         because below about 32px the rings close up and the letters vanish.
+         Same tile, same heart - one brand at two densities. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#EC4899" />
+
     <!-- Preconnect for Performance -->
     <!-- Supabase is the origin every screen depends on, and it was not
          preconnected: the browser only began DNS + TLS for it after the JS
@@ -126,7 +139,7 @@
       "@type": "Organization",
       "name": "Dates.care",
       "url": "https://dates.care/",
-      "logo": "https://dates.care/logo.png",
+      "logo": "https://dates.care/brand/logo-512.png",
       "sameAs": [
         "https://twitter.com/datescare",
         "https://facebook.com/datescare",
@@ -142,7 +155,49 @@
     </script>
   </head>
   <body>
-    <div id="app"></div>
+    <!-- Pre-hydration homepage. createRoot() clears this container on first
+         render, so visitors see it only until the bundle executes - but a
+         crawler that does not run JavaScript sees it as the whole page.
+         The served HTML previously carried nothing but meta tags, and Google's
+         OAuth brand verification rejected the app for it twice: "homepage is
+         behind a login page", and a name mismatch, because "Dates.care"
+         appeared nowhere outside <title>. See docs/homepage-fallback.md. -->
+    <div id="app">
+      <div style="min-height:100vh;margin:0;padding:56px 24px 40px;box-sizing:border-box;background:linear-gradient(135deg,#F86FA0 0%,#EC4899 55%,#9B3BB0 100%);font-family:'Alegreya',Georgia,serif;color:#fff;display:flex;justify-content:center">
+        <div style="width:100%;max-width:560px">
+
+          <img src="/brand/logo-120.png" width="72" height="72" alt="Dates.care"
+               style="display:block;margin:0 auto 22px;border-radius:16px" />
+
+          <h1 style="font-size:40px;line-height:1.1;font-weight:700;text-align:center;margin:0 0 10px">Dates.care</h1>
+          <p style="font-size:19px;text-align:center;margin:0 0 18px;opacity:.9">Dating, done properly.</p>
+
+          <p style="font-size:16px;line-height:1.6;text-align:center;margin:0 0 30px;opacity:.85">
+            Dates.care is an online dating service for people who are serious about
+            connection. Verified profiles, thoughtful matching, and real
+            conversations. Browsing and your first message to every connection are
+            always free.
+          </p>
+
+          <h2 style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 14px;opacity:.8">What Dates.care offers</h2>
+          <ul style="list-style:none;padding:0;margin:0 0 32px;font-size:15px;line-height:1.6">
+            <li style="margin-bottom:12px"><strong>Verified profiles.</strong> Photo and identity verification keeps fake accounts out.</li>
+            <li style="margin-bottom:12px"><strong>Thoughtful matching.</strong> Matches based on what you are actually looking for.</li>
+            <li style="margin-bottom:12px"><strong>Real conversations.</strong> Private messaging, plus video and audio calls.</li>
+            <li style="margin-bottom:12px"><strong>Relationship support.</strong> Couple therapy and counselling from qualified practitioners.</li>
+          </ul>
+
+          <p style="font-size:14px;text-align:center;margin:0;opacity:.75">
+            <a href="/#privacy" style="color:#fff;text-decoration:underline">Privacy Policy</a>
+            &nbsp;&middot;&nbsp;
+            <a href="/#terms" style="color:#fff;text-decoration:underline">Terms of Service</a>
+            &nbsp;&middot;&nbsp;
+            <a href="mailto:support@dates.care" style="color:#fff;text-decoration:underline">support@dates.care</a>
+          </p>
+
+        </div>
+      </div>
+    </div>
     <script type="module" src="./src/index.tsx"></script>
   </body>
 </html>

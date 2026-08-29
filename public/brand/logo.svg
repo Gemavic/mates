@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Dates.care">
+  <title>Dates.care</title>
+  <defs>
+    <linearGradient id="dcPink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F86FA0"/>
+      <stop offset=".55" stop-color="#EC4899"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+    <clipPath id="dcHeart"><path d="M60 87.5C43 74.5 28.5 63 28.5 50.6c0-8.4 6.7-14.2 14.8-14.2 6.4 0 12.2 3.7 16.7 9.9 4.5-6.2 10.3-9.9 16.7-9.9 8.1 0 14.8 5.8 14.8 14.2C91.5 63 77 74.5 60 87.5Z"/></clipPath>
+  </defs>
+
+  <rect width="120" height="120" rx="27" fill="url(#dcPink)"/>
+
+  <!-- Two rings meeting side by side: two people, joined. Concentric rings only
+       ever read as a halo - the meaning needs the rings to actually meet. -->
+  <circle cx="47" cy="60" r="25" fill="none" stroke="#16182F" stroke-width="3.4"/>
+  <circle cx="73" cy="60" r="25" fill="none" stroke="#16182F" stroke-width="3.4"/>
+
+  <!-- D and C seated one per ring, so the monogram is the two people rather than
+       a label added on top. Drawn as geometry, not type: the SVG carries no font
+       dependency and the letterforms stay in the same family as the rings.
+       Cream, not dark - dark letters merged into the dark rings and went muddy. -->
+  <path d="M27.5 69.5V50.5H32.5A9.5 9.5 0 0 1 32.5 69.5Z" fill="none" stroke="#FFF4EC" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M90.6 52.0A9.5 9.5 0 1 0 90.6 68.0" fill="none" stroke="#FFF4EC" stroke-width="3.4" stroke-linecap="round"/>
+
+  <!-- The heart sits across the join, holding the two rings together. It is
+       itself two halves, seam through the notch between the lobes - one lobe
+       each. The same idea told twice, at two scales. -->
+  <g transform="translate(60,60) scale(.52) translate(-60,-61)">
+    <path d="M60 87.5C43 74.5 28.5 63 28.5 50.6c0-8.4 6.7-14.2 14.8-14.2 6.4 0 12.2 3.7 16.7 9.9 4.5-6.2 10.3-9.9 16.7-9.9 8.1 0 14.8 5.8 14.8 14.2C91.5 63 77 74.5 60 87.5Z" fill="#FFF4EC"/>
+    <g clip-path="url(#dcHeart)"><path d="M110 13 134 41 34 124 10 96Z" fill="#F2B173"/></g>
+  </g>
+</svg>

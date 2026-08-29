@@ -32,6 +32,13 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white/15 backdrop-blur-sm rounded-2xl mb-6 shadow-xl border border-white/20">
             <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="currentColor" />
           </div>
+          {/* The site never showed its own name anywhere a reader or a crawler
+              could find it - only in <title>. Google's OAuth brand
+              verification rejected the app for exactly that: the consent
+              screen name did not match the homepage. */}
+          <p className="text-white/90 text-lg sm:text-xl font-semibold tracking-wide mb-2">
+            Dates.care
+          </p>
           <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
             Dating, done
             <span className="block">properly.</span>

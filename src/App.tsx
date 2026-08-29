@@ -63,6 +63,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { creditManager } from '@/lib/creditSystem';
 import { supabaseConfigError } from '@/lib/supabase';
 import { getRouteConfig } from '@/lib/routeConfig';
+import { getAuthLandingScreen, screenFromHash } from '@/lib/authUrl';
 import { AlertTriangle } from 'lucide-react';
 
 interface SelectedChatUser {
@@ -85,7 +86,15 @@ function ScreenLoadingFallback() {
 
 const App: React.FC = () => {
   const { theme } = useTheme();
-  const [currentScreen, setCurrentScreen] = useState('welcome');
+  // Seeded rather than defaulted to 'welcome': when the tab was opened by an
+  // OAuth redirect, the callback screen has to be the first thing rendered.
+  // Deciding it a tick later meant a flash of the wrong screen, and - once the
+  // Supabase client had cleared the fragment - no way to tell where to go.
+  const [currentScreen, setCurrentScreen] = useState(
+    () => getAuthLandingScreen()
+      || (typeof window !== 'undefined' && screenFromHash(window.location.hash))
+      || 'welcome'
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -200,9 +209,13 @@ const App: React.FC = () => {
       setCurrentScreen(screen);
     };
 
-    // Check initial URL
-    const hash = window.location.hash.slice(1);
-    if (hash && hash !== currentScreen) {
+    // Check initial URL. The fragment is parsed rather than compared whole:
+    // an auth redirect arrives as `#access_token=...`, which is a payload and
+    // not a screen name. Comparing the whole fragment matched no case in the
+    // screen switch, so every OAuth return fell through to the default screen
+    // and sat on loading skeletons for ever.
+    const hash = screenFromHash(window.location.hash);
+    if (hash && hash !== currentScreen && !getAuthLandingScreen()) {
       setCurrentScreen(hash);
     }
 
@@ -210,7 +223,7 @@ const App: React.FC = () => {
     // navigation - the hash changes but nothing reloads. Without this listener
     // the tab just sits on whatever screen it was already showing.
     const handleHashChange = () => {
-      const next = window.location.hash.slice(1);
+      const next = screenFromHash(window.location.hash);
       if (next) setCurrentScreen(next);
     };
 

@@ -1,4 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import { normaliseAuthCallbackUrl } from '@/lib/authUrl';
+
+// An OAuth redirect lands on a fragment GoTrue built by concatenation, which
+// collides with the `#auth-callback` fragment this app asks to be sent back to.
+// Repair it before createClient runs, because `detectSessionInUrl` reads
+// window.location during client initialisation and only gets one look.
+normaliseAuthCallbackUrl();
 
 // Environment variables - with logging for debugging
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';

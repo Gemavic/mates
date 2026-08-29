@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Dates.care">
+  <title>Dates.care</title>
+  <defs>
+    <linearGradient id="dcPink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F86FA0"/><stop offset=".55" stop-color="#EC4899"/><stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+    <clipPath id="dcHeart"><path d="M60 87.5C43 74.5 28.5 63 28.5 50.6c0-8.4 6.7-14.2 14.8-14.2 6.4 0 12.2 3.7 16.7 9.9 4.5-6.2 10.3-9.9 16.7-9.9 8.1 0 14.8 5.8 14.8 14.2C91.5 63 77 74.5 60 87.5Z"/></clipPath>
+  </defs>
+  <rect width="120" height="120" rx="27" fill="url(#dcPink)"/>
+  <path d="M60 87.5C43 74.5 28.5 63 28.5 50.6c0-8.4 6.7-14.2 14.8-14.2 6.4 0 12.2 3.7 16.7 9.9 4.5-6.2 10.3-9.9 16.7-9.9 8.1 0 14.8 5.8 14.8 14.2C91.5 63 77 74.5 60 87.5Z" fill="#FFF4EC"/>
+  <g clip-path="url(#dcHeart)"><path d="M110 13 134 41 34 124 10 96Z" fill="#F2B173"/></g>
+</svg>
