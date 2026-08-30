@@ -258,6 +258,34 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
         </div>
       </section>
 
+      {/* -------------------------------------------------- signing in / user data */}
+      {/* Google's OAuth homepage requirements include "explain with transparency
+          the purpose for which your app requests user data". Everything else on
+          their checklist was already met; this section is that line. Keep it in
+          step with the same block in index.html. */}
+      <section className="max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-20">
+        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+            Signing in, and what we ask for
+          </h2>
+          <p className="text-slate-600 text-sm leading-relaxed mb-3">
+            You can create your account with an email address and password, or with
+            Google, Facebook or Apple. If you choose one of those, we ask that
+            provider for three things only: your name, your email address and your
+            profile picture. We use them to create your Dates.care account, to sign
+            you in again on your next visit, and to fill in your profile so you are
+            not retyping what you have already entered elsewhere.
+          </p>
+          <p className="text-slate-600 text-sm leading-relaxed">
+            We never request access to your mail, contacts, calendar or files, we
+            never post anything on your behalf, and we do not sell or share what we
+            receive. You can disconnect at any time from your account settings, or
+            from your Google Account permissions page. The full detail is in our{' '}
+            <a href="/privacy" className="text-rose-600 underline">privacy policy</a>.
+          </p>
+        </div>
+      </section>
+
       {/* ---------------------------------------------------------------- pricing */}
       <section className="bg-slate-50 border-y border-slate-200">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
