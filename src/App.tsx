@@ -285,7 +285,7 @@ const App: React.FC = () => {
       case 'welcome':
         return {
           title: 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
-          description: 'Verified profiles, thoughtful matching, and real conversations. Free to join — browsing and your first message to every connection are always free.',
+          description: 'Verified profiles, thoughtful matching, and real conversations. Free to join, and chatting is free — no limits, no first-message catch.',
           canonicalUrl: baseUrl
         };
       case 'signin':

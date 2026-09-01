@@ -462,7 +462,7 @@ export const formatPrice = (amount: number): string => `$${amount.toFixed(2)}`;
 // Credit costs for different actions (display values; server enforces real costs)
 export const CREDIT_COSTS = {
   PHOTO: 15,
-  MESSAGE: 10, // first message per thread is FREE (enforced server-side)
+  MESSAGE: 0, // chat is free - see spend_message() in the database
   VIDEO: 50,
   AUDIO: 30,
   FILE: 10,

@@ -5,7 +5,16 @@ import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power,
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
-import { takePendingCall } from '@/lib/callSignals';
+import {
+  RING_TIMEOUT_MS,
+  resolveInvite,
+  ringUser,
+  takeAcceptedCall,
+  takePendingCall,
+  watchInvite,
+  type CallInvite,
+} from '@/lib/callSignals';
+import { startRingtone } from '@/lib/ringtone';
 import { twilioVoiceManager } from '@/lib/twilioVoice';
 
 interface AudioChatProps {
@@ -40,7 +49,23 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
 
     setInitError(null);
     try {
-      await twilioVoiceManager.initialize(user.id);
+      await twilioVoiceManager.initialize(user.id, {
+        onIncoming: () => {
+          // Consent already happened: this screen is only reached by accepting
+          // the incoming-call modal, or by being on it deliberately. Nothing
+          // used to call accept(), which is why every audio call died as
+          // No Answer.
+          twilioVoiceManager.acceptIncomingCall({
+            onAnswered: () => {
+              setIsInCall(true);
+              setIsConnecting(false);
+              setIsAnswered(true);
+              setCallDuration(0);
+            },
+            onEnded: () => endCall(),
+          });
+        },
+      });
       setIsInitialized(true);
     } catch (error) {
       console.error('Error initializing Twilio Voice:', error);
@@ -82,6 +107,39 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   useEffect(() => {
     pendingCallRef.current = takePendingCall();
   }, []);
+
+  // Signalling state for an outgoing invite, mirroring VideoChat. Audio had
+  // none of this: startAudioCall dialled Twilio directly, so the other person
+  // was never told anything and their device was not registered to receive it.
+  const inviteRef = useRef<CallInvite | null>(null);
+  const unwatchInviteRef = useRef<(() => void) | null>(null);
+  const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopRingbackRef = useRef<(() => void) | null>(null);
+
+  const clearSignalling = () => {
+    unwatchInviteRef.current?.();
+    unwatchInviteRef.current = null;
+    if (ringTimeoutRef.current) {
+      clearTimeout(ringTimeoutRef.current);
+      ringTimeoutRef.current = null;
+    }
+    stopRingbackRef.current?.();
+    stopRingbackRef.current = null;
+  };
+
+  // Arriving because the incoming-call modal was accepted. The caller is
+  // waiting on 'accepted' before dialling, so all this side has to do is be
+  // registered and pick up when Twilio delivers the call.
+  const acceptedCallRef = useRef(takeAcceptedCall());
+  useEffect(() => {
+    const accepted = acceptedCallRef.current;
+    if (accepted) {
+      setCurrentMatchName(accepted.peerName);
+      setIsConnecting(true);
+    }
+  }, []);
+
+  useEffect(() => clearSignalling, []);
 
   useEffect(() => {
     const target = pendingCallRef.current;
@@ -141,14 +199,62 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         (window as any).callTimer = timer;
       };
 
-      await twilioVoiceManager.makeCall(matchId, {
-        onAnswered: beginBilling,
-        onEnded: () => endCall(),
+      // Ring them first, and only dial once they have accepted.
+      //
+      // Twilio Voice delivers a call to a *registered* device. The callee's
+      // device only registers when this screen is open, so dialling straight
+      // away reached nobody - the Twilio log showed these ending as No Answer
+      // after 0 seconds. Now the invite rings them app-wide, accepting brings
+      // them here, and their device is registering while we wait.
+      const invite = await ringUser(matchId, 'audio');
+      inviteRef.current = invite;
+
+      // Pressing Call is the user gesture that lets this side play sound.
+      stopRingbackRef.current = startRingtone('outgoing');
+
+      const dial = async () => {
+        clearSignalling();
+        try {
+          await twilioVoiceManager.makeCall(matchId, {
+            onAnswered: beginBilling,
+            onEnded: () => endCall(),
+          });
+          setIsInCall(true);
+          setIsConnecting(false);
+          setCallDuration(0);
+        } catch (dialError) {
+          console.error('Audio dial failed after accept:', dialError);
+          setIsConnecting(false);
+          alert('They answered, but the call could not connect. Please try again.');
+        }
+      };
+
+      unwatchInviteRef.current = watchInvite(invite.id, (status) => {
+        if (status === 'accepted') {
+          // A moment for their device to finish registering before Twilio
+          // tries to reach it.
+          setTimeout(() => { void dial(); }, 1500);
+          return;
+        }
+        clearSignalling();
+        inviteRef.current = null;
+        setIsConnecting(false);
+        alert(
+          status === 'declined'
+            ? `${matchName} declined the call.`
+            : `The call to ${matchName} ended before it connected.`
+        );
       });
 
-      setIsInCall(true);
-      setIsConnecting(false);
-      setCallDuration(0);
+      ringTimeoutRef.current = setTimeout(() => {
+        clearSignalling();
+        if (inviteRef.current) {
+          void resolveInvite(inviteRef.current.id, 'missed');
+          inviteRef.current = null;
+        }
+        setIsConnecting(false);
+        alert(`${matchName} did not answer.`);
+      }, RING_TIMEOUT_MS);
 
     } catch (error: any) {
       console.error('Error starting audio call:', error);
@@ -166,6 +272,11 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   };
 
   const endCall = () => {
+    clearSignalling();
+    if (inviteRef.current) {
+      void resolveInvite(inviteRef.current.id, 'cancelled');
+      inviteRef.current = null;
+    }
     twilioVoiceManager.endCall();
     setIsInCall(false);
     setIsConnecting(false);

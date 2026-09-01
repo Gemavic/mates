@@ -50,17 +50,20 @@ export const FEATURES = {
   verification: true,
   staffPanel: true,
   videoChat: true,
-  // Off, and the entry points are removed to match.
+  // On. The three things the old note asked for are now in place:
   //
-  // The Twilio device only registers while the Audio screen is open, and its
-  // 'incoming' handler stores the call without ever ringing the UI -
-  // acceptIncomingCall() is never called by anything. So a call to someone
-  // who is not already sitting on that screen fails on contact: the Twilio
-  // log shows these ending as No Answer after 0 seconds.
+  //  - An accept/reject surface: IncomingCallHost renders the incoming-call
+  //    modal app-wide, and the invite carries kind 'audio'.
+  //  - Something that answers: twilioVoice.initialize() takes an onIncoming
+  //    handler and AudioChat uses it to call acceptIncomingCall(), which
+  //    nothing did before - hence every call ending as No Answer at 0s.
+  //  - Registration before the dial: AudioChat rings via a call invite and
+  //    waits for 'accepted' before connecting to Twilio, so the callee has
+  //    arrived on the screen and registered by the time the call is placed.
   //
-  // Re-enabling needs the device registered app-wide and an accept/reject
-  // surface, then a real two-device test. Video calling is unaffected.
-  audioChat: false
+  // Still wants a real two-device test before it is trusted in front of
+  // members. Video calling is unaffected either way.
+  audioChat: true
 };
 
 // Validation

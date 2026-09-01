@@ -49,7 +49,16 @@ export class TwilioVoiceManager {
     }
   }
 
-  async initialize(userId: string): Promise<void> {
+  /**
+   * @param handlers.onIncoming fires when Twilio delivers a call to this
+   *   device. It used to only stash the call in `currentCall`, and nothing
+   *   anywhere called acceptIncomingCall() - so every audio call ended as
+   *   No Answer after 0 seconds no matter what the callee did.
+   */
+  async initialize(
+    userId: string,
+    handlers: { onIncoming?: (call: Call) => void } = {}
+  ): Promise<void> {
     try {
       const token = await this.getToken(userId);
 
@@ -69,6 +78,7 @@ export class TwilioVoiceManager {
       this.device.on('incoming', (call) => {
         console.log('Incoming call from:', call.parameters.From);
         this.currentCall = call;
+        handlers.onIncoming?.(call);
       });
 
       await this.device.register();
@@ -130,10 +140,19 @@ export class TwilioVoiceManager {
     }
   }
 
-  acceptIncomingCall(): void {
-    if (this.currentCall) {
-      this.currentCall.accept();
-    }
+  acceptIncomingCall(handlers: { onAnswered?: () => void; onEnded?: () => void } = {}): void {
+    if (!this.currentCall) return;
+    const call = this.currentCall;
+    call.on('accept', () => handlers.onAnswered?.());
+    call.on('disconnect', () => {
+      this.currentCall = null;
+      handlers.onEnded?.();
+    });
+    call.on('cancel', () => {
+      this.currentCall = null;
+      handlers.onEnded?.();
+    });
+    call.accept();
   }
 
   rejectIncomingCall(): void {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
-import { whatsappSupportLink } from '@/lib/config';
+import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { whatsappSupportLink, FEATURES } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -86,7 +86,9 @@ export const Menu: React.FC<MenuProps> = ({
         ? [{ id: 'moderation', icon: Shield, label: 'Moderation', description: 'Review flagged content and reports' }]
         : []),
       { id: 'video-chat', icon: Video, label: 'Video Chat', description: 'Face-to-face calls' },
-      // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
+      ...(FEATURES.audioChat
+        ? [{ id: 'audio-chat', icon: Phone, label: 'Voice Call', description: 'Talk without video' }]
+        : []),
       { id: 'match-suitor', icon: Crown, label: 'VIP Matchmaking', description: 'Personalized matching' },
       { id: 'care-blog', icon: BookOpen, label: 'Dating Advice', description: 'Tips & relationship guides' },
       { id: 'quizzes', icon: Sparkles, label: 'Quizzes', description: 'Personality & compatibility' },
@@ -290,7 +292,7 @@ export const Menu: React.FC<MenuProps> = ({
               </a>
             </div>
             <div className="text-center text-white/50 text-xs space-y-0.5 mb-4">
-              <p>Live chat: first 2 messages free, then 10 credits each • Stickers: 5 credits • Photos: 10 credits</p>
+              <p>Live chat: free, unlimited • Stickers: 5 credits • Photos: 10 credits</p>
               <p>Mail: First letter 10 credits, following 30 • First photo FREE</p>
               <p>Video: 60 credits/min • Audio: 50 credits/min</p>
             </div>

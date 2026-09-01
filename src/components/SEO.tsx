@@ -9,7 +9,7 @@ interface SEOProps {
 
 export const SEO: React.FC<SEOProps> = ({
   title = 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
-  description = 'Verified profiles, thoughtful matching, and real conversations. Free to join — browsing and your first message to every connection are always free.',
+  description = 'Verified profiles, thoughtful matching, and real conversations. Free to join, and chatting is free — no limits, no first-message catch.',
   keywords = 'dating app, online dating, meet singles, verified profiles, video chat dating, couple therapy, relationship counseling',
   canonicalUrl = 'https://dates.care/'
 }) => {

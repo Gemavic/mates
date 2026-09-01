@@ -18,7 +18,13 @@ import {
 } from '@/lib/callSignals';
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVideoManager } from '@/lib/twilioVideo';
-import type { LocalVideoTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack } from 'twilio-video';
+import type {
+  LocalVideoTrack,
+  RemoteAudioTrack,
+  RemoteParticipant,
+  RemoteTrack,
+  RemoteVideoTrack,
+} from 'twilio-video';
 
 interface VideoChatProps {
   onNavigate: (screen: string) => void;
@@ -53,6 +59,24 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopRingbackRef = useRef<(() => void) | null>(null);
   const [peerConnected, setPeerConnected] = useState(false);
+
+  // Remote audio needs somewhere to live. The in-call view only renders video
+  // containers, and it does not exist at all until a call starts - so a track
+  // that arrived early had nowhere to go. This container is created once, sits
+  // outside the React tree and outlives every branch, so audio can attach the
+  // moment it is subscribed.
+  const remoteAudioRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const host = document.createElement('div');
+    host.style.display = 'none';
+    host.setAttribute('data-dc-remote-audio', '');
+    document.body.appendChild(host);
+    remoteAudioRef.current = host;
+    return () => {
+      host.remove();
+      remoteAudioRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -220,6 +244,21 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         setPeerConnected(false);
       },
       (track: RemoteTrack, _participant: RemoteParticipant) => {
+        // Audio first, and this used to be missing entirely: the handler began
+        // `if (track.kind !== 'video') return`, so the other person's voice was
+        // subscribed and then thrown away. Video worked, the call was silent.
+        if (track.kind === 'audio') {
+          if (!remoteAudioRef.current) return;
+          const element = twilioVideoManager.attachTrack(
+            track as RemoteAudioTrack,
+            remoteAudioRef.current
+          ) as HTMLAudioElement;
+          element.autoplay = true;
+          // Answering or placing the call is the user gesture that permits
+          // playback; if a browser still refuses, there is nothing to undo.
+          void element.play?.().catch(() => {});
+          return;
+        }
         if (track.kind !== 'video') return;
         const videoTrack = track as RemoteVideoTrack;
         if (remoteVideoRef.current) {

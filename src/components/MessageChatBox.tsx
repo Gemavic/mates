@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
-import { MessageCircle, X, Send, Smile, Video, Gift, Mail, Heart, Flag } from 'lucide-react';
+import { MessageCircle, X, Send, Smile, Video, Gift, Mail, Heart, Flag, Phone } from 'lucide-react';
 import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { contentModeration } from '@/lib/contentModeration';
 import { moderateImage } from '@/lib/imageModeration';
@@ -8,6 +8,9 @@ import { compressImage } from '@/lib/photoUpload';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { maskContactInfo, containsContactInfo, CONTACT_MASK_NOTICE } from '@/lib/maskContacts';
+import { FEATURES } from '@/lib/config';
+import { setPendingCall } from '@/lib/callSignals';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { MessagingManager, CreditManager } from '@/lib/database';
@@ -99,12 +102,13 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
   chatThreadsRef.current = chatThreads;
   userProfileImageRef.current = userProfileImage;
 
-  // Chat is charged per message sent, never per minute. The previous ambient
-  // timer billed 2 credits for every minute a thread was merely open, so a
-  // reader who left the tab up paid for doing nothing. Pricing is now: first 2
-  // messages in a thread free, 10 credits each after that, free for monthly
-  // subscribers, and reading is always free. Enforced server-side in
-  // spend_message().
+  // Chat is free. It used to bill 2 credits a minute for merely having a
+  // thread open, then 10 credits a message after the first two - and the
+  // homepage advertised "first message free" while charging for the rest,
+  // which is a bad thing to be caught doing. Messages now cost nothing, and
+  // the money is in photos, gifts, mail and calls instead. Still routed
+  // through spend_message() server-side, which records the send at zero so
+  // volume stays visible and older clients keep working.
 
   useEffect(() => {
     const loadCredits = async () => {
@@ -610,15 +614,14 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
       console.error('Message moderation failed, allowing message:', error);
     }
 
-    // Charge for the message itself, server-side. First 2 per thread are free,
-    // subscribers always are, and a refusal must stop the send rather than let
-    // an unpaid message through.
+    // Still called, though it no longer charges: it writes the ledger row and
+    // returns the balance. A failure here means the server rejected the send,
+    // so it must stop rather than let the message through unrecorded.
     const charge = await creditManager.sendMessage(user.id, activeThreadData.id, trimmed);
     if (!charge.success) {
       alert(
-        `You need ${charge.cost} credits to send this message. Your first 2 messages in each conversation are free.`
+        'Your message could not be sent. Please check your connection and try again.'
       );
-      onNavigate('credits');
       return;
     }
     setUserBalance(creditManager.getTotalCredits(user.id));
@@ -874,7 +877,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <span className="font-bold text-pink-900">{formatCredits(userBalance)}</span>
           </div>
         </div>
-        <p className="text-xs text-pink-600 mt-1">First 2 messages free, then 10 credits each</p>
+        <p className="text-xs text-pink-600 mt-1">Chatting is free</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-pink-50 dark:bg-night-900">
@@ -954,9 +957,23 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <Video className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="text-xs sm:text-sm">Video</span>
           </button>
-          {/* Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts */}
+          {FEATURES.audioChat && (
+            <button
+              onClick={() => {
+                // Carry the person through, so the voice screen dials them
+                // rather than making you pick out of a list you just left.
+                const peer = chatThreads.find(t => t.id === activeThread);
+                if (peer) setPendingCall({ peerId: peer.participantId, peerName: peer.participantName });
+                onNavigate('audio-chat');
+              }}
+              className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors touch-manipulation active:scale-95"
+            >
+              <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">Voice</span>
+            </button>
+          )}
         </div>
-        <p className="text-xs text-blue-600 mt-1">Chat: first 2 free, then 10 credits | Mail: 10 credits | Super Like: 5 credits</p>
+        <p className="text-xs text-blue-600 mt-1">Chat: free | Mail: 10 credits | Super Like: 5 credits</p>
         <p className="text-xs text-green-600">FREE: Likes, Blinks, Messages</p>
       </div>
     </div>
@@ -1113,7 +1130,9 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                           senderName={msg.senderName}
                         />
                       ) : (
-                        <p className="text-base leading-relaxed">{msg.message}</p>
+                        <p className="text-base leading-relaxed whitespace-pre-wrap">
+                          {maskContactInfo(msg.message)}
+                        </p>
                       )}
                     </div>
                     )}
@@ -1188,7 +1207,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
           )}
 
           <p className="text-xs text-gray-400 text-center mb-1.5">
-            Live chat: first 2 messages in each conversation are free, then 10 credits per message · reading is always free · included free with any subscription
+{containsContactInfo(message) ? CONTACT_MASK_NOTICE + ' · ' : ''}
+            Live chat is free, for everyone, with no daily limit · photos, gifts, mail and calls are the paid extras
           </p>
 
           <div className="flex items-center space-x-2">

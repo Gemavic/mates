@@ -25,6 +25,11 @@ interface AttachedFile {
   type: string;
   url: string;
   preview?: string;
+  /** The file itself. Without this there is nothing to upload - which is
+   *  exactly what went wrong before: only a local object URL was kept, the
+   *  browser threw it away on send, and the recipient got "Photo attached"
+   *  with nothing behind it. */
+  file?: File;
 }
 
 interface MailThread {
@@ -52,12 +57,23 @@ interface MailMessage {
   isRead: boolean;
   isExclusive: boolean;
   attachments?: AttachedFile[];
+  /** Signed URLs for the stored attachments, valid for this session. */
+  photoUrls?: string[];
+  gift?: GiftPayload | null;
+  giftNote?: string | null;
+  giftOpenedAt?: string | null;
 }
+
+import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
+import { maskContactInfo } from '@/lib/maskContacts';
+
+const ATTACHMENT_BUCKET = 'mail-attachments';
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
 export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) => {
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'starred' | 'exclusive'>('inbox');
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [starredThreadIds, setStarredThreadIds] = useState<Set<string>>(new Set());
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
@@ -241,12 +257,27 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
     try {
       const { data: messages, error } = await supabaseClient
         .from('mail_messages')
-        .select('*')
+        .select('*, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
         .eq('thread_id', threadId)
         .neq('subject', 'Chat Message')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+
+      // Attachments live in a private bucket keyed by thread, so the stored
+      // value is a path, not a URL. Sign them in one batch rather than one
+      // round trip per photo.
+      const attachmentPaths = messages.flatMap((m: any) => (m.photo_urls || []) as string[])
+        .filter((v: string) => v && !v.startsWith('http'));
+      const signedByPath: Record<string, string> = {};
+      if (attachmentPaths.length) {
+        const { data: signed } = await supabaseClient
+          .storage.from(ATTACHMENT_BUCKET)
+          .createSignedUrls(attachmentPaths, 60 * 60);
+        (signed || []).forEach((entry: any) => {
+          if (entry?.path && entry?.signedUrl) signedByPath[entry.path] = entry.signedUrl;
+        });
+      }
 
       const senderIds = [...new Set(messages.map(m => m.sender_id))];
       const [profilesRes, photosRes] = await Promise.all([
@@ -267,7 +298,13 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         timestamp: new Date(msg.created_at).toLocaleString(),
         hasPhotos: msg.has_photos || false,
         isRead: msg.is_read || false,
-        isExclusive: msg.subject?.includes('Exclusive') || false
+        isExclusive: msg.subject?.includes('Exclusive') || false,
+        photoUrls: ((msg.photo_urls || []) as string[])
+          .map((path) => (path.startsWith('http') ? path : signedByPath[path]))
+          .filter(Boolean),
+        gift: (msg.virtual_gifts as GiftPayload) || null,
+        giftNote: msg.gift_note || null,
+        giftOpenedAt: msg.gift_opened_at || null,
       }));
 
       setCurrentMessages(formatted);
@@ -291,8 +328,37 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
     if (!user || !selectedThread) return;
 
     try {
+      // Upload before charging. The old order charged 10 credits a photo and
+      // then dropped the files on the floor, so people paid for attachments
+      // that were never delivered. Now only what actually reaches storage is
+      // billed, and a failed upload costs nothing.
+      const uploadedPaths: string[] = [];
+      const failedUploads: string[] = [];
+      for (const attachment of attachedFiles) {
+        if (!attachment.file) { failedUploads.push(attachment.name); continue; }
+        const extension = (attachment.name.split('.').pop() || 'jpg').toLowerCase().slice(0, 8);
+        const path = `${selectedThread}/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabaseClient
+          .storage.from(ATTACHMENT_BUCKET)
+          .upload(path, attachment.file, { contentType: attachment.type, upsert: false });
+        if (uploadError) {
+          console.error('Attachment upload failed:', uploadError);
+          failedUploads.push(attachment.name);
+          continue;
+        }
+        uploadedPaths.push(path);
+      }
+
+      if (failedUploads.length) {
+        alert(
+          `Could not attach ${failedUploads.join(', ')}. ` +
+          'Nothing was charged for those, and the rest of your message will still send.'
+        );
+      }
+      if (!messageText.trim() && uploadedPaths.length === 0) return;
+
       let totalCost = 10;
-      if (attachedFiles.length > 0) totalCost += attachedFiles.length * 10;
+      totalCost += uploadedPaths.length * 10;
       if (isExclusive) totalCost += 20;
 
       if (!creditManager.canAfford(user.id, totalCost) && !creditManager.isStaffMember(user.id)) {
@@ -326,7 +392,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         senderImage: currentPhoto?.photo_url || DEFAULT_AVATAR,
         subject, message: messageText.trim() || 'Sent attachments',
         timestamp: new Date().toLocaleString(),
-        hasPhotos: attachedFiles.length > 0, isRead: false, isExclusive
+        hasPhotos: uploadedPaths.length > 0, isRead: false, isExclusive,
+        photoUrls: attachedFiles.filter(f => f.preview).map(f => f.preview as string),
       };
 
       setCurrentMessages(prev => [...prev, optimistic]);
@@ -343,7 +410,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         .insert({
           thread_id: selectedThread, sender_id: user.id,
           subject, message_text: savedText || 'Sent attachments',
-          credits_spent: totalCost, has_photos: attachedFiles.length > 0,
+          credits_spent: totalCost,
+          has_photos: uploadedPaths.length > 0,
+          photo_urls: uploadedPaths,
           is_delivered: true, delivered_at: new Date().toISOString(), is_read: false
         })
         .select().single();
@@ -383,7 +452,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           id: Math.random().toString(36).substring(2),
           name: file.name, size: file.size, type: file.type,
           url: URL.createObjectURL(file),
-          preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+          preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+          file,
         }]);
       });
       setShowAttachmentMenu(false);
@@ -470,20 +540,60 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                         {msg.subject}
                       </p>
                     )}
-                    <div className={cn(
-                      "rounded-2xl px-4 py-3 shadow-sm",
-                      msg.isExclusive
-                        ? (isMe ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white' : 'bg-gradient-to-br from-amber-50 to-amber-100 text-gray-800 border border-amber-200')
-                        : (isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 border border-gray-100')
-                    )}>
-                      <p className="text-sm leading-relaxed">{msg.message}</p>
-                      {msg.hasPhotos && (
-                        <div className="mt-2 flex items-center gap-1 text-xs opacity-70">
-                          <Image className="w-3 h-3" />
-                          <span>Photo attached</span>
-                        </div>
-                      )}
-                    </div>
+                    {msg.gift ? (
+                      // A gift is a package, not a sentence. Mail stored gift_id
+                      // all along but rendered the fallback text, so a paid-for
+                      // gift arrived looking like someone had typed it.
+                      <GiftMessage
+                        messageId={msg.id}
+                        gift={msg.gift}
+                        note={msg.giftNote || null}
+                        senderName={msg.senderName}
+                        isMine={isMe}
+                        openedAt={msg.giftOpenedAt || null}
+                        onSendYours={() => onNavigate('gift-shop')}
+                      />
+                    ) : (
+                      <div className={cn(
+                        "rounded-2xl px-4 py-3 shadow-sm",
+                        msg.isExclusive
+                          ? (isMe ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white' : 'bg-gradient-to-br from-amber-50 to-amber-100 text-gray-800 border border-amber-200')
+                          : (isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 border border-gray-100')
+                      )}>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {maskContactInfo(msg.message)}
+                        </p>
+
+                        {msg.photoUrls && msg.photoUrls.length > 0 ? (
+                          <div className={cn(
+                            "mt-2 grid gap-1.5",
+                            msg.photoUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+                          )}>
+                            {msg.photoUrls.map((url, i) => (
+                              <button
+                                key={url + i}
+                                type="button"
+                                onClick={() => setLightbox(url)}
+                                className="block overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-white/60"
+                                title="Tap to view"
+                              >
+                                <img
+                                  src={url}
+                                  alt="Attachment"
+                                  loading="lazy"
+                                  className="w-full h-32 object-cover hover:opacity-90 transition-opacity"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        ) : msg.hasPhotos ? (
+                          <div className="mt-2 flex items-center gap-1 text-xs opacity-70">
+                            <Image className="w-3 h-3" />
+                            <span>Attachment unavailable</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
                       <span className="text-[10px] text-gray-400">{msg.timestamp}</span>
                       {isMe && <CheckCircle2 className="w-3 h-3 text-blue-400" />}
@@ -735,6 +845,32 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
             </div>
           </div>
         </div>
+
+        {/* Tapping an attachment opens it. Before, there was nothing to open:
+            "Photo attached" was the whole feature. */}
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setLightbox(null)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl leading-none"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <img
+              src={lightbox}
+              alt="Attachment"
+              className="max-h-full max-w-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
       </Layout>
     </PageTransition>
   );

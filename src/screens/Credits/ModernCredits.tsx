@@ -448,7 +448,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-white/70">Live chat (per message, first 2 free)</span>
+                      <span className="text-white/70">Live chat (free, unlimited)</span>
                       <span className="font-medium">2 Credits</span>
                     </div>
                     <div className="flex justify-between">

@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { MessagingManager } from '@/lib/database';
 import { creditManager } from '@/lib/creditSystem';
+import { maskContactInfo } from '@/lib/maskContacts';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
 
@@ -390,7 +391,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     const charge = await creditManager.sendMessage(user.id, selectedThread, trimmed);
     if (!charge.success) {
       alert(
-        `You need ${charge.cost} credits to send this message. Your first 2 messages in each conversation are free.`
+        'Your message could not be sent. Please check your connection and try again.'
       );
       onNavigate('credits');
       return;
@@ -563,7 +564,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                           </div>
                         );
                       })()}
-                      <p className="text-sm leading-relaxed">{msg.message}</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {maskContactInfo(msg.message)}
+                      </p>
                     </div>
                     )}
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
@@ -697,7 +700,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               </div>
             )}
             <p className="text-xs text-gray-400 text-center">
-              Live chat: first 2 messages in each conversation are free, then 10 credits per message · reading is always free · included free with any subscription
+              Live chat is free, for everyone, with no daily limit · photos, gifts, mail and calls are the paid extras
             </p>
             <div className="flex items-center gap-2 pb-3">
             <button onClick={() => { setShowQuickMessages(!showQuickMessages); setShowEmojiPicker(false); }}

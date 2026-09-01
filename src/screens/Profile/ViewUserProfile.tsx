@@ -5,6 +5,7 @@ import {
   Heart,
   MessageCircle,
   Video,
+  Phone,
   MapPin,
   Briefcase,
   GraduationCap,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { setPendingCall } from '@/lib/callSignals';
+import { FEATURES } from '@/lib/config';
 import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { sendWinkNotification } from '@/lib/emailNotifications';
 import { supabaseClient } from '@/lib/supabase';
@@ -333,6 +335,16 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
     alert('Unblocked. You will see each other again.');
   };
 
+  const handleAudioCall = () => {
+    if (!user) {
+      alert('Please sign in for voice calls');
+      onNavigate('signin');
+      return;
+    }
+    setPendingCall({ peerId: userId, peerName: profile?.full_name || 'Member' });
+    onNavigate('audio-chat');
+  };
+
   const handleVideoCall = () => {
     if (!user) {
       alert('Please sign in for video calls');
@@ -519,8 +531,16 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
               >
                 <Video className="w-5 h-5" />
               </Button>
-              {/* Audio calling is hidden until incoming calls can be answered -
-                  see FEATURES.audioChat in config.ts */}
+              {FEATURES.audioChat && (
+                <Button
+                  onClick={handleAudioCall}
+                  title="Voice call"
+                  aria-label="Voice call"
+                  className="bg-white/20 text-white hover:bg-white/30"
+                >
+                  <Phone className="w-5 h-5" />
+                </Button>
+              )}
               {/* Report and block belong here, next to the actions, not buried
                   in a menu - this is the screen someone is on when they decide
                   a person is a problem. */}

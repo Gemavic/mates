@@ -44,7 +44,6 @@ const CREDIT_PACKS = [
 ];
 
 const SPEND = [
-  { what: 'Message after the first', cost: '10 credits' },
   { what: 'Virtual gift', cost: 'from 5 credits' },
   { what: 'Super like', cost: '25 credits' },
   { what: 'Profile boost (30 min)', cost: '50 credits' },
@@ -55,11 +54,11 @@ const SPEND = [
 const FAQ = [
   {
     q: 'Is Dates.care free to join?',
-    a: 'Yes. Creating an account, building a profile and browsing other members cost nothing, and your first message to every new connection is always free. Credits are only needed for the extras listed above.',
+    a: 'Yes. Creating an account, building a profile, browsing other members and chatting are all free, with no limit on messages. Credits are only needed for the extras listed above.',
   },
   {
     q: 'What are credits for?',
-    a: 'Credits pay for optional things — continuing a conversation past the first message, sending a gift, boosting your profile, and audio or video calls. You buy them in packs and they do not expire.',
+    a: 'Credits pay for the optional extras — sending a photo or a gift, mail, boosting your profile, and audio or video calls. Chatting itself is free. You buy credits in packs and they do not expire.',
   },
   {
     q: 'How do you keep fake profiles out?',
@@ -167,8 +166,8 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
                     </Button>
                   </div>
                   <p className="text-white/70 text-sm mt-4">
-                    Free to join. Browsing and your first message to every
-                    connection are always free.
+                    Free to join. Browsing and chatting are free, with no limit
+                    on messages.
                   </p>
                 </>
               )}
@@ -193,7 +192,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
             { n: '2', icon: Heart, t: 'Match on what matters',
               d: 'Browse and like freely. Matching weighs what you are actually looking for, not just who swiped fastest.' },
             { n: '3', icon: MessageCircle, t: 'Talk, meet, connect',
-              d: 'Message, call, or send a gift. Your first message to every new connection is free, so conversations start easily.' },
+              d: 'Message as much as you like — chat is free. Calls, gifts and mail are there when you want them.' },
           ].map(s => (
             <li key={s.n} className="bg-slate-50 rounded-2xl border border-slate-200 p-6">
               <div className="flex items-center gap-3 mb-3">
@@ -217,7 +216,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: MessageCircle, t: 'Private messaging', d: 'One-to-one conversations with photo sharing. The first message to each connection is free.' },
+              { icon: MessageCircle, t: 'Private messaging', d: 'One-to-one conversations, free and unlimited. Photos are a paid extra.' },
               { icon: Video, t: 'Video calls', d: 'Meet face to face before you meet in person — the safest way to know who you are talking to.' },
               { icon: Phone, t: 'Audio calls', d: 'A voice call when video feels like too much, too soon.' },
               { icon: Gift, t: 'Virtual gifts', d: 'Over a hundred hand-drawn gifts, from a simple hello to something genuinely memorable.' },
@@ -303,7 +302,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               {[
                 'Creating an account and building your profile',
                 'Browsing and liking other members',
-                'Your first message to every new connection',
+                'Chatting — every message, to everyone, with no limit',
               ].map(x => (
                 <li key={x} className="flex items-start gap-2.5 text-slate-700 text-sm">
                   <Check className="w-4 h-4 text-emerald-600 flex-none mt-0.5" />

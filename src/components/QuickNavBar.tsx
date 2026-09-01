@@ -1,5 +1,6 @@
 import React from 'react';
-import { Mail, MessageCircle, Video, Users, Heart, Gift, CreditCard, Settings } from 'lucide-react';
+import { FEATURES } from '@/lib/config';
+import { Mail, MessageCircle, Video, Phone, Users, Heart, Gift, CreditCard, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickNavBarProps {
@@ -13,8 +14,10 @@ export const QuickNavBar: React.FC<QuickNavBarProps> = ({ onNavigate, activeScre
     { id: 'discovery', label: 'Browse', icon: Users, color: 'text-blue-600 dark:text-blue-300', activeColor: 'bg-blue-100 dark:bg-blue-900/40' },
     { id: 'matches', label: 'Chat', icon: MessageCircle, color: 'text-green-600 dark:text-green-300', activeColor: 'bg-green-100 dark:bg-green-900/40' },
     { id: 'mail', label: 'Mail', icon: Mail, color: 'text-purple-600 dark:text-purple-300', activeColor: 'bg-purple-100 dark:bg-purple-900/40' },
-    // Audio calling is hidden until incoming calls can be answered - see FEATURES.audioChat in config.ts
     { id: 'video-chat', label: 'Video', icon: Video, color: 'text-teal-600 dark:text-teal-300', activeColor: 'bg-teal-100 dark:bg-teal-900/40' },
+    ...(FEATURES.audioChat
+      ? [{ id: 'audio-chat', label: 'Voice', icon: Phone, color: 'text-emerald-600 dark:text-emerald-300', activeColor: 'bg-emerald-100 dark:bg-emerald-900/40' }]
+      : []),
     { id: 'likes', label: 'Likes', icon: Heart, color: 'text-red-600 dark:text-red-300', activeColor: 'bg-red-100 dark:bg-red-900/40' },
     { id: 'gift-shop', label: 'Gifts', icon: Gift, color: 'text-pink-600 dark:text-pink-300', activeColor: 'bg-pink-100 dark:bg-pink-900/40' },
     { id: 'credits', label: 'Credits', icon: CreditCard, color: 'text-orange-600 dark:text-orange-300', activeColor: 'bg-orange-100 dark:bg-orange-900/40' },

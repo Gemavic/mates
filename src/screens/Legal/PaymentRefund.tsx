@@ -60,7 +60,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
                 The Datescare provides two types of paid Services:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li><strong>Action-based:</strong> You are charged each time you make an action (e.g., sending a chat message or an email). Chat is charged per message sent — the first 2 messages in each conversation are free, and reading messages is always free.</li>
+                <li><strong>Action-based:</strong> You are charged each time you use a paid feature (for example sending mail, a photo, a gift, or placing a call). Live chat messages are free and unlimited, and reading is always free.</li>
                 <li><strong>Time-dependent:</strong> You are charged per time period (e.g., audio and video calls are charged per minute, billed only once the other person answers)</li>
               </ul>
               <p className="text-sm text-gray-600 mt-3">
