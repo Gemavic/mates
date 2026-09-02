@@ -72,7 +72,7 @@ const MESSAGE_PAGE_SIZE = 50;
 // what this component chooses to render. EXCLUSIVE_UNLOCK_COST is what the
 // recipient pays, once, to see one.
 const EXCLUSIVE_BUCKET = 'chat-exclusive';
-const EXCLUSIVE_UNLOCK_COST = 20;
+const EXCLUSIVE_UNLOCK_COST = 50;
 
 function LockedPhoto({ cost, senderName, busy, onUnlock }: {
   cost: number;

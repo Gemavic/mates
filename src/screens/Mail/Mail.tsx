@@ -56,9 +56,15 @@ interface MailMessage {
   hasPhotos: boolean;
   isRead: boolean;
   isExclusive: boolean;
+  /** What the recipient pays to open an exclusive message. */
+  unlockCost: number;
+  /** True when this reader sent it, paid for it, or it was never locked. */
+  unlocked: boolean;
   attachments?: AttachedFile[];
   /** Signed URLs for the stored attachments, valid for this session. */
   photoUrls?: string[];
+  /** The storage paths behind those URLs, kept so an unlock can sign them. */
+  photoPaths?: string[];
   gift?: GiftPayload | null;
   giftNote?: string | null;
   giftOpenedAt?: string | null;
@@ -68,6 +74,12 @@ import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 import { maskContactInfo } from '@/lib/maskContacts';
 
 const ATTACHMENT_BUCKET = 'mail-attachments';
+
+// Exclusive mail used to be a label: the flag was read back off the subject
+// line and nothing was ever withheld, so the twenty credits bought a word. The
+// recipient now pays this to open one, and the storage policy - not this file
+// - is what refuses the photo until they have.
+const EXCLUSIVE_UNLOCK_COST = 50;
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
@@ -80,6 +92,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
   const [messageText, setMessageText] = useState('');
   const [subjectText, setSubjectText] = useState('');
   const [isExclusive, setIsExclusive] = useState(false);
+  const [unlockingId, setUnlockingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -252,6 +265,47 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
     if (selectedThread && user) loadThreadMessages(selectedThread);
   }, [selectedThread, user]);
 
+  /**
+   * Pays for one exclusive mail. unlock_message() charges before it writes the
+   * unlock row, and that row is what the storage policy consults, so the photo
+   * simply cannot be signed until this has succeeded.
+   */
+  const handleUnlockMail = async (messageId: string) => {
+    if (!user) return;
+    setUnlockingId(messageId);
+    try {
+      const { data, error } = await supabaseClient.rpc('unlock_message', { p_message_id: messageId });
+
+      if (error || !data?.success) {
+        const why = data?.error ?? (error as any)?.message;
+        alert(why === 'insufficient_credits'
+          ? 'You do not have enough credits to open this mail.'
+          : 'Could not open this mail. Please try again.');
+        return;
+      }
+
+      const target = currentMessages.find(m => m.id === messageId);
+      const paths = target?.photoPaths ?? [];
+      let urls: string[] = [];
+
+      if (paths.length) {
+        const { data: signed } = await supabaseClient
+          .storage.from(ATTACHMENT_BUCKET)
+          .createSignedUrls(paths, 60 * 60);
+        urls = (signed || []).map((s: any) => s?.signedUrl).filter(Boolean);
+      }
+
+      setCurrentMessages(prev => prev.map(m =>
+        m.id === messageId ? { ...m, unlocked: true, photoUrls: urls } : m
+      ));
+    } catch (err) {
+      console.error('Unlock failed:', err);
+      alert('Could not open this mail. Please try again.');
+    } finally {
+      setUnlockingId(null);
+    }
+  };
+
   const loadThreadMessages = async (threadId: string) => {
     if (!user) return;
     try {
@@ -264,10 +318,29 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
 
       if (error) throw error;
 
+      // Which exclusive messages has this reader paid for? Their own are free.
+      const lockedIds = messages
+        .filter((m: any) => m.is_exclusive && m.sender_id !== user.id)
+        .map((m: any) => m.id);
+
+      const paidIds = new Set<string>();
+      if (lockedIds.length) {
+        const { data: unlocks } = await supabaseClient
+          .from('message_unlocks')
+          .select('message_id')
+          .in('message_id', lockedIds);
+        (unlocks || []).forEach((u: any) => paidIds.add(u.message_id));
+      }
+
+      const isViewable = (m: any) =>
+        !m.is_exclusive || m.sender_id === user.id || paidIds.has(m.id);
+
       // Attachments live in a private bucket keyed by thread, so the stored
       // value is a path, not a URL. Sign them in one batch rather than one
-      // round trip per photo.
-      const attachmentPaths = messages.flatMap((m: any) => (m.photo_urls || []) as string[])
+      // round trip per photo - and only for the messages this reader is
+      // entitled to, because asking for the rest would just be refused.
+      const attachmentPaths = messages.filter(isViewable)
+        .flatMap((m: any) => (m.photo_urls || []) as string[])
         .filter((v: string) => v && !v.startsWith('http'));
       const signedByPath: Record<string, string> = {};
       if (attachmentPaths.length) {
@@ -298,10 +371,13 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         timestamp: new Date(msg.created_at).toLocaleString(),
         hasPhotos: msg.has_photos || false,
         isRead: msg.is_read || false,
-        isExclusive: msg.subject?.includes('Exclusive') || false,
+        isExclusive: msg.is_exclusive === true,
+        unlockCost: msg.unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
+        unlocked: isViewable(msg),
         photoUrls: ((msg.photo_urls || []) as string[])
           .map((path) => (path.startsWith('http') ? path : signedByPath[path]))
           .filter(Boolean),
+        photoPaths: ((msg.photo_urls || []) as string[]).filter((v) => v && !v.startsWith('http')),
         gift: (msg.virtual_gifts as GiftPayload) || null,
         giftNote: msg.gift_note || null,
         giftOpenedAt: msg.gift_opened_at || null,
@@ -393,6 +469,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         subject, message: messageText.trim() || 'Sent attachments',
         timestamp: new Date().toLocaleString(),
         hasPhotos: uploadedPaths.length > 0, isRead: false, isExclusive,
+        // The sender never pays to see their own mail.
+        unlockCost: isExclusive ? EXCLUSIVE_UNLOCK_COST : 0, unlocked: true,
         photoUrls: attachedFiles.filter(f => f.preview).map(f => f.preview as string),
       };
 
@@ -413,6 +491,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           credits_spent: totalCost,
           has_photos: uploadedPaths.length > 0,
           photo_urls: uploadedPaths,
+          is_exclusive: isExclusive,
+          unlock_cost: isExclusive ? EXCLUSIVE_UNLOCK_COST : 0,
           is_delivered: true, delivered_at: new Date().toISOString(), is_read: false
         })
         .select().single();
@@ -564,7 +644,23 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                           {maskContactInfo(msg.message)}
                         </p>
 
-                        {msg.photoUrls && msg.photoUrls.length > 0 ? (
+                        {msg.isExclusive && !msg.unlocked && msg.hasPhotos ? (
+                          <div className="mt-2">
+                            <div className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-fuchsia-200 via-amber-200 to-amber-300">
+                              <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
+                                <Lock className="w-8 h-8 text-white/90 drop-shadow" />
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleUnlockMail(msg.id)}
+                              disabled={unlockingId === msg.id}
+                              className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
+                            >
+                              {unlockingId === msg.id ? 'Opening...' : `Unlock for ${msg.unlockCost} credits`}
+                            </button>
+                          </div>
+                        ) : msg.photoUrls && msg.photoUrls.length > 0 ? (
                           <div className={cn(
                             "mt-2 grid gap-1.5",
                             msg.photoUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
@@ -620,7 +716,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
               <div className="flex items-center justify-center gap-4 mt-3">
                 <span className="text-xs text-gray-400">Mail: 10 credits</span>
                 <span className="text-xs text-gray-400">Photo: +10 credits</span>
-                <span className="text-xs text-amber-500 font-medium">Exclusive: +20 credits</span>
+                <span className="text-xs text-amber-500 font-medium">Exclusive: +20 credits · they pay 50 to open</span>
               </div>
             </div>
           ) : (
@@ -714,7 +810,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                     <Star className="w-3.5 h-3.5 text-amber-500" />
                     <span className="text-xs font-medium text-amber-700">Exclusive mail costs +20 extra credits</span>
                   </div>
-                  <p className="text-[10px] text-amber-600 mt-0.5">Only visible to the recipient. Cannot be forwarded.</p>
+                  <p className="text-[10px] text-amber-600 mt-0.5">
+                    Arrives locked. They pay {EXCLUSIVE_UNLOCK_COST} credits to open it, and only they can.
+                  </p>
                 </div>
               )}
             </div>
@@ -840,7 +938,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
               <div className="flex items-center gap-3">
                 <span>Mail: 10 cr</span>
                 <span>Photo: +10 cr</span>
-                <span className="text-amber-600 font-medium">Exclusive: +20 cr</span>
+                <span className="text-amber-600 font-medium">Exclusive: +20 cr · opens for 50</span>
               </div>
             </div>
           </div>
