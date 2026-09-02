@@ -363,7 +363,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
               senderImage: thread?.participantImage || DEFAULT_AVATAR,
               message: msg.message_text, timestamp: new Date(msg.created_at),
               isDelivered: true, isRead: false,
-              replyToId: msg.reply_to_message_id ?? null
+              replyToId: msg.reply_to_message_id ?? null,
+              isExclusive: msg.is_exclusive === true,
+              unlockCost: msg.unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
+              unlocked: (msg.unlock_cost ?? 0) === 0,
+              signedUrl: null
             }];
           });
         }
@@ -612,7 +616,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
     const optimistic: ChatMessage = {
       id: `temp-${Date.now()}`, senderId: user.id, senderName: 'You',
       senderImage: userProfileImage, message: trimmed, timestamp: new Date(),
-      isDelivered: false, isRead: false, replyToId: replyingTo?.id ?? null
+      isDelivered: false, isRead: false, replyToId: replyingTo?.id ?? null,
+      unlocked: true
     };
 
     setMessages(prev => [...prev, optimistic]);
@@ -776,7 +781,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                           </div>
                         );
                       })()}
-                      {!msg.unlocked ? (
+                      {msg.unlocked === false ? (
                         <div className="w-52 max-w-full">
                           <div className="relative h-32 overflow-hidden rounded-xl bg-gradient-to-br from-fuchsia-300 via-pink-300 to-amber-200">
                             <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
@@ -892,6 +897,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                   isDelivered: true,
                   isRead: false,
                   replyToId: null,
+                  unlocked: true,
                   stickerEmoji: sticker.emoji,
                   stickerImage: sticker.image_url,
                 }]);
@@ -917,6 +923,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                   isDelivered: true,
                   isRead: false,
                   replyToId: null,
+                  unlocked: true,
                 }]);
               }}
               onOpenShop={() => onNavigate('gift-shop')}

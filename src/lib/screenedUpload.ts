@@ -76,6 +76,10 @@ export async function uploadScreenedImage(opts: {
   const { error: coverError } = await put(covered);
 
   if (coverError) {
+    // Worth logging loudly: this failed silently for every photo with writing
+    // in it because the bucket had no UPDATE policy, and the message the sender
+    // saw said nothing about why.
+    console.error('Could not replace the photo with the covered version:', coverError);
     await discard();
     return { ok: false, error: 'Could not hide the contact details in that photo. Please try again.' };
   }

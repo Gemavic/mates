@@ -1346,7 +1346,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                         ? 'bg-gradient-to-br from-pink-200 dark:from-pink-600 to-pink-300 dark:to-pink-700 text-gray-800 dark:text-white border border-pink-400 dark:border-pink-500'
                         : 'bg-white dark:bg-night-800 text-gray-800 dark:text-slate-100 border border-pink-200 dark:border-night-700'
                     }`}>
-                      {!msg.unlocked ? (
+                      {msg.unlocked === false ? (
                         <LockedItem
                           cost={msg.unlockCost ?? EXCLUSIVE_UNLOCK_COST}
                           senderName={msg.senderName}

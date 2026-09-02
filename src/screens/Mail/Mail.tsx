@@ -681,12 +681,12 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                       )}>
                         <p className={cn(
                           "text-sm leading-relaxed whitespace-pre-wrap",
-                          !msg.unlocked && "select-none blur-[5px]"
-                        )} aria-hidden={!msg.unlocked}>
+                          msg.unlocked === false && "select-none blur-[5px]"
+                        )} aria-hidden={msg.unlocked === false}>
                           {maskContactInfo(msg.message)}
                         </p>
 
-                        {!msg.unlocked ? (
+                        {msg.unlocked === false ? (
                           <div className="mt-2">
                             {msg.hasPhotos && (
                               <div className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-fuchsia-200 via-amber-200 to-amber-300">
