@@ -73,6 +73,8 @@ interface MailMessage {
 import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 import { maskContactInfo } from '@/lib/maskContacts';
 import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST, MAIL_OPEN_COST } from '@/lib/exclusivePricing';
+import { uploadScreenedImage } from '@/lib/screenedUpload';
+import { compressImage } from '@/lib/photoUpload';
 
 const ATTACHMENT_BUCKET = 'mail-attachments';
 
@@ -88,6 +90,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
   const [subjectText, setSubjectText] = useState('');
   const [isExclusive, setIsExclusive] = useState(false);
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
+  // A second tap on Send used to post the whole mail twice.
+  const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -410,6 +414,10 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
     e.preventDefault();
     if (!messageText.trim() && attachedFiles.length === 0) return;
     if (!user || !selectedThread) return;
+    // A second tap while the first send was still uploading posted the whole
+    // mail twice - two identical messages a second apart, charged twice.
+    if (sending) return;
+    setSending(true);
 
     try {
       // Upload before charging. The old order charged 10 credits a photo and
@@ -418,18 +426,31 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
       // billed, and a failed upload costs nothing.
       const uploadedPaths: string[] = [];
       const failedUploads: string[] = [];
+      const refusals: string[] = [];
+      const notices: string[] = [];
+
       for (const attachment of attachedFiles) {
         if (!attachment.file) { failedUploads.push(attachment.name); continue; }
-        const extension = (attachment.name.split('.').pop() || 'jpg').toLowerCase().slice(0, 8);
-        const path = `${selectedThread}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await supabaseClient
-          .storage.from(ATTACHMENT_BUCKET)
-          .upload(path, attachment.file, { contentType: attachment.type, upsert: false });
-        if (uploadError) {
-          console.error('Attachment upload failed:', uploadError);
-          failedUploads.push(attachment.name);
+
+        // Mail attachments were being uploaded raw: no nudity scan and no text
+        // scan, so a phone number written on a notepad travelled by mail while
+        // the identical picture was refused in chat. Same gate now.
+        const payload = await compressImage(attachment.file);
+        const path = `${selectedThread}/${crypto.randomUUID()}.jpg`;
+
+        const screened = await uploadScreenedImage({
+          bucket: ATTACHMENT_BUCKET,
+          path,
+          blob: payload,
+          userId: user.id,
+          isPublicBucket: false,
+        });
+
+        if (!screened.ok) {
+          refusals.push(`${attachment.name}: ${screened.error}`);
           continue;
         }
+        if (screened.notice) notices.push(screened.notice);
         uploadedPaths.push(path);
       }
 
@@ -439,13 +460,19 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           'Nothing was charged for those, and the rest of your message will still send.'
         );
       }
+      if (refusals.length) alert(refusals.join('\n\n'));
+      if (notices.length) alert(notices[0]);
       if (!messageText.trim() && uploadedPaths.length === 0) return;
 
       // Exclusive is a flat price for the whole thing. It used to be a
       // surcharge, so an exclusive mail with one photo cost 70.
       const totalCost = isExclusive
         ? EXCLUSIVE_SEND_COST
-        : 10 + uploadedPaths.length * 10;
+        : MAIL_OPEN_COST + uploadedPaths.length * MAIL_OPEN_COST;
+
+      // The reader pays what the sender paid: ten for the message and ten for
+      // each photo, so a mail carrying ten pictures opens for a hundred.
+      const openCost = isExclusive ? EXCLUSIVE_UNLOCK_COST : totalCost;
 
       if (!creditManager.canAfford(user.id, totalCost) && !creditManager.isStaffMember(user.id)) {
         alert(`Insufficient credits! Need ${totalCost} credits. You have ${creditManager.getTotalCredits(user.id)}.`);
@@ -480,7 +507,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         timestamp: new Date().toLocaleString(),
         hasPhotos: uploadedPaths.length > 0, isRead: false, isExclusive,
         // The sender never pays to see their own mail.
-        unlockCost: isExclusive ? EXCLUSIVE_UNLOCK_COST : MAIL_OPEN_COST, unlocked: true,
+        unlockCost: isExclusive ? EXCLUSIVE_UNLOCK_COST : MAIL_OPEN_COST, unlocked: true, // replaced below once the real cost is known
         photoUrls: attachedFiles.filter(f => f.preview).map(f => f.preview as string),
       };
 
@@ -502,7 +529,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           has_photos: uploadedPaths.length > 0,
           photo_urls: uploadedPaths,
           is_exclusive: isExclusive,
-          unlock_cost: isExclusive ? EXCLUSIVE_UNLOCK_COST : MAIL_OPEN_COST,
+          unlock_cost: openCost,
           is_delivered: true, delivered_at: new Date().toISOString(), is_read: false
         })
         .select().single();
@@ -524,6 +551,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
       setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 3000);
     } catch (error: any) {
       alert(`Failed to send mail: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -734,7 +763,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                 Compose Private Mail
               </button>
               <div className="flex items-center justify-center gap-4 mt-3">
-                <span className="text-xs text-gray-400">Mail: 10 credits · they pay 10 to open</span>
+                <span className="text-xs text-gray-400">Mail: 10 credits + 10 a photo · they pay the same to open</span>
                 <span className="text-xs text-gray-400">Photo: +10 credits</span>
                 <span className="text-xs text-amber-500 font-medium">Exclusive: 50 credits flat · they pay 50 to open</span>
               </div>
@@ -816,7 +845,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
 
                 <Button
                   onClick={handleSendMail}
-                  disabled={!messageText.trim() && attachedFiles.length === 0}
+                  disabled={sending || (!messageText.trim() && attachedFiles.length === 0)}
                   className="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-5 py-2 text-sm disabled:opacity-40"
                 >
                   <Send className="w-4 h-4 mr-1.5" />
@@ -959,7 +988,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 px-3 py-2 text-[10px] text-gray-500">
               <div className="flex items-center gap-3">
                 <span>Mail: 10 cr</span>
-                <span>Photo: +10 cr</span>
+                <span>Photo: +10 cr each</span>
                 <span className="text-amber-600 font-medium">Exclusive: 50 cr flat · opens for 50</span>
               </div>
             </div>

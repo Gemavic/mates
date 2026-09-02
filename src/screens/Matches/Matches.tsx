@@ -11,13 +11,17 @@ import { Button } from '@/components/ui/button';
 import {
   MessageCircle, Mail as MailIcon, User, Users,
   Newspaper, MessageSquare, CreditCard, ArrowLeft, Send,
-  Smile, Gift, X
+  Smile, Gift, X, Image as ImageIcon, Camera, Lock
 } from 'lucide-react';
+import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { MessagingManager } from '@/lib/database';
 import { creditManager } from '@/lib/creditSystem';
 import { maskContactInfo } from '@/lib/maskContacts';
+import { uploadScreenedImage } from '@/lib/screenedUpload';
+import { compressImage } from '@/lib/photoUpload';
+import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePricing';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +29,47 @@ import { cn } from '@/lib/utils';
 // Loading every message meant a long thread sent megabytes over mobile data
 // before the first bubble appeared.
 const MESSAGE_PAGE_SIZE = 50;
+
+// This screen is the chat members actually use. MessageChatBox is a second
+// implementation of the same conversation, and photo sending was built there -
+// which is why there was no camera here at all. Anything that costs money has
+// to exist in both, or in neither.
+const PHOTO_COST = 10;
+const EXCLUSIVE_BUCKET = 'chat-exclusive';
+const PUBLIC_CHAT_BUCKET = 'chat-media';
+
+/**
+ * Fills in signed URLs for the locked photos this reader is entitled to - the
+ * ones they sent, and the ones they have paid for. Everything else keeps a
+ * null URL and renders as the locked card. The storage policy would refuse the
+ * rest anyway; this just avoids asking.
+ */
+async function resolveLocked(list: ChatMessage[], userId: string): Promise<ChatMessage[]> {
+  const locked = list.filter(m => m.isExclusive);
+  if (locked.length === 0) return list;
+
+  const { data: unlocks } = await supabaseClient
+    .from('message_unlocks')
+    .select('message_id')
+    .in('message_id', locked.map(m => m.id));
+
+  const paid = new Set((unlocks || []).map((u: { message_id: string }) => u.message_id));
+  const viewable = locked.filter(m => m.senderId === userId || paid.has(m.id));
+  const signed: Record<string, string> = {};
+
+  if (viewable.length > 0) {
+    const { data } = await supabaseClient.storage
+      .from(EXCLUSIVE_BUCKET)
+      .createSignedUrls(viewable.map(m => m.message), 60 * 60);
+    for (const entry of data || []) {
+      if (entry.path && entry.signedUrl) signed[entry.path] = entry.signedUrl;
+    }
+  }
+
+  return list.map(m => m.isExclusive
+    ? { ...m, unlocked: m.senderId === userId || paid.has(m.id), signedUrl: signed[m.message] ?? null }
+    : m);
+}
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
@@ -89,6 +134,12 @@ interface ChatMessage {
   stickerImage?: string | null;
   giftNote?: string | null;
   giftOpenedAt?: string | null;
+  // A locked photo: `message` holds a storage path, and signedUrl is only
+  // filled in for someone entitled to see it.
+  isExclusive?: boolean;
+  unlockCost?: number;
+  unlocked?: boolean;
+  signedUrl?: string | null;
 }
 
 interface MatchesProps {
@@ -108,6 +159,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
   // The message this one is answering. mail_messages already had a
   // reply_to_message_id column - nothing had ever written to it.
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [exclusiveMode, setExclusiveMode] = useState(false);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
+  const [unlockingId, setUnlockingId] = useState<string | null>(null);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
@@ -220,7 +274,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
         // back to chronological order for display.
         const { data: page, error } = await supabaseClient
           .from('mail_messages')
-          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost ), stickers:sticker_id ( emoji, image_url )')
+          .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, is_exclusive, unlock_cost, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost ), stickers:sticker_id ( emoji, image_url )')
           .eq('thread_id', selectedThread)
           .in('subject', ['Chat Message', 'Gift', 'Sticker'])
           .order('created_at', { ascending: false })
@@ -265,10 +319,17 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             giftOpenedAt: (msg as any).gift_opened_at ?? null,
             stickerEmoji: (msg as any).stickers?.emoji ?? null,
             stickerImage: (msg as any).stickers?.image_url ?? null,
+            isExclusive: (msg as any).is_exclusive === true,
+            unlockCost: (msg as any).unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
+            unlocked: isMe || ((msg as any).unlock_cost ?? 0) === 0,
+            signedUrl: null,
           };
         });
 
-        setMessages(loaded);
+        const resolved = await resolveLocked(loaded, user.id);
+        if (cancelled) return;
+
+        setMessages(resolved);
 
         supabaseClient
           .from('mail_messages')
@@ -342,7 +403,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
       const { data, error } = await supabaseClient
         .from('mail_messages')
-        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost ), stickers:sticker_id ( emoji, image_url )')
+        .select('id, sender_id, message_text, created_at, is_read, is_delivered, reply_to_message_id, gift_id, gift_note, gift_opened_at, is_exclusive, unlock_cost, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost ), stickers:sticker_id ( emoji, image_url )')
         .eq('thread_id', selectedThread)
         .in('subject', ['Chat Message', 'Gift', 'Sticker'])
         .lt('created_at', oldest)
@@ -366,17 +427,168 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           gift: (msg as any).virtual_gifts ?? null,
           giftNote: (msg as any).gift_note ?? null,
           giftOpenedAt: (msg as any).gift_opened_at ?? null,
+          isExclusive: (msg as any).is_exclusive === true,
+          unlockCost: (msg as any).unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
+          unlocked: isMe || ((msg as any).unlock_cost ?? 0) === 0,
+          signedUrl: null,
         };
       });
 
       setHasOlderMessages((data || []).length === MESSAGE_PAGE_SIZE);
-      setMessages(prev => [...older, ...prev]);
+      const olderResolved = await resolveLocked(older, user.id);
+      setMessages(prev => [...olderResolved, ...prev]);
     } catch (err) {
       console.error('Could not load earlier messages:', err);
     } finally {
       setLoadingOlder(false);
     }
   }, [user, selectedThread, messages, threads, userProfileImage, loadingOlder]);
+  /**
+   * Sends one photo. It goes through uploadScreenedImage first, so nudity is
+   * refused and a phone number written on paper is painted over, and it is
+   * only charged for once it has passed - a refused photo used to take the
+   * credits anyway.
+   */
+  const handleSendPhoto = useCallback((source: 'library' | 'camera') => {
+    if (!user || !selectedThread) return;
+
+    const exclusive = exclusiveMode;
+    const cost = exclusive ? EXCLUSIVE_SEND_COST : PHOTO_COST;
+    const isStaff = creditManager.isStaffMember(user.id);
+
+    if (!isStaff && !creditManager.canAfford(user.id, cost)) {
+      alert(`You need ${cost} credits to send ${exclusive ? 'an exclusive photo' : 'a photo'}.`);
+      onNavigate('credits');
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    if (source === 'camera') input.setAttribute('capture', 'environment');
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 25 * 1024 * 1024) {
+        alert('That photo is too large. Please choose one under 25MB.');
+        return;
+      }
+
+      setSendingPhoto(true);
+      const bucket = exclusive ? EXCLUSIVE_BUCKET : PUBLIC_CHAT_BUCKET;
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+
+      try {
+        const payload = await compressImage(file);
+
+        const screened = await uploadScreenedImage({
+          bucket, path, blob: payload, userId: user.id, isPublicBucket: !exclusive,
+        });
+
+        if (!screened.ok) {
+          alert(screened.error ?? 'That photo could not be sent.');
+          return;
+        }
+        if (screened.notice) alert(screened.notice);
+
+        if (!isStaff && cost > 0) {
+          const paid = await creditManager.deductCredits(user.id, cost, 'Sent photo');
+          if (!paid) {
+            await supabaseClient.storage.from(bucket).remove([path]);
+            alert('Could not send that photo - insufficient credits.');
+            return;
+          }
+        }
+
+        // A public photo travels as a URL. A locked one travels as its storage
+        // path, because both people can read the row.
+        const stored = exclusive
+          ? path
+          : supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+
+        const signedUrl = exclusive
+          ? (await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60)).data?.signedUrl ?? null
+          : null;
+
+        const optimistic: ChatMessage = {
+          id: `temp-${Date.now()}`, senderId: user.id, senderName: 'You',
+          senderImage: userProfileImage, message: stored, timestamp: new Date(),
+          isDelivered: false, isRead: false, replyToId: null,
+          isExclusive: exclusive,
+          unlockCost: exclusive ? EXCLUSIVE_UNLOCK_COST : 0,
+          unlocked: true,
+          signedUrl,
+        };
+        setMessages(prev => [...prev, optimistic]);
+        setExclusiveMode(false);
+
+        const { data: saved, error } = await supabaseClient
+          .from('mail_messages')
+          .insert({
+            thread_id: selectedThread, sender_id: user.id,
+            subject: 'Chat Message', message_text: stored,
+            credits_spent: cost, has_photos: true,
+            is_exclusive: exclusive,
+            unlock_cost: exclusive ? EXCLUSIVE_UNLOCK_COST : 0,
+            is_delivered: true, delivered_at: new Date().toISOString(), is_read: false,
+          })
+          .select().single();
+
+        if (error) {
+          console.error('Could not save photo message:', error);
+          setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+          alert('The photo uploaded, but could not be sent. Please try again.');
+          return;
+        }
+
+        setMessages(prev => prev.map(m =>
+          m.id === optimistic.id ? { ...m, id: saved.id, isDelivered: true } : m
+        ));
+      } catch (err) {
+        console.error('Photo send failed:', err);
+        alert('Could not send that photo. Please try again.');
+      } finally {
+        setSendingPhoto(false);
+      }
+    };
+
+    input.click();
+  }, [user, selectedThread, exclusiveMode, userProfileImage, onNavigate]);
+
+  /**
+   * Pays for one locked photo. unlock_message() charges before it records
+   * anything, and the unlock row is what the storage policy consults.
+   */
+  const handleUnlockPhoto = useCallback(async (messageId: string, storagePath: string) => {
+    if (!user) return;
+    setUnlockingId(messageId);
+    try {
+      const { data, error } = await supabaseClient.rpc('unlock_message', { p_message_id: messageId });
+
+      if (error || !data?.success) {
+        const why = data?.error ?? (error as any)?.message;
+        alert(why === 'insufficient_credits'
+          ? 'You do not have enough credits to unlock this photo.'
+          : 'Could not unlock this photo. Please try again.');
+        return;
+      }
+
+      const { data: signed } = await supabaseClient.storage
+        .from(EXCLUSIVE_BUCKET)
+        .createSignedUrl(storagePath, 60 * 60);
+
+      setMessages(prev => prev.map(m => m.id === messageId
+        ? { ...m, unlocked: true, signedUrl: signed?.signedUrl ?? null }
+        : m));
+    } catch (err) {
+      console.error('Unlock failed:', err);
+      alert('Could not unlock this photo. Please try again.');
+    } finally {
+      setUnlockingId(null);
+    }
+  }, [user]);
+
   const handleSendMessage = useCallback(async () => {
     const trimmed = messageText.trim();
     if (!trimmed || !user || !selectedThread) return;
@@ -564,9 +776,40 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                           </div>
                         );
                       })()}
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {maskContactInfo(msg.message)}
-                      </p>
+                      {!msg.unlocked ? (
+                        <div className="w-52 max-w-full">
+                          <div className="relative h-32 overflow-hidden rounded-xl bg-gradient-to-br from-fuchsia-300 via-pink-300 to-amber-200">
+                            <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
+                              <Lock className="w-8 h-8 text-white/90 drop-shadow" />
+                            </div>
+                            <span className="absolute left-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-semibold text-white">
+                              Exclusive
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleUnlockPhoto(msg.id, msg.message)}
+                            disabled={unlockingId === msg.id}
+                            className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
+                          >
+                            {unlockingId === msg.id ? 'Unlocking...' : `Unlock for ${msg.unlockCost ?? EXCLUSIVE_UNLOCK_COST} credits`}
+                          </button>
+                        </div>
+                      ) : msg.isExclusive && msg.signedUrl ? (
+                        <div>
+                          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                            <Lock className="w-3 h-3" />
+                            Exclusive
+                          </div>
+                          <ProtectedMedia src={msg.signedUrl} isOwnMedia={isMe} senderName={msg.senderName} />
+                        </div>
+                      ) : looksLikeImage(msg.message) ? (
+                        <ProtectedMedia src={msg.message} isOwnMedia={isMe} senderName={msg.senderName} />
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {maskContactInfo(msg.message)}
+                        </p>
+                      )}
                     </div>
                     )}
                     <div className={cn("flex items-center gap-1.5 px-1 mt-1", isMe ? 'justify-end' : 'justify-start')}>
@@ -699,10 +942,42 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                 </button>
               </div>
             )}
-            <p className="text-xs text-gray-400 text-center">
-              Live chat is free, for everyone, with no daily limit · photos, gifts, mail and calls are the paid extras
-            </p>
-            <div className="flex items-center gap-2 pb-3">
+            <div className="flex items-center gap-2">
+              <p className="flex-1 min-w-0 text-xs text-gray-400">
+                Live chat is free, for everyone, with no daily limit · photos, gifts, mail and calls are the paid extras
+              </p>
+              <button
+                type="button"
+                onClick={() => setExclusiveMode(v => !v)}
+                title={`Send the next photo locked: ${EXCLUSIVE_SEND_COST} credits to send, ${EXCLUSIVE_UNLOCK_COST} for them to open it.`}
+                className={cn(
+                  "flex flex-shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                  exclusiveMode
+                    ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-500 dark:bg-amber-900/30 dark:text-amber-300"
+                    : "border-gray-300 text-gray-500 dark:border-night-600 dark:text-slate-400"
+                )}
+              >
+                <Lock className="w-3 h-3" />
+                Exclusive
+              </button>
+            </div>
+            <div className="flex w-full min-w-0 items-center gap-2 pb-3">
+            <button
+              onClick={() => handleSendPhoto('library')}
+              disabled={sendingPhoto}
+              aria-label="Send a photo"
+              className="text-pink-500 hover:text-pink-600 disabled:opacity-40 flex-shrink-0 p-1.5 active:scale-95"
+            >
+              <ImageIcon className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => handleSendPhoto('camera')}
+              disabled={sendingPhoto}
+              aria-label="Take a photo"
+              className="text-pink-500 hover:text-pink-600 disabled:opacity-40 flex-shrink-0 p-1.5 active:scale-95"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
             <button onClick={() => { setShowQuickMessages(!showQuickMessages); setShowEmojiPicker(false); }}
               className="bg-white dark:bg-night-900 text-pink-600 px-3 py-2 rounded-full border-2 border-pink-400 hover:bg-pink-50 dark:hover:bg-night-700 transition-colors flex-shrink-0 font-bold text-sm active:scale-95">
               Hi
