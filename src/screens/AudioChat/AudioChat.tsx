@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { showCallToast } from '@/lib/callToast';
 import { useAuth } from '@/hooks/useAuth';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
 import {
@@ -174,6 +175,9 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       // soon as the call is placed, so the meter used to run while the other
       // phone was still ringing - and charged in full for calls nobody picked
       // up. Matches what VideoChat does with its remote-participant event.
+      // Once per call, not once per minute.
+      let lowBalanceWarned = false;
+
       const beginBilling = () => {
         if ((window as any).callTimer) return;
         setIsAnswered(true);
@@ -186,10 +190,20 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
               void (async () => {
                 const success = await creditManager.deductCredits(user.id, 50);
                 if (success) {
-                  setUserBalance(creditManager.getTotalCredits(user.id));
+                  const remaining = creditManager.getTotalCredits(user.id);
+                  setUserBalance(remaining);
+
+                  // Warn while there is still time to wrap up or top up,
+                  // rather than letting the call simply stop.
+                  if (!lowBalanceWarned && remaining < 50 * 2) {
+                    lowBalanceWarned = true;
+                    showCallToast(
+                      `About ${Math.max(1, Math.floor(remaining / 50))} more minute(s) of credit. The call will end when it runs out.`
+                    );
+                  }
                 } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
                   endCall();
-                  alert('Insufficient credits for audio call!');
+                  showCallToast('Your credits ran out, so the call ended.', 'error');
                 }
               })();
             }

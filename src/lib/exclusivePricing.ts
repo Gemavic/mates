@@ -12,3 +12,10 @@ export const EXCLUSIVE_SEND_COST = 50;
 
 /** Charged to the recipient, once, to open it. */
 export const EXCLUSIVE_UNLOCK_COST = 50;
+
+/**
+ * Charged to the recipient, once, to open an ordinary private mail. Live chat
+ * stays at zero - chat messages carry no unlock cost at all, which is what
+ * keeps them free.
+ */
+export const MAIL_OPEN_COST = 10;

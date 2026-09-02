@@ -74,9 +74,10 @@ const MESSAGE_PAGE_SIZE = 50;
 // chat and mail cannot quote different numbers for the same thing.
 const EXCLUSIVE_BUCKET = 'chat-exclusive';
 
-function LockedPhoto({ cost, senderName, busy, onUnlock }: {
+function LockedItem({ cost, senderName, exclusive, busy, onUnlock }: {
   cost: number;
   senderName: string;
+  exclusive: boolean;
   busy: boolean;
   onUnlock: () => void;
 }) {
@@ -91,7 +92,7 @@ function LockedPhoto({ cost, senderName, busy, onUnlock }: {
         </span>
       </div>
       <p className="mt-2 text-xs text-gray-600 dark:text-slate-300">
-        {senderName} sent an exclusive photo.
+        {senderName} sent {exclusive ? 'an exclusive photo' : 'private mail'}.
       </p>
       <button
         type="button"
@@ -99,7 +100,7 @@ function LockedPhoto({ cost, senderName, busy, onUnlock }: {
         disabled={busy}
         className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
       >
-        {busy ? 'Unlocking...' : `Unlock for ${cost} credits`}
+        {busy ? 'Opening...' : `${exclusive ? 'Unlock' : 'Open'} for ${cost} credits`}
       </button>
     </div>
   );
@@ -429,7 +430,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             giftOpenedAt: (msg as any).gift_opened_at ?? null,
             isExclusive: (msg as any).is_exclusive ?? false,
             unlockCost: (msg as any).unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
-            unlocked: isCurrentUser || !((msg as any).is_exclusive ?? false),
+            unlocked: isCurrentUser || ((msg as any).unlock_cost ?? 0) === 0,
             signedUrl: null
           };
         });
@@ -1035,7 +1036,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
    * unlock row, and it charges before it does, so a member cannot talk their
    * way past this from the console.
    */
-  const handleUnlockMessage = useCallback(async (messageId: string, storagePath: string) => {
+  const handleUnlockMessage = useCallback(async (messageId: string, storagePath: string, exclusive: boolean) => {
     if (!user) return;
 
     setUnlockingId(messageId);
@@ -1052,12 +1053,16 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
         return;
       }
 
-      const { data: signed } = await supabaseClient.storage
-        .from(EXCLUSIVE_BUCKET)
-        .createSignedUrl(storagePath, 60 * 60);
+      let signedUrl: string | null = null;
+      if (exclusive) {
+        const { data: signed } = await supabaseClient.storage
+          .from(EXCLUSIVE_BUCKET)
+          .createSignedUrl(storagePath, 60 * 60);
+        signedUrl = signed?.signedUrl ?? null;
+      }
 
       setMessages(prev => prev.map(m => m.id === messageId
-        ? { ...m, unlocked: true, signedUrl: signed?.signedUrl ?? null }
+        ? { ...m, unlocked: true, signedUrl }
         : m));
 
       if (typeof data.total_credits === 'number') {
@@ -1341,27 +1346,26 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
                         ? 'bg-gradient-to-br from-pink-200 dark:from-pink-600 to-pink-300 dark:to-pink-700 text-gray-800 dark:text-white border border-pink-400 dark:border-pink-500'
                         : 'bg-white dark:bg-night-800 text-gray-800 dark:text-slate-100 border border-pink-200 dark:border-night-700'
                     }`}>
-                      {msg.isExclusive ? (
-                        msg.unlocked && msg.signedUrl ? (
-                          <div>
-                            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                              <Lock className="w-3 h-3" />
-                              Exclusive
-                            </div>
-                            <ProtectedMedia
-                              src={msg.signedUrl}
-                              isOwnMedia={isCurrentUser}
-                              senderName={msg.senderName}
-                            />
+                      {!msg.unlocked ? (
+                        <LockedItem
+                          cost={msg.unlockCost ?? EXCLUSIVE_UNLOCK_COST}
+                          senderName={msg.senderName}
+                          exclusive={msg.isExclusive === true}
+                          busy={unlockingId === msg.id}
+                          onUnlock={() => handleUnlockMessage(msg.id, msg.message, msg.isExclusive === true)}
+                        />
+                      ) : msg.isExclusive && msg.signedUrl ? (
+                        <div>
+                          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                            <Lock className="w-3 h-3" />
+                            Exclusive
                           </div>
-                        ) : (
-                          <LockedPhoto
-                            cost={msg.unlockCost ?? EXCLUSIVE_UNLOCK_COST}
+                          <ProtectedMedia
+                            src={msg.signedUrl}
+                            isOwnMedia={isCurrentUser}
                             senderName={msg.senderName}
-                            busy={unlockingId === msg.id}
-                            onUnlock={() => handleUnlockMessage(msg.id, msg.message)}
                           />
-                        )
+                        </div>
                       ) : looksLikeImage(msg.message) ? (
                         <ProtectedMedia
                           src={msg.message}

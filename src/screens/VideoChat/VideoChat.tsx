@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, PhoneOff, Users, Settings, Power, PowerOff, Monitor, MonitorOff } from 'lucide-react';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
+import { showCallToast } from '@/lib/callToast';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
@@ -198,6 +199,9 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
    */
   const isCallerRef = useRef(false);
 
+  /** So the low-credit warning is given once per call, not every minute. */
+  const lowBalanceWarnedRef = useRef(false);
+
   /**
    * Billing starts when the other person actually arrives - not when we join the
    * room. Previously the meter ran from the moment joinRoom() returned, so an
@@ -205,6 +209,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
    */
   const beginBilling = (userId: string) => {
     if ((window as any).callTimer) return;
+    lowBalanceWarnedRef.current = false;
 
     const timer = setInterval(() => {
       setCallDuration((prev) => {
@@ -213,7 +218,17 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
           void (async () => {
             const success = await creditManager.deductCredits(userId, 60);
             if (success) {
-              setUserBalance(creditManager.getTotalCredits(userId));
+              const remaining = creditManager.getTotalCredits(userId);
+              setUserBalance(remaining);
+
+              // Say so before the money runs out, not as the call dies. Below
+              // two more minutes there is time to wrap up or top up.
+              if (!lowBalanceWarnedRef.current && remaining < 60 * 2) {
+                lowBalanceWarnedRef.current = true;
+                showCallToast(
+                  `About ${Math.max(1, Math.floor(remaining / 60))} more minute(s) of credit. The call will end when it runs out.`
+                );
+              }
             } else if (!(await creditManager.hasFreeCallingAccess(userId))) {
               endCall();
               const errorMessage = document.createElement('div');

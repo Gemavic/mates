@@ -72,7 +72,7 @@ interface MailMessage {
 
 import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 import { maskContactInfo } from '@/lib/maskContacts';
-import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePricing';
+import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST, MAIL_OPEN_COST } from '@/lib/exclusivePricing';
 
 const ATTACHMENT_BUCKET = 'mail-attachments';
 
@@ -241,7 +241,11 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           participantName: p?.first_name || p?.full_name || 'User',
           participantAge: p?.age || 25,
           participantImage: photo || p?.photo_url || DEFAULT_AVATAR,
-          lastMessage: msgs?.latest?.message_text || 'No messages yet',
+          lastMessage: !msgs?.latest
+            ? 'No messages yet'
+            : ((msgs.latest.unlock_cost ?? 0) > 0 && msgs.latest.sender_id !== user.id
+                ? 'New mail - open to read'
+                : msgs.latest.message_text),
           timestamp: msgs?.latest?.created_at || thread.created_at,
           unreadCount: msgs?.unreadCount || 0,
           isVerified: p?.is_verified || false,
@@ -291,8 +295,14 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
       }
 
       setCurrentMessages(prev => prev.map(m =>
-        m.id === messageId ? { ...m, unlocked: true, photoUrls: urls } : m
+        m.id === messageId ? { ...m, unlocked: true, isRead: true, photoUrls: urls } : m
       ));
+
+      // Paid for and now visible, so the sender may honestly be told it was read.
+      await supabaseClient.from('mail_messages')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', messageId);
+      await loadMailThreads();
     } catch (err) {
       console.error('Unlock failed:', err);
       alert('Could not open this mail. Please try again.');
@@ -315,7 +325,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
 
       // Which exclusive messages has this reader paid for? Their own are free.
       const lockedIds = messages
-        .filter((m: any) => m.is_exclusive && m.sender_id !== user.id)
+        .filter((m: any) => (m.unlock_cost ?? 0) > 0 && m.sender_id !== user.id)
         .map((m: any) => m.id);
 
       const paidIds = new Set<string>();
@@ -328,7 +338,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
       }
 
       const isViewable = (m: any) =>
-        !m.is_exclusive || m.sender_id === user.id || paidIds.has(m.id);
+        (m.unlock_cost ?? 0) === 0 || m.sender_id === user.id || paidIds.has(m.id);
 
       // Attachments live in a private bucket keyed by thread, so the stored
       // value is a path, not a URL. Sign them in one batch rather than one
@@ -367,7 +377,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         hasPhotos: msg.has_photos || false,
         isRead: msg.is_read || false,
         isExclusive: msg.is_exclusive === true,
-        unlockCost: msg.unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
+        unlockCost: msg.unlock_cost ?? MAIL_OPEN_COST,
         unlocked: isViewable(msg),
         photoUrls: ((msg.photo_urls || []) as string[])
           .map((path) => (path.startsWith('http') ? path : signedByPath[path]))
@@ -384,7 +394,10 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         .from('mail_messages')
         .update({ is_read: true })
         .eq('thread_id', threadId)
-        .neq('sender_id', user.id);
+        .neq('sender_id', user.id)
+        // Marking an unopened mail as read would tell the sender it had been
+        // seen when the recipient has not paid to see it.
+        .in('id', formatted.filter(m => m.unlocked).map(m => m.id));
 
       await loadMailThreads();
     } catch (error) {
@@ -428,9 +441,11 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
       }
       if (!messageText.trim() && uploadedPaths.length === 0) return;
 
-      let totalCost = 10;
-      totalCost += uploadedPaths.length * 10;
-      if (isExclusive) totalCost += EXCLUSIVE_SEND_COST;
+      // Exclusive is a flat price for the whole thing. It used to be a
+      // surcharge, so an exclusive mail with one photo cost 70.
+      const totalCost = isExclusive
+        ? EXCLUSIVE_SEND_COST
+        : 10 + uploadedPaths.length * 10;
 
       if (!creditManager.canAfford(user.id, totalCost) && !creditManager.isStaffMember(user.id)) {
         alert(`Insufficient credits! Need ${totalCost} credits. You have ${creditManager.getTotalCredits(user.id)}.`);
@@ -465,7 +480,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         timestamp: new Date().toLocaleString(),
         hasPhotos: uploadedPaths.length > 0, isRead: false, isExclusive,
         // The sender never pays to see their own mail.
-        unlockCost: isExclusive ? EXCLUSIVE_UNLOCK_COST : 0, unlocked: true,
+        unlockCost: isExclusive ? EXCLUSIVE_UNLOCK_COST : MAIL_OPEN_COST, unlocked: true,
         photoUrls: attachedFiles.filter(f => f.preview).map(f => f.preview as string),
       };
 
@@ -487,7 +502,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           has_photos: uploadedPaths.length > 0,
           photo_urls: uploadedPaths,
           is_exclusive: isExclusive,
-          unlock_cost: isExclusive ? EXCLUSIVE_UNLOCK_COST : 0,
+          unlock_cost: isExclusive ? EXCLUSIVE_UNLOCK_COST : MAIL_OPEN_COST,
           is_delivered: true, delivered_at: new Date().toISOString(), is_read: false
         })
         .select().single();
@@ -635,24 +650,34 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                           ? (isMe ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white' : 'bg-gradient-to-br from-amber-50 to-amber-100 text-gray-800 border border-amber-200')
                           : (isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 border border-gray-100')
                       )}>
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        <p className={cn(
+                          "text-sm leading-relaxed whitespace-pre-wrap",
+                          !msg.unlocked && "select-none blur-[5px]"
+                        )} aria-hidden={!msg.unlocked}>
                           {maskContactInfo(msg.message)}
                         </p>
 
-                        {msg.isExclusive && !msg.unlocked && msg.hasPhotos ? (
+                        {!msg.unlocked ? (
                           <div className="mt-2">
-                            <div className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-fuchsia-200 via-amber-200 to-amber-300">
-                              <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
-                                <Lock className="w-8 h-8 text-white/90 drop-shadow" />
+                            {msg.hasPhotos && (
+                              <div className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-fuchsia-200 via-amber-200 to-amber-300">
+                                <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
+                                  <Lock className="w-8 h-8 text-white/90 drop-shadow" />
+                                </div>
                               </div>
-                            </div>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleUnlockMail(msg.id)}
                               disabled={unlockingId === msg.id}
-                              className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
+                              className={cn(
+                                "mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-60",
+                                msg.isExclusive ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-500 hover:bg-blue-600"
+                              )}
                             >
-                              {unlockingId === msg.id ? 'Opening...' : `Unlock for ${msg.unlockCost} credits`}
+                              {unlockingId === msg.id
+                                ? 'Opening...'
+                                : `${msg.isExclusive ? 'Unlock' : 'Open'} for ${msg.unlockCost} credits`}
                             </button>
                           </div>
                         ) : msg.photoUrls && msg.photoUrls.length > 0 ? (
@@ -709,9 +734,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                 Compose Private Mail
               </button>
               <div className="flex items-center justify-center gap-4 mt-3">
-                <span className="text-xs text-gray-400">Mail: 10 credits</span>
+                <span className="text-xs text-gray-400">Mail: 10 credits · they pay 10 to open</span>
                 <span className="text-xs text-gray-400">Photo: +10 credits</span>
-                <span className="text-xs text-amber-500 font-medium">Exclusive: +50 credits · they pay 50 to open</span>
+                <span className="text-xs text-amber-500 font-medium">Exclusive: 50 credits flat · they pay 50 to open</span>
               </div>
             </div>
           ) : (
@@ -804,7 +829,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                   <div className="flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 text-amber-500" />
                     <span className="text-xs font-medium text-amber-700">
-                      Exclusive mail costs +{EXCLUSIVE_SEND_COST} extra credits
+                      Exclusive mail costs {EXCLUSIVE_SEND_COST} credits, whatever it contains
                     </span>
                   </div>
                   <p className="text-[10px] text-amber-600 mt-0.5">
@@ -935,7 +960,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
               <div className="flex items-center gap-3">
                 <span>Mail: 10 cr</span>
                 <span>Photo: +10 cr</span>
-                <span className="text-amber-600 font-medium">Exclusive: +50 cr · opens for 50</span>
+                <span className="text-amber-600 font-medium">Exclusive: 50 cr flat · opens for 50</span>
               </div>
             </div>
           </div>
