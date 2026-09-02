@@ -27,6 +27,24 @@ function digitCount(s: string): number {
   return (s.match(/\d/g) || []).length;
 }
 
+/**
+ * A single word that gives away contact details whatever surrounds it.
+ *
+ * The regexes above expect the text to survive OCR in one piece. It does not:
+ * "histogm@gmail.com" came back joined and was covered, while
+ * "Matto Canada1 @gmail.Com" arrived as three words with the @ floating, matched
+ * nothing, and was delivered in full. Inside a photograph the cost of covering
+ * one word too many is a black rectangle nobody minds, so the bar is low here.
+ */
+const TELLTALE =
+  /(?:@|gmail|googlemail|yahoo|ymail|hotmail|outlook|icloud|proton|aol|zoho|\.com|\.net|\.org|\.co\b|whats\s?app|telegram|snapchat|snap|instagram|insta|viber|skype|wechat|signal)/i;
+
+/** True when two words sit on roughly the same line of writing. */
+function sameLine(a: Word, b: Word): boolean {
+  const centre = (w: Word) => w.box.y + w.box.h / 2;
+  return Math.abs(centre(a) - centre(b)) < Math.max(a.box.h, b.box.h) * 0.8;
+}
+
 /** Flattens Vision's page/block/paragraph/word tree into words with boxes. */
 export function collectWords(fullText: any): Word[] {
   const out: Word[] = [];
@@ -88,6 +106,26 @@ export function findContactText(fullText: any): {
       });
     }
   }
+
+  // Then the word-by-word sweep, for everything OCR broke apart.
+  words.forEach((word, i) => {
+    const telltale = TELLTALE.test(word.text);
+    // Five, not four: a year is four digits and blacking out "2026" on every
+    // photo that happens to show a date would be its own kind of broken.
+    const numeric = digitCount(word.text) >= 5;
+    if (!telltale && !numeric) return;
+
+    hit.add(i);
+    matches.push(word.text.trim());
+
+    // An address is written across several words once OCR has split it, and
+    // the half that names the person sits beside the half that names the
+    // provider. Take the neighbours on the same line as well.
+    if (telltale) {
+      if (i > 0 && sameLine(words[i - 1], word)) hit.add(i - 1);
+      if (i + 1 < words.length && sameLine(words[i + 1], word)) hit.add(i + 1);
+    }
+  });
 
   // Pad each box a little - OCR boxes hug the glyphs, and a covering rectangle
   // that hugs them just as tightly leaves readable edges.

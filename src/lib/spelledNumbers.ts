@@ -28,16 +28,16 @@ function load(language: string[][]) {
 // English, including the way people say digits aloud and the near-homophones
 // they reach for when a filter starts biting.
 load([
-  ['0', 'zero', 'oh', 'o', 'nought', 'naught', 'nil', 'zilch'],
-  ['1', 'one', 'won', 'wun'],
-  ['2', 'two', 'to', 'too', 'tu'],
-  ['3', 'three', 'tree', 'thee'],
-  ['4', 'four', 'for', 'fore', 'four'],
-  ['5', 'five', 'fife'],
-  ['6', 'six', 'sics'],
-  ['7', 'seven', 'sevn'],
-  ['8', 'eight', 'ate', 'ait'],
-  ['9', 'nine', 'niner', 'none', 'nyne'],
+  ['0', 'zero', 'oh', 'o', 'nought', 'naught', 'nil', 'zilch', 'zeroh'],
+  ['1', 'one', 'won', 'wun', 'wan'],
+  ['2', 'two', 'to', 'too', 'tu', 'tew'],
+  ['3', 'three', 'tree', 'thee', 'threee', 'thri'],
+  ['4', 'four', 'for', 'fore', 'foure', 'phor'],
+  ['5', 'five', 'fife', 'fyve', 'phive'],
+  ['6', 'six', 'sics', 'sicks', 'sixe'],
+  ['7', 'seven', 'sevn', 'sevun'],
+  ['8', 'eight', 'ate', 'ait', 'ayt', 'ayte'],
+  ['9', 'nine', 'niner', 'none', 'nyne', 'nyn'],
 ]);
 
 // French, Spanish, Portuguese, Italian, German - accents are stripped before
@@ -117,29 +117,66 @@ function digitsFor(raw: string): string | null {
 /** How many digits a spoken run has to carry before it counts as a number. */
 const MIN_DIGITS = 7;
 
+/**
+ * How many ordinary words may sit inside a run without ending it.
+ *
+ * "six one eight, my number, six one five seven nine nine" is one number with
+ * words dropped into it, and a run that breaks at the first non-digit misses
+ * it entirely. One word of slack catches that without catching prose: "I have
+ * six cats plus three dogs" has two words between the digits, so it stays a
+ * sentence.
+ */
+const MAX_GAP = 2;
+
+/**
+ * ...and how much of a run has to BE digits for it to count.
+ *
+ * Two words of slack alone would catch "I bought two apples, three pears, four
+ * plums, five figs, six dates and seven limes" - seven digits, but plainly a
+ * sentence. Requiring most of the run to be number-words separates the two:
+ * a dictated phone number is almost entirely digits, prose is not.
+ */
+const MIN_DENSITY = 0.6;
+
 function runs(text: string): Array<{ from: number; to: number; digits: number }> {
   const parts = text.split(SEPARATORS);
   const found: Array<{ from: number; to: number; digits: number }> = [];
 
   let from = -1;
+  let last = -1;
   let digits = 0;
+  let spoken = 0;
+  let gap = 0;
 
-  const close = (to: number) => {
-    if (from >= 0 && digits >= MIN_DIGITS) found.push({ from, to, digits });
+  const close = () => {
+    if (from >= 0 && digits >= MIN_DIGITS) {
+      const tokens = (last - from) / 2 + 1;
+      if (spoken / tokens >= MIN_DENSITY) found.push({ from, to: last, digits });
+    }
     from = -1;
+    last = -1;
     digits = 0;
+    spoken = 0;
+    gap = 0;
   };
 
   for (let i = 0; i < parts.length; i += 2) {
     const value = digitsFor(parts[i]);
+
     if (value === null) {
-      close(i - 2);
+      if (from < 0) continue;
+      gap += 1;
+      if (gap > MAX_GAP) close();
       continue;
     }
+
     if (from < 0) from = i;
+    last = i;
     digits += value.length;
+    spoken += 1;
+    gap = 0;
   }
-  close(parts.length - 1);
+  close();
 
   return found;
 }
