@@ -72,14 +72,9 @@ interface MailMessage {
 
 import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 import { maskContactInfo } from '@/lib/maskContacts';
+import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePricing';
 
 const ATTACHMENT_BUCKET = 'mail-attachments';
-
-// Exclusive mail used to be a label: the flag was read back off the subject
-// line and nothing was ever withheld, so the twenty credits bought a word. The
-// recipient now pays this to open one, and the storage policy - not this file
-// - is what refuses the photo until they have.
-const EXCLUSIVE_UNLOCK_COST = 50;
 
 const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
 
@@ -435,7 +430,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
 
       let totalCost = 10;
       totalCost += uploadedPaths.length * 10;
-      if (isExclusive) totalCost += 20;
+      if (isExclusive) totalCost += EXCLUSIVE_SEND_COST;
 
       if (!creditManager.canAfford(user.id, totalCost) && !creditManager.isStaffMember(user.id)) {
         alert(`Insufficient credits! Need ${totalCost} credits. You have ${creditManager.getTotalCredits(user.id)}.`);
@@ -716,7 +711,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
               <div className="flex items-center justify-center gap-4 mt-3">
                 <span className="text-xs text-gray-400">Mail: 10 credits</span>
                 <span className="text-xs text-gray-400">Photo: +10 credits</span>
-                <span className="text-xs text-amber-500 font-medium">Exclusive: +20 credits · they pay 50 to open</span>
+                <span className="text-xs text-amber-500 font-medium">Exclusive: +50 credits · they pay 50 to open</span>
               </div>
             </div>
           ) : (
@@ -808,7 +803,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-xs font-medium text-amber-700">Exclusive mail costs +20 extra credits</span>
+                    <span className="text-xs font-medium text-amber-700">
+                      Exclusive mail costs +{EXCLUSIVE_SEND_COST} extra credits
+                    </span>
                   </div>
                   <p className="text-[10px] text-amber-600 mt-0.5">
                     Arrives locked. They pay {EXCLUSIVE_UNLOCK_COST} credits to open it, and only they can.
@@ -938,7 +935,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
               <div className="flex items-center gap-3">
                 <span>Mail: 10 cr</span>
                 <span>Photo: +10 cr</span>
-                <span className="text-amber-600 font-medium">Exclusive: +20 cr · opens for 50</span>
+                <span className="text-amber-600 font-medium">Exclusive: +50 cr · opens for 50</span>
               </div>
             </div>
           </div>

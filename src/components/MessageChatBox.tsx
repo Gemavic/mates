@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { maskContactInfo, containsContactInfo, CONTACT_MASK_NOTICE } from '@/lib/maskContacts';
 import { FEATURES } from '@/lib/config';
+import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePricing';
 import { setPendingCall } from '@/lib/callSignals';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -69,10 +70,9 @@ const MESSAGE_PAGE_SIZE = 50;
 
 // Exclusive photos are kept in a private bucket and the row carries only the
 // storage path, so the lock is enforced by the storage policy rather than by
-// what this component chooses to render. EXCLUSIVE_UNLOCK_COST is what the
-// recipient pays, once, to see one.
+// what this component chooses to render. Both prices live in one module so
+// chat and mail cannot quote different numbers for the same thing.
 const EXCLUSIVE_BUCKET = 'chat-exclusive';
-const EXCLUSIVE_UNLOCK_COST = 50;
 
 function LockedPhoto({ cost, senderName, busy, onUnlock }: {
   cost: number;
@@ -825,7 +825,8 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
     const isStaff = creditManager.isStaffMember(user.id);
 
     let cost = 0;
-    if (type === 'image') cost = 10;
+    if (exclusive) cost = EXCLUSIVE_SEND_COST;
+    else if (type === 'image') cost = 10;
     else if (type === 'video') cost = 60;
     else if (type === 'file') cost = 10;
 
@@ -1452,7 +1453,7 @@ export const MessageChatBox: React.FC<MessageChatBoxProps> = ({
             <button
               type="button"
               onClick={() => setExclusiveMode(v => !v)}
-              title={`Send the next photo locked. They pay ${EXCLUSIVE_UNLOCK_COST} credits to open it.`}
+              title={`Send the next photo locked: ${EXCLUSIVE_SEND_COST} credits to send, ${EXCLUSIVE_UNLOCK_COST} for them to open it.`}
               className={`flex flex-shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                 exclusiveMode
                   ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-500 dark:bg-amber-900/30 dark:text-amber-300'

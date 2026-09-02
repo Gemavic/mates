@@ -99,6 +99,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     // were already looking at.
     const outgoing = takePendingCall();
     if (outgoing && user?.id) {
+      isCallerRef.current = true;
       void startVideoCall(outgoing.peerId, outgoing.peerName);
       return;
     }
@@ -110,6 +111,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     (async () => {
       try {
         setIsConnecting(true);
+        isCallerRef.current = false;
         setCurrentMatchName(accepted.peerName);
         await joinCallRoom(accepted.roomName, user.id);
         if (cancelled) return;
@@ -187,6 +189,16 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   };
 
   /**
+   * True only on the side that placed the call. joinCallRoom() is shared by the
+   * caller and the person accepting, and it started the meter for whoever ran
+   * it - so both people were charged 60 credits a minute for the same call, and
+   * a receiver who ran out was hung up on mid-conversation for a call they
+   * never agreed to pay for. Audio never had this: its meter lives inside
+   * startAudioCall, which only the caller runs.
+   */
+  const isCallerRef = useRef(false);
+
+  /**
    * Billing starts when the other person actually arrives - not when we join the
    * room. Previously the meter ran from the moment joinRoom() returned, so an
    * unanswered call still charged 60 credits a minute for an empty room.
@@ -237,7 +249,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         // They answered and arrived: stop ringing, start the meter.
         clearSignalling();
         setPeerConnected(true);
-        beginBilling(userId);
+        // Only the caller pays. Receiving is free.
+        if (isCallerRef.current) beginBilling(userId);
       },
       (participant: RemoteParticipant) => {
         console.log('Participant disconnected:', participant.identity);
@@ -298,6 +311,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
     try {
       setIsConnecting(true);
+      isCallerRef.current = true;
       setCallError(null);
       setCurrentMatchName(matchName);
 
