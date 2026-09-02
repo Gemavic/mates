@@ -16,6 +16,8 @@
  * an ordinary sentence. "I turn 30 in 2026" and "$18.99" stay as they are.
  */
 
+import { containsSpelledNumber, maskSpelledNumbers } from './spelledNumbers';
+
 const MASK_CHAR = '*';
 
 /** Six or more asterisks, so a long number does not leak its own length. */
@@ -46,6 +48,7 @@ const PATTERNS: RegExp[] = [
 /** True when the text appears to contain a phone number, email, link or handle. */
 export function containsContactInfo(text: string): boolean {
   if (!text) return false;
+  if (containsSpelledNumber(text)) return true;
   return PATTERNS.some((p) => {
     p.lastIndex = 0;
     return p.test(text);
@@ -76,6 +79,11 @@ export function maskContactInfo(text: string): string {
     if (digits < 7) return _m; // years, prices, ages - leave them alone
     return `${lead}${mask(number)}`;
   });
+
+  // Finally, numbers spelled out in words - in any language we hold the digits
+  // for. Left until last so it works on whatever the patterns above did not
+  // already take.
+  out = maskSpelledNumbers(out);
 
   return out;
 }

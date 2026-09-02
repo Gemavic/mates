@@ -481,7 +481,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
 
       setSendingPhoto(true);
       const bucket = exclusive ? EXCLUSIVE_BUCKET : PUBLIC_CHAT_BUCKET;
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      let path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
 
       try {
         const payload = await compressImage(file);
@@ -495,6 +495,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
           return;
         }
         if (screened.notice) alert(screened.notice);
+        // Covering writes a new file and deletes the original.
+        path = screened.path ?? path;
 
         if (!isStaff && cost > 0) {
           const paid = await creditManager.deductCredits(user.id, cost, 'Sent photo');
@@ -911,7 +913,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
             <QuickGiftBar
               threadId={selectedThread}
               recipientName={threads.find(t => t.id === selectedThread)?.participantName || 'them'}
-              onSent={(text) => {
+              onSent={(text, gift) => {
                 if (!user) return;
                 setMessages(prev => [...prev, {
                   id: `gift-${Date.now()}`,
@@ -924,6 +926,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
                   isRead: false,
                   replyToId: null,
                   unlocked: true,
+                  // Render as the package it is. It always came back as a gift
+                  // on the next load; it just looked like typed text until then.
+                  gift: gift as GiftPayload,
+                  giftNote: null,
+                  giftOpenedAt: null,
                 }]);
               }}
               onOpenShop={() => onNavigate('gift-shop')}

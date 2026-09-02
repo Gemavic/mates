@@ -16,6 +16,15 @@ import { coverRegions } from './coverContactText';
 
 export interface ScreenedUpload {
   ok: boolean;
+  /**
+   * Where the image actually ended up. When contact details had to be covered
+   * this is NOT the path that was passed in: the covered version is written
+   * beside it under a new name and the original deleted. Overwriting in place
+   * meant trusting both an UPDATE policy and the CDN to stop serving the copy
+   * it had already cached at that path - which is how a photo could be
+   * reported as covered and still arrive readable. Callers must store this.
+   */
+  path?: string;
   /** Why it was refused, ready to show the sender. */
   error?: string;
   /** Something worth telling the sender even though it went through. */
@@ -34,65 +43,63 @@ export async function uploadScreenedImage(opts: {
   const { bucket, path, userId, isPublicBucket } = opts;
   const store = supabaseClient.storage.from(bucket);
 
-  const put = (body: Blob) =>
-    store.upload(path, body, { contentType: 'image/jpeg', upsert: true });
+  const put = (at: string, body: Blob) =>
+    store.upload(at, body, { contentType: 'image/jpeg', upsert: false });
 
-  const readableUrl = async (): Promise<string | null> => {
-    if (isPublicBucket) return store.getPublicUrl(path).data.publicUrl;
-    const { data } = await store.createSignedUrl(path, 600);
+  const readableUrl = async (at: string): Promise<string | null> => {
+    if (isPublicBucket) return store.getPublicUrl(at).data.publicUrl;
+    const { data } = await store.createSignedUrl(at, 600);
     return data?.signedUrl ?? null;
   };
 
-  const discard = () => store.remove([path]);
+  const discard = (at: string) => store.remove([at]);
 
-  let blob = opts.blob;
+  const blob = opts.blob;
 
-  const { error: uploadError } = await put(blob);
+  const { error: uploadError } = await put(path, blob);
   if (uploadError) {
     console.error('Upload failed:', uploadError);
     return { ok: false, error: 'Could not upload that photo. Please try again.' };
   }
 
-  let url = await readableUrl();
+  let url = await readableUrl(path);
   if (!url) {
-    await discard();
+    await discard(path);
     return { ok: false, error: 'Could not prepare that photo for checking. Please try again.' };
   }
 
   let verdict = await moderateImage(url, userId, opts.contentType ?? 'chat_media', { scanText: true });
 
   if (!verdict.allowed) {
-    await discard();
+    await discard(path);
     return { ok: false, error: verdict.reason ?? 'This image does not meet our content rules.' };
   }
 
   if (!verdict.textScan.found || verdict.textScan.boxes.length === 0) {
-    return { ok: true };
+    return { ok: true, path };
   }
 
-  // Paint over the words Vision located, replace the stored file, and read it
-  // again. If anything is still legible after covering, it does not go.
+  // Paint over the words Vision located and store the result under a NEW name,
+  // then read that one back. If anything is still legible after covering, it
+  // does not go.
+  const coveredPath = path.replace(/(\.[a-z0-9]+)?$/i, '') + '-covered.jpg';
   const covered = await coverRegions(blob, verdict.textScan.boxes);
-  const { error: coverError } = await put(covered);
 
+  const { error: coverError } = await put(coveredPath, covered);
   if (coverError) {
-    // Worth logging loudly: this failed silently for every photo with writing
-    // in it because the bucket had no UPDATE policy, and the message the sender
-    // saw said nothing about why.
-    console.error('Could not replace the photo with the covered version:', coverError);
-    await discard();
+    console.error('Could not store the covered version of the photo:', coverError);
+    await discard(path);
     return { ok: false, error: 'Could not hide the contact details in that photo. Please try again.' };
   }
 
-  blob = covered;
-  url = await readableUrl();
-
+  url = await readableUrl(coveredPath);
   if (url) {
     verdict = await moderateImage(url, userId, opts.contentType ?? 'chat_media', { scanText: true });
   }
 
   if (verdict.textScan.found) {
-    await discard();
+    await discard(path);
+    await discard(coveredPath);
     return {
       ok: false,
       error:
@@ -101,5 +108,12 @@ export async function uploadScreenedImage(opts: {
     };
   }
 
-  return { ok: true, notice: 'Contact details written in that photo were covered before it was sent.' };
+  // The uncovered original must not be left addressable.
+  await discard(path);
+
+  return {
+    ok: true,
+    path: coveredPath,
+    notice: 'Contact details written in that photo were covered before it was sent.',
+  };
 }

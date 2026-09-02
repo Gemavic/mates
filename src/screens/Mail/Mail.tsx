@@ -451,7 +451,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           continue;
         }
         if (screened.notice) notices.push(screened.notice);
-        uploadedPaths.push(path);
+        // Covering writes a new file and deletes the original, so this is not
+        // necessarily the path we asked for.
+        uploadedPaths.push(screened.path ?? path);
       }
 
       if (failedUploads.length) {

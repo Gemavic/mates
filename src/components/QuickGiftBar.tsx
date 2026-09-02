@@ -15,8 +15,12 @@ interface QuickGift {
 interface QuickGiftBarProps {
   threadId: string;
   recipientName: string;
-  /** Called after a gift is charged and delivered, so the thread can show it. */
-  onSent: (text: string) => void;
+  /**
+   * Called after a gift is charged and delivered, so the thread can show it.
+   * The gift travels with the sentence - without it a paid gift arrived in the
+   * thread looking like someone had typed "Sent you a Bubble Tea!".
+   */
+  onSent: (text: string, gift: QuickGift) => void;
   onOpenShop: () => void;
 }
 
@@ -111,7 +115,7 @@ export const QuickGiftBar: React.FC<QuickGiftBarProps> = ({
         return;
       }
 
-      onSent(text);
+      onSent(text, gift);
       setPending(null);
     } finally {
       setSending(false);
