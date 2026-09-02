@@ -12,8 +12,14 @@
 // in the logs - a moderation endpoint that silently approves everything while
 // looking like it works is worse than none.
 
+// Alongside SafeSearch it can also run DOCUMENT_TEXT_DETECTION, which is how
+// a phone number written on a notepad is caught. That is asked for only where
+// a leak is possible - a photo sent to another member - because Vision bills
+// per feature per image.
+
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { findContactText } from './contactText.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,7 +128,7 @@ Deno.serve(async (req: Request) => {
     });
 
   try {
-    const { imageUrl, userId, contentType = 'photo' } = await req.json();
+    const { imageUrl, userId, contentType = 'photo', scanText = false } = await req.json();
 
     if (!imageUrl || typeof imageUrl !== 'string') {
       return json({ allowed: false, error: 'imageUrl is required' }, 400);
@@ -136,13 +142,14 @@ Deno.serve(async (req: Request) => {
       return json({ allowed: true, configured: false, review: false, reason: null });
     }
 
+    const features: Array<Record<string, string>> = [{ type: 'SAFE_SEARCH_DETECTION' }];
+    if (scanText) features.push({ type: 'DOCUMENT_TEXT_DETECTION' });
+
     const annotate = async (image: Record<string, unknown>) => {
       const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [{ image, features: [{ type: 'SAFE_SEARCH_DETECTION' }] }],
-        }),
+        body: JSON.stringify({ requests: [{ image, features }] }),
       });
       return { res, body: await res.json() };
     };
@@ -190,6 +197,20 @@ Deno.serve(async (req: Request) => {
     const safe: SafeSearch = result?.responses?.[0]?.safeSearchAnnotation ?? {};
     const decision = verdict(safe);
 
+    // Contact details written on paper, a screen or a hand. Reported rather
+    // than refused: the caller covers the words and sends the rest of the
+    // photo, which is what a member actually wants.
+    let textScan: { scanned: boolean; found: boolean; matches: string[]; boxes: unknown[] } =
+      { scanned: false, found: false, matches: [], boxes: [] };
+
+    if (scanText) {
+      const hits = findContactText(result?.responses?.[0]?.fullTextAnnotation);
+      textScan = { scanned: true, found: hits.found, matches: hits.matches, boxes: hits.boxes };
+      if (hits.found) {
+        console.log('Contact details found in image', { userId, contentType, count: hits.boxes.length });
+      }
+    }
+
     if (!decision.allowed) {
       await queueForReview(userId ?? null, contentType, `Blocked: ${decision.category}`, 'critical', imageUrl);
     } else if (decision.review) {
@@ -206,6 +227,7 @@ Deno.serve(async (req: Request) => {
       configured: true,
       scanned: true,
       likelihoods: safe,
+      textScan,
     });
   } catch (error: any) {
     console.error('moderate-image failed:', error?.message ?? error);

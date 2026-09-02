@@ -1,14 +1,26 @@
 import { supabaseClient } from './supabase';
+import type { CoverBox } from './coverContactText';
 
 /**
  * Real image moderation, via the moderate-image edge function (Google Cloud
- * Vision SafeSearch).
+ * Vision).
  *
  * This replaces contentModeration.scanImage(), which was a stub: it read the
  * file and returned a heuristic verdict, so nothing on this site actually
  * detected nudity. Scanning happens server-side because a client-side check is
  * advice, not enforcement - anyone can skip it.
  */
+
+export interface TextScan {
+  /** True when text detection actually ran on this image. */
+  scanned: boolean;
+  /** True when a phone number, email, link or handle was read out of it. */
+  found: boolean;
+  /** What was read, for the message shown to the sender. */
+  matches: string[];
+  /** Where each offending word sits, in the scanned image's pixels. */
+  boxes: CoverBox[];
+}
 
 export interface ImageVerdict {
   /** False only when the scan positively identified disallowed content. */
@@ -19,16 +31,21 @@ export interface ImageVerdict {
   reason: string | null;
   /** False when GOOGLE_VISION_API_KEY is not set - nothing was scanned. */
   configured: boolean;
+  /** Only populated when scanText was asked for. */
+  textScan: TextScan;
 }
+
+const NO_TEXT_SCAN: TextScan = { scanned: false, found: false, matches: [], boxes: [] };
 
 export async function moderateImage(
   imageUrl: string,
   userId: string,
-  contentType: 'photo' | 'chat_media' | 'feed_media' = 'photo'
+  contentType: 'photo' | 'chat_media' | 'feed_media' = 'photo',
+  options: { scanText?: boolean } = {}
 ): Promise<ImageVerdict> {
   try {
     const { data, error } = await supabaseClient.functions.invoke('moderate-image', {
-      body: { imageUrl, userId, contentType },
+      body: { imageUrl, userId, contentType, scanText: options.scanText === true },
     });
 
     if (error) {
@@ -36,7 +53,7 @@ export async function moderateImage(
       // uploading a profile photo at all. The server queues unscanned images
       // for review, so this is not a silent pass.
       console.error('Image moderation call failed, allowing upload:', error);
-      return { allowed: true, review: true, reason: null, configured: false };
+      return { allowed: true, review: true, reason: null, configured: false, textScan: NO_TEXT_SCAN };
     }
 
     return {
@@ -44,9 +61,15 @@ export async function moderateImage(
       review: !!data?.review,
       reason: data?.reason ?? null,
       configured: !!data?.configured,
+      textScan: {
+        scanned: !!data?.textScan?.scanned,
+        found: !!data?.textScan?.found,
+        matches: Array.isArray(data?.textScan?.matches) ? data.textScan.matches : [],
+        boxes: Array.isArray(data?.textScan?.boxes) ? data.textScan.boxes : [],
+      },
     };
   } catch (err) {
     console.error('Image moderation threw, allowing upload:', err);
-    return { allowed: true, review: true, reason: null, configured: false };
+    return { allowed: true, review: true, reason: null, configured: false, textScan: NO_TEXT_SCAN };
   }
 }
