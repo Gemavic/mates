@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Users, Settings, Power, PowerOff } from 'lucide-react';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { showCallToast } from '@/lib/callToast';
+import { AUDIO_CALL_PER_MINUTE } from '@/lib/exclusivePricing';
 import { useAuth } from '@/hooks/useAuth';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
 import {
@@ -59,17 +60,17 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         const newDuration = prev + 1;
         if (charge && newDuration % 60 === 0) {
           void (async () => {
-            const success = await creditManager.deductCredits(payerId, 50);
+            const success = await creditManager.deductCredits(payerId, AUDIO_CALL_PER_MINUTE);
             if (success) {
               const remaining = creditManager.getTotalCredits(payerId);
               setUserBalance(remaining);
 
               // Warn while there is still time to wrap up or top up,
               // rather than letting the call simply stop.
-              if (!lowBalanceWarnedRef.current && remaining < 50 * 2) {
+              if (!lowBalanceWarnedRef.current && remaining < AUDIO_CALL_PER_MINUTE * 2) {
                 lowBalanceWarnedRef.current = true;
                 showCallToast(
-                  `About ${Math.max(1, Math.floor(remaining / 50))} more minute(s) of credit. The call will end when it runs out.`
+                  `About ${Math.max(1, Math.floor(remaining / AUDIO_CALL_PER_MINUTE))} more minute(s) of credit. The call will end when it runs out.`
                 );
               }
             } else if (!(await creditManager.hasFreeCallingAccess(payerId))) {
@@ -209,9 +210,9 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       return;
     }
 
-    const canAfford = creditManager.canAfford(user.id, 50);
+    const canAfford = creditManager.canAfford(user.id, AUDIO_CALL_PER_MINUTE);
     if (!canAfford && !(await creditManager.hasFreeCallingAccess(user.id))) {
-      alert(`Need ${formatCredits(50)} per minute for audio calls!`);
+      alert(`Need ${formatCredits(AUDIO_CALL_PER_MINUTE)} per minute for audio calls!`);
       return;
     }
 

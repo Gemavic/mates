@@ -287,7 +287,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
       onNavigate('signin');
       return;
     }
-    // Chat, not mail. Mail costs the sender 10 credits and the reader 10 more;
+    // Chat, not mail. Mail costs the sender 5 credits and the reader 5 more;
     // live chat is free. Sending someone to the paid product when they press
     // "Message" is a charge they never asked for.
     onNavigate('matches', { userId });

@@ -5,6 +5,7 @@ import { Video, VideoOff, Mic, MicOff, PhoneOff, Users, Settings, Power, PowerOf
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { creditManager, formatCredits } from '@/lib/creditSystem';
 import { showCallToast } from '@/lib/callToast';
+import { VIDEO_CALL_PER_MINUTE } from '@/lib/exclusivePricing';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
@@ -249,17 +250,17 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         const newDuration = prev + 1;
         if (charge && newDuration % 60 === 0) {
           void (async () => {
-            const success = await creditManager.deductCredits(userId, 60);
+            const success = await creditManager.deductCredits(userId, VIDEO_CALL_PER_MINUTE);
             if (success) {
               const remaining = creditManager.getTotalCredits(userId);
               setUserBalance(remaining);
 
               // Say so before the money runs out, not as the call dies. Below
               // two more minutes there is time to wrap up or top up.
-              if (!lowBalanceWarnedRef.current && remaining < 60 * 2) {
+              if (!lowBalanceWarnedRef.current && remaining < VIDEO_CALL_PER_MINUTE * 2) {
                 lowBalanceWarnedRef.current = true;
                 showCallToast(
-                  `About ${Math.max(1, Math.floor(remaining / 60))} more minute(s) of credit. The call will end when it runs out.`
+                  `About ${Math.max(1, Math.floor(remaining / VIDEO_CALL_PER_MINUTE))} more minute(s) of credit. The call will end when it runs out.`
                 );
               }
             } else if (!(await creditManager.hasFreeCallingAccess(userId))) {
@@ -347,11 +348,11 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       return;
     }
 
-    const canAfford = creditManager.canAfford(user.id, 60);
+    const canAfford = creditManager.canAfford(user.id, VIDEO_CALL_PER_MINUTE);
     if (!canAfford && !(await creditManager.hasFreeCallingAccess(user.id))) {
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = `Need ${formatCredits(60)} per minute for video calls!`;
+      errorMessage.textContent = `Need ${formatCredits(VIDEO_CALL_PER_MINUTE)} per minute for video calls!`;
       document.body.appendChild(errorMessage);
       setTimeout(() => document.body.removeChild(errorMessage), 3000);
       return;

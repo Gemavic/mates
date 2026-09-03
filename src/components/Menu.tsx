@@ -282,7 +282,7 @@ export const Menu: React.FC<MenuProps> = ({
               </a>
             </div>
             <div className="text-center text-white/50 text-xs space-y-0.5 mb-4">
-              <p>Live chat: free, unlimited • Stickers: 5 credits • Photos: 10 credits</p>
+              <p>Live chat, likes and winks: free • Mail: 5 credits • Photos: 10 credits</p>
               <p>Mail: First letter 10 credits, following 30 • First photo FREE</p>
               <p>Video: 60 credits/min • Audio: 50 credits/min</p>
             </div>

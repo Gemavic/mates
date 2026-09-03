@@ -153,7 +153,7 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <div className="text-center pt-3 border-t border-gray-100 space-y-1">
-              <p className="text-xs text-pink-600 font-medium">Live chat: free, unlimited • Stickers: 5 credits • Photos: 10 credits</p>
+              <p className="text-xs text-pink-600 font-medium">Live chat, likes and winks: free • Mail: 5 credits • Photos: 10 credits</p>
               <p className="text-xs text-purple-600 font-medium">Mail: First letter 10 credits, following 30 credits • First photo FREE, following 10 credits</p>
               <p className="text-xs text-pink-600 font-medium">Video calls: 60 credits/min • Audio calls: 50 credits/min</p>
             </div>

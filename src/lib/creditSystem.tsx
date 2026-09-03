@@ -11,6 +11,14 @@
 // ============================================================================
 
 import { supabaseClient } from '@/lib/supabase';
+import {
+  AUDIO_CALL_PER_MINUTE,
+  CHAT_COST,
+  MAIL_AUDIO_COST,
+  MAIL_PHOTO_COST,
+  MAIL_VIDEO_COST,
+  VIDEO_CALL_PER_MINUTE,
+} from '@/lib/exclusivePricing';
 
 export interface CreditPackage {
   id: string;
@@ -346,32 +354,32 @@ export class CreditManager {
       {
         id: 'starter',
         package_name: 'Starter',
-        credits: 50,
+        credits: 65,
         bonus_credits: 10,
         price_usd: 12.99,
         package_type: 'credits',
         is_popular: false,
-        features: ['50 Credits', '10 Bonus Credits', 'Messaging & Gifts', 'All Core Features'],
+        features: ['65 Credits', '10 Bonus Credits', 'Messaging & Gifts', 'All Core Features'],
       },
       {
         id: 'popular',
         package_name: 'Popular',
-        credits: 100,
-        bonus_credits: 25,
+        credits: 130,
+        bonus_credits: 30,
         price_usd: 18.99,
         package_type: 'credits',
         is_popular: true,
-        features: ['100 Credits', '25 Bonus Credits', 'Best For Regular Use', 'Priority Support'],
+        features: ['130 Credits', '30 Bonus Credits', 'Best For Regular Use', 'Priority Support'],
       },
       {
         id: 'premium',
         package_name: 'Premium',
-        credits: 450,
-        bonus_credits: 50,
+        credits: 580,
+        bonus_credits: 70,
         price_usd: 50.99,
         package_type: 'credits',
         is_popular: false,
-        features: ['450 Credits', '50 Bonus Credits', 'Best Value Per Credit', 'VIP Support'],
+        features: ['580 Credits', '70 Bonus Credits', 'Best Value Per Credit', 'VIP Support'],
       },
     ];
   }
@@ -461,15 +469,15 @@ export const formatPrice = (amount: number): string => `$${amount.toFixed(2)}`;
 
 // Credit costs for different actions (display values; server enforces real costs)
 export const CREDIT_COSTS = {
-  PHOTO: 15,
-  MESSAGE: 0, // chat is free - see spend_message() in the database
-  VIDEO: 50,
-  AUDIO: 30,
+  PHOTO: MAIL_PHOTO_COST,
+  MESSAGE: CHAT_COST, // chat is free - see spend_message() in the database
+  VIDEO: MAIL_VIDEO_COST,
+  AUDIO: MAIL_AUDIO_COST,
   FILE: 10,
   SUPER_LIKE: 25,
   BOOST: 50,
   GIFT: 15,
-  VIDEO_CALL: 100,
-  AUDIO_CALL: 50,
-  MAIL_PHOTO: 10,
+  VIDEO_CALL: VIDEO_CALL_PER_MINUTE,
+  AUDIO_CALL: AUDIO_CALL_PER_MINUTE,
+  MAIL_PHOTO: MAIL_PHOTO_COST,
 };

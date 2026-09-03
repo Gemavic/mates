@@ -3,7 +3,18 @@ import { ResponsiveLayout } from '@/components/ResponsiveLayout';
 import { ModernHeader } from '@/components/ModernHeader';
 import { ModernCard } from '@/components/ModernCard';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Coins, Heart as KoboIcon, Star, Crown, Gift, TrendingUp, Clock, MessageCircle, Mail, Video, Heart, ShoppingCart, Check, Sparkles } from 'lucide-react';
+import { CreditCard, Coins, Heart as KoboIcon, Star, Crown, Gift, TrendingUp, Clock, MessageCircle, Mail, Video, Heart, ShoppingCart, Check, Sparkles, Lock } from 'lucide-react';
+import {
+  AUDIO_CALL_PER_MINUTE,
+  EXCLUSIVE_SEND_COST,
+  EXCLUSIVE_UNLOCK_COST,
+  MAIL_AUDIO_COST,
+  MAIL_OPEN_COST,
+  MAIL_PHOTO_COST,
+  MAIL_SEND_COST,
+  MAIL_VIDEO_COST,
+  VIDEO_CALL_PER_MINUTE,
+} from '@/lib/exclusivePricing';
 import { creditManager, formatPrice } from '@/lib/creditSystem';
 import { getUserCredits, getCreditTransactions } from '@/lib/database';
 import { useAuth } from '@/hooks/useAuth';
@@ -440,62 +451,48 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">How Credits Work</h3>
 
+              {/* Every figure below is the constant the biller actually uses.
+                  This panel used to be hand-typed and advertised prices the
+                  app had never charged - live chat billed at "2 Credits"
+                  under a heading that said it was free. */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-white mb-3 flex items-center">
-                    <MessageCircle className="w-5 h-5 mr-2 text-blue-500" />
-                    Chat Features
+                    <MessageCircle className="w-5 h-5 mr-2 text-blue-400" />
+                    Always free
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Live chat (free, unlimited)</span>
-                      <span className="font-medium">2 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Stickers in chat</span>
-                      <span className="font-medium">5 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Sending photos in chat</span>
-                      <span className="font-medium">10 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Opening audios in chat</span>
-                      <span className="font-medium">30 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Opening videos in chat</span>
-                      <span className="font-medium">50 Credits</span>
-                    </div>
+                    {['Live chat, unlimited', 'Browsing profiles', 'Likes', 'Winks'].map((label) => (
+                      <div key={label} className="flex justify-between">
+                        <span className="text-white/70">{label}</span>
+                        <span className="font-medium text-green-300">FREE</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="font-semibold text-white mb-3 flex items-center">
-                    <Mail className="w-5 h-5 mr-2 text-green-500" />
-                    Mail Features
+                    <Mail className="w-5 h-5 mr-2 text-green-400" />
+                    Mail
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Sending letters (first)</span>
-                      <span className="font-medium">10 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Sending letters (following)</span>
-                      <span className="font-medium">30 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Opening letters (first)</span>
-                      <span className="font-medium text-green-600">FREE</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Opening letters (following)</span>
-                      <span className="font-medium">10 Credits</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/70">Opening videos in mail</span>
-                      <span className="font-medium">50 Credits</span>
-                    </div>
+                    {[
+                      ['Sending a mail', MAIL_SEND_COST],
+                      ['Opening a mail', MAIL_OPEN_COST],
+                      ['Each photo attached', MAIL_PHOTO_COST],
+                      ['Audio in a message', MAIL_AUDIO_COST],
+                      ['Video in a message', MAIL_VIDEO_COST],
+                    ].map(([label, cost]) => (
+                      <div key={label as string} className="flex justify-between">
+                        <span className="text-white/70">{label}</span>
+                        <span className="font-medium">{cost} Credits</span>
+                      </div>
+                    ))}
+                    <p className="text-white/50 text-xs pt-1">
+                      Attachments are charged at both ends, so a mail costs the
+                      same to open as it did to send.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -503,18 +500,46 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-white mb-3 flex items-center">
-                    <Video className="w-5 h-5 mr-2 text-purple-500" />
-                    Video & Audio Calls
+                    <Video className="w-5 h-5 mr-2 text-purple-400" />
+                    Calls
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-white/70">Video Calls (per minute)</span>
-                      <span className="font-medium">60 Credits</span>
+                      <span className="text-white/70">Video call, per minute</span>
+                      <span className="font-medium">{VIDEO_CALL_PER_MINUTE} Credits</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-white/70">Audio Calls (per minute)</span>
-                      <span className="font-medium">50 Credits</span>
+                      <span className="text-white/70">Audio call, per minute</span>
+                      <span className="font-medium">{AUDIO_CALL_PER_MINUTE} Credits</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Answering a call</span>
+                      <span className="font-medium text-green-300">FREE</span>
+                    </div>
+                    <p className="text-white/50 text-xs pt-1">
+                      Only the caller pays, and only from the moment the other
+                      person answers.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-white mb-3 flex items-center">
+                    <Lock className="w-5 h-5 mr-2 text-amber-400" />
+                    Exclusive
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Sending an exclusive</span>
+                      <span className="font-medium">{EXCLUSIVE_SEND_COST} Credits</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Opening an exclusive</span>
+                      <span className="font-medium">{EXCLUSIVE_UNLOCK_COST} Credits</span>
+                    </div>
+                    <p className="text-white/50 text-xs pt-1">
+                      A flat price, whatever it contains.
+                    </p>
                   </div>
                 </div>
               </div>

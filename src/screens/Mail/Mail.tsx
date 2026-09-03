@@ -72,7 +72,13 @@ interface MailMessage {
 
 import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
 import { maskContactInfo } from '@/lib/maskContacts';
-import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST, MAIL_OPEN_COST } from '@/lib/exclusivePricing';
+import {
+  EXCLUSIVE_SEND_COST,
+  EXCLUSIVE_UNLOCK_COST,
+  MAIL_OPEN_COST,
+  MAIL_PHOTO_COST,
+  MAIL_SEND_COST,
+} from '@/lib/exclusivePricing';
 import { uploadScreenedImage } from '@/lib/screenedUpload';
 import { compressImage } from '@/lib/photoUpload';
 
@@ -470,10 +476,11 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
       // surcharge, so an exclusive mail with one photo cost 70.
       const totalCost = isExclusive
         ? EXCLUSIVE_SEND_COST
-        : MAIL_OPEN_COST + uploadedPaths.length * MAIL_OPEN_COST;
+        : MAIL_SEND_COST + uploadedPaths.length * MAIL_PHOTO_COST;
 
-      // The reader pays what the sender paid: ten for the message and ten for
-      // each photo, so a mail carrying ten pictures opens for a hundred.
+      // The reader pays what the sender paid: the mail itself, plus the same
+      // per-photo charge again, so a mail carrying three pictures costs 35 to
+      // send and 35 to open.
       const openCost = isExclusive ? EXCLUSIVE_UNLOCK_COST : totalCost;
 
       if (!creditManager.canAfford(user.id, totalCost) && !creditManager.isStaffMember(user.id)) {

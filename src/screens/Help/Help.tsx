@@ -87,7 +87,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         },
         {
           question: 'What\'s the difference between Chat and Mail?',
-          answer: 'Chat is real-time messaging and it is free and unlimited. Mail is like email and costs credits (10-30 per message, depending on attachments).'
+          answer: 'Chat is real-time messaging and it is free and unlimited, and so are browsing profiles, likes and winks. Mail costs 5 credits to send and 5 to open, plus 10 for each photo, 10 for an audio and 20 for a video - charged the same at both ends.'
         }
       ]
     }
