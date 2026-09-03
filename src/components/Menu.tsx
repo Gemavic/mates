@@ -7,24 +7,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
 import { creditManager } from '@/lib/creditSystem';
 
-interface SelectedChatUser {
-  id: string;
-  name: string;
-  image: string;
-}
-
 interface MenuProps {
   onNavigate: (screen: any) => void;
   currentScreen: string;
-  selectedChatUser?: SelectedChatUser | null;
-  onSelectChatUser?: (user: SelectedChatUser | null) => void;
 }
 
 export const Menu: React.FC<MenuProps> = ({
   onNavigate,
   currentScreen,
-  selectedChatUser: _selectedChatUser,
-  onSelectChatUser: _onSelectChatUser
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, getFirstName } = useAuth();

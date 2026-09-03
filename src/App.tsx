@@ -66,12 +66,6 @@ import { getRouteConfig } from '@/lib/routeConfig';
 import { getAuthLandingScreen, screenFromHash } from '@/lib/authUrl';
 import { AlertTriangle } from 'lucide-react';
 
-interface SelectedChatUser {
-  id: string;
-  name: string;
-  image: string;
-}
-
 function ScreenLoadingFallback() {
   const { theme } = useTheme();
   return (
@@ -96,7 +90,6 @@ const App: React.FC = () => {
       || 'welcome'
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [selectedChatUser, setSelectedChatUser] = useState<SelectedChatUser | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const { user, loading } = useAuth();
@@ -409,7 +402,7 @@ const App: React.FC = () => {
         return <ModernDiscovery onNavigate={handleNavigate} />;
 
       case 'matches':
-        return <Matches onNavigate={handleNavigate} onSelectChatUser={setSelectedChatUser} initialRecipientId={selectedUserId} />;
+        return <Matches onNavigate={handleNavigate} initialRecipientId={selectedUserId} />;
       
       case 'likes':
         return <Likes onNavigate={handleNavigate} />;
@@ -598,8 +591,6 @@ const App: React.FC = () => {
         <Menu
           onNavigate={handleNavigate}
           currentScreen={currentScreen}
-          selectedChatUser={selectedChatUser}
-          onSelectChatUser={setSelectedChatUser}
         />
 
         {/* Current Screen Content */}

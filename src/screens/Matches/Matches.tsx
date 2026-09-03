@@ -30,10 +30,10 @@ import { cn } from '@/lib/utils';
 // before the first bubble appeared.
 const MESSAGE_PAGE_SIZE = 50;
 
-// This screen is the chat members actually use. MessageChatBox is a second
-// implementation of the same conversation, and photo sending was built there -
-// which is why there was no camera here at all. Anything that costs money has
-// to exist in both, or in neither.
+// This is the one chat screen. There used to be a second implementation of the
+// same conversation in MessageChatBox, which is why a feature could be built,
+// tested and still be missing: it was built in the copy nobody opened. That
+// file is gone - if a conversation needs to change, it changes here.
 const PHOTO_COST = 10;
 const EXCLUSIVE_BUCKET = 'chat-exclusive';
 const PUBLIC_CHAT_BUCKET = 'chat-media';
@@ -97,12 +97,6 @@ const QUICK_MESSAGES = [
   'Do you like traveling?'
 ];
 
-interface SelectedChatUser {
-  id: string;
-  name: string;
-  image: string;
-}
-
 interface ChatThread {
   id: string;
   participantId: string;
@@ -144,7 +138,6 @@ interface ChatMessage {
 
 interface MatchesProps {
   onNavigate: (screen: string, params?: { userId?: string }) => void;
-  onSelectChatUser?: (user: SelectedChatUser | null) => void;
   /** Arriving from "Message" on a profile: open this conversation directly. */
   initialRecipientId?: string | null;
 }
@@ -629,10 +622,10 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
     const thread = threads.find(t => t.id === selectedThread);
     if (!thread) return;
 
-    // This screen has its own chat implementation. It must charge on the same
-    // terms as MessageChatBox - otherwise it is simply the free way to chat and
-    // the pricing means nothing. First 2 messages per thread free, subscribers
-    // free, 10 credits after that; enforced server-side in spend_message().
+    // Chat is free, and spend_message() on the server is what says so. The call
+    // stays because it writes the ledger row every message is expected to have,
+    // and because the price living server-side is what stops the client being
+    // the thing that decides what anything costs.
     const charge = await creditManager.sendMessage(user.id, selectedThread, trimmed);
     if (!charge.success) {
       alert(
