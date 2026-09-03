@@ -38,6 +38,52 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
   const [activeMatches, setActiveMatches] = useState<CallableMatch[]>([]);
 
+  /** So the low-credit warning is given once per call, not every minute. */
+  const lowBalanceWarnedRef = useRef(false);
+
+  /**
+   * The clock and the meter are two different things, and treating them as one
+   * was a bug: only the caller pays, so only the caller ran the interval - and
+   * the person who answered watched their call sit at 00:00 the whole way
+   * through. Both sides run the clock now. Only the caller is charged.
+   */
+  const startCallClock = (charge: boolean) => {
+    if ((window as any).callTimer) return;
+    if (!user?.id) return;
+    const payerId = user.id;
+    lowBalanceWarnedRef.current = false;
+    setCallDuration(0);
+
+    const timer = setInterval(() => {
+      setCallDuration(prev => {
+        const newDuration = prev + 1;
+        if (charge && newDuration % 60 === 0) {
+          void (async () => {
+            const success = await creditManager.deductCredits(payerId, 50);
+            if (success) {
+              const remaining = creditManager.getTotalCredits(payerId);
+              setUserBalance(remaining);
+
+              // Warn while there is still time to wrap up or top up,
+              // rather than letting the call simply stop.
+              if (!lowBalanceWarnedRef.current && remaining < 50 * 2) {
+                lowBalanceWarnedRef.current = true;
+                showCallToast(
+                  `About ${Math.max(1, Math.floor(remaining / 50))} more minute(s) of credit. The call will end when it runs out.`
+                );
+              }
+            } else if (!(await creditManager.hasFreeCallingAccess(payerId))) {
+              endCall();
+              showCallToast('Your credits ran out, so the call ended.', 'error');
+            }
+          })();
+        }
+        return newDuration;
+      });
+    }, 1000);
+    (window as any).callTimer = timer;
+  };
+
   // Pulled out of the effect so a failed attempt can be retried from the
   // "Retry" button below, not just on mount. initialize() itself now races
   // its session lookup against a timeout (see twilioVoice.ts), so this
@@ -61,7 +107,9 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
               setIsInCall(true);
               setIsConnecting(false);
               setIsAnswered(true);
-              setCallDuration(0);
+              // Answering is free - but it is still a call, and it still needs
+              // a running timer.
+              startCallClock(false);
             },
             onEnded: () => endCall(),
           });
@@ -171,46 +219,12 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       setIsConnecting(true);
       setCurrentMatchName(matchName);
 
-      // Billing starts on answer, not on dial. device.connect() resolves as
-      // soon as the call is placed, so the meter used to run while the other
-      // phone was still ringing - and charged in full for calls nobody picked
-      // up. Matches what VideoChat does with its remote-participant event.
-      // Once per call, not once per minute.
-      let lowBalanceWarned = false;
-
+      // The meter starts on answer, not on dial. device.connect() resolves as
+      // soon as the call is placed, so it used to run while the other phone was
+      // still ringing - and charged in full for calls nobody picked up.
       const beginBilling = () => {
-        if ((window as any).callTimer) return;
         setIsAnswered(true);
-        setCallDuration(0);
-
-        const timer = setInterval(() => {
-          setCallDuration(prev => {
-            const newDuration = prev + 1;
-            if (newDuration % 60 === 0) {
-              void (async () => {
-                const success = await creditManager.deductCredits(user.id, 50);
-                if (success) {
-                  const remaining = creditManager.getTotalCredits(user.id);
-                  setUserBalance(remaining);
-
-                  // Warn while there is still time to wrap up or top up,
-                  // rather than letting the call simply stop.
-                  if (!lowBalanceWarned && remaining < 50 * 2) {
-                    lowBalanceWarned = true;
-                    showCallToast(
-                      `About ${Math.max(1, Math.floor(remaining / 50))} more minute(s) of credit. The call will end when it runs out.`
-                    );
-                  }
-                } else if (!(await creditManager.hasFreeCallingAccess(user.id))) {
-                  endCall();
-                  showCallToast('Your credits ran out, so the call ended.', 'error');
-                }
-              })();
-            }
-            return newDuration;
-          });
-        }, 1000);
-        (window as any).callTimer = timer;
+        startCallClock(true);
       };
 
       // Ring them first, and only dial once they have accepted.
@@ -235,7 +249,6 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
           });
           setIsInCall(true);
           setIsConnecting(false);
-          setCallDuration(0);
         } catch (dialError) {
           console.error('Audio dial failed after accept:', dialError);
           setIsConnecting(false);

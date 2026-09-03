@@ -122,7 +122,6 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         if (cancelled) return;
         setIsInCall(true);
         setIsConnecting(false);
-        setCallDuration(0);
       } catch (error: any) {
         if (cancelled) return;
         console.error('Error joining accepted call:', error);
@@ -232,18 +231,23 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const lowBalanceWarnedRef = useRef(false);
 
   /**
-   * Billing starts when the other person actually arrives - not when we join the
-   * room. Previously the meter ran from the moment joinRoom() returned, so an
-   * unanswered call still charged 60 credits a minute for an empty room.
+   * The clock and the meter are two different things, and conflating them was a
+   * bug: when billing became caller-only, the receiver stopped being charged
+   * *and* stopped seeing a timer, so their call sat at 00:00 for its whole
+   * duration. Both sides always run the clock. Only the caller is charged.
+   *
+   * Either way it starts when the other person actually arrives, not when we
+   * join the room - otherwise an unanswered call bills for an empty room.
    */
-  const beginBilling = (userId: string) => {
+  const startCallClock = (userId: string, charge: boolean) => {
     if ((window as any).callTimer) return;
     lowBalanceWarnedRef.current = false;
+    setCallDuration(0);
 
     const timer = setInterval(() => {
       setCallDuration((prev) => {
         const newDuration = prev + 1;
-        if (newDuration % 60 === 0) {
+        if (charge && newDuration % 60 === 0) {
           void (async () => {
             const success = await creditManager.deductCredits(userId, 60);
             if (success) {
@@ -293,8 +297,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         // They answered and arrived: stop ringing, start the meter.
         clearSignalling();
         setPeerConnected(true);
-        // Only the caller pays. Receiving is free.
-        if (isCallerRef.current) beginBilling(userId);
+        // Both sides see the timer; only the caller pays for it.
+        startCallClock(userId, isCallerRef.current);
       },
       (participant: RemoteParticipant) => {
         console.log('Participant disconnected:', participant.identity);
@@ -391,7 +395,6 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
       setIsInCall(true);
       setIsConnecting(false);
-      setCallDuration(0);
 
     } catch (error: any) {
       console.error('Error starting video call:', error);
