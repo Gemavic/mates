@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Users, Heart, MessageCircle, Calendar, Star, Shield, Phone, Video, Brain } from 'lucide-react';
 import { BookingCalendar } from '@/components/BookingCalendar';
+import { CrisisSupport } from '@/components/CrisisSupport';
+import { loadPractitioners, requestBooking, formatFee } from '@/lib/practitioners';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RelationshipServicesProps {
   onNavigate: (screen: string) => void;
@@ -11,53 +14,34 @@ interface RelationshipServicesProps {
 export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNavigate }) => {
   const [selectedTherapist, setSelectedTherapist] = useState<string | null>(null);
   const [showBookingCalendar, setShowBookingCalendar] = useState(false);
+  const [showCrisisSupport, setShowCrisisSupport] = useState(false);
+  const [bookingNotice, setBookingNotice] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const therapists = [
-    {
-      id: '1',
-      name: 'Dr. Sarah Johnson',
-      specialization: 'Relationship & Communication Expert',
-      experience: '15 years',
-      rating: 4.9,
-      image: 'https://images.pexels.com/photos/5215024/pexels-photo-5215024.jpeg?auto=compress&cs=tinysrgb&w=400',
-      price: '$120/session',
-      availability: 'Available today',
-      expertise: ['Couple Therapy', 'Conflict Resolution', 'Marriage Counseling']
-    },
-    {
-      id: '2',
-      name: 'Dr. Michael Chen',
-      specialization: 'Dating & Self-Confidence Coach',
-      experience: '12 years',
-      rating: 4.8,
-      image: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=400',
-      price: '$100/session',
-      availability: 'Available tomorrow',
-      expertise: ['Dating Anxiety', 'Self-Esteem', 'Personal Growth']
-    },
-    {
-      id: '3',
-      name: 'Dr. Emily Rodriguez',
-      specialization: 'Trust & Communication Specialist',
-      experience: '10 years',
-      rating: 4.9,
-      image: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
-      price: '$110/session',
-      availability: 'Available this week',
-      expertise: ['Trust Building', 'Communication Skills', 'Relationship Healing']
-    },
-    {
-      id: '4',
-      name: 'Dr. James Wilson',
-      specialization: 'Anxiety & Trauma Recovery Expert',
-      experience: '13 years',
-      rating: 4.9,
-      image: 'https://images.pexels.com/photos/6560258/pexels-photo-6560258.jpeg?auto=compress&cs=tinysrgb&w=400',
-      price: '$115/session',
-      availability: 'Available today',
-      expertise: ['Past Trauma', 'Anxiety Management', 'Emotional Healing']
-    }
-  ];
+  // The roster used to be four invented people written into this file, with
+  // stock photographs and credentials nobody had checked. It comes from the
+  // database now, and only practitioners somebody has verified are returned.
+  const [roster, setRoster] = useState<any[]>([]);
+  const [loadingRoster, setLoadingRoster] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadPractitioners('relationship').then((rows) => {
+      if (cancelled) return;
+      setRoster(rows.map((p) => ({
+        id: p.id,
+        name: p.title ? `${p.title} ${p.full_name}` : p.full_name,
+        specialization: p.specialization ?? '',
+        experience: p.experience_years ? `${p.experience_years} years` : '',
+        image: p.photo_url ?? '',
+        price: formatFee(p) ?? 'Fee on request',
+        availability: p.availability_note ?? 'By arrangement',
+        expertise: [] as string[],
+      })));
+      setLoadingRoster(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const services = [
     {
@@ -104,38 +88,37 @@ export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNa
     { icon: MessageCircle, name: 'Text Chat', description: 'Written conversations' }
   ];
 
-  const handleBookingConfirm = (therapistId: string, date: string, time: string) => {
-    const therapist = therapists.find(t => t.id === therapistId);
-    const formattedDate = new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+  const handleBookingConfirm = async (therapistId: string, date: string, time: string) => {
+    // This used to pop up a green "Session Booked!" toast and save nothing
+    // anywhere, so the member believed they had an appointment that did not
+    // exist and nobody would ever turn up to. It records a real request now,
+    // and says only what is true about it.
+    if (!user) {
+      setBookingNotice('Please sign in first so we can send your confirmation.');
+      return;
+    }
+    const person = roster.find((t) => t.id === therapistId);
+    const result = await requestBooking({
+      userId: user.id,
+      service: 'relationship',
+      practitionerId: therapistId,
+      practitionerName: person?.name ?? 'practitioner',
+      date,
+      time,
     });
 
-    // ⚠️ SECURITY FIX: Replaced innerHTML with textContent to prevent XSS
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    if (!result.ok) {
+      setBookingNotice(result.error ?? 'Your request could not be saved.');
+      return;
+    }
 
-    const textDiv = document.createElement('div');
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'font-bold';
-    titleDiv.textContent = 'Session Booked!';
-
-    const detailsDiv = document.createElement('div');
-    detailsDiv.className = 'text-sm';
-    detailsDiv.textContent = (therapist?.name || 'Therapist') + ' • ' + formattedDate + ' at ' + time;
-
-    textDiv.appendChild(titleDiv);
-    textDiv.appendChild(detailsDiv);
-    successMessage.appendChild(textDiv);
-
-    document.body.appendChild(successMessage);
-    setTimeout(() => {
-      if (document.body.contains(successMessage)) {
-        document.body.removeChild(successMessage);
-      }
-    }, 7000);
+    const formattedDate = new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    });
+    setBookingNotice(
+      `Request sent for ${formattedDate} at ${time} with ${person?.name ?? 'your practitioner'}. ` +
+      'This is not confirmed yet - we will be in touch to arrange it, and you are not charged until it is agreed.'
+    );
   };
 
   return (
@@ -197,7 +180,22 @@ export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNa
         <div className="mb-8">
           <h3 className="text-white font-semibold text-lg mb-4">Our Professionals</h3>
           <div className="space-y-4">
-            {therapists.map((therapist) => (
+            {!loadingRoster && roster.length === 0 && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center">
+                <p className="text-white font-medium mb-1">No practitioners listed yet</p>
+                <p className="text-white/70 text-sm">
+                  We are onboarding qualified professionals and verifying their
+                  credentials before they appear here. Nobody is bookable until
+                  that is done.
+                </p>
+              </div>
+            )}
+            {loadingRoster && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center">
+                <p className="text-white/70 text-sm">Loading practitioners...</p>
+              </div>
+            )}
+            {roster.map((therapist) => (
               <div
                 key={therapist.id}
                 className="bg-white/10 backdrop-blur-sm rounded-2xl p-4"
@@ -219,7 +217,7 @@ export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNa
                     <p className="text-white/80 text-sm mb-1">{therapist.specialization}</p>
                     <p className="text-white/70 text-xs mb-2">{therapist.experience} experience</p>
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {therapist.expertise.map((exp, idx) => (
+                      {therapist.expertise.map((exp: string, idx: number) => (
                         <span key={idx} className="bg-white/20 text-white text-xs px-2 py-1 rounded-full">
                           {exp}
                         </span>
@@ -258,17 +256,7 @@ export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNa
             </p>
             <Button
               className="bg-white text-red-500 font-semibold px-6 py-2 hover:scale-105 transition-all duration-300"
-              onClick={() => {
-                const successMessage = document.createElement('div');
-                successMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                successMessage.textContent = 'Emergency support contacted. Help is on the way.';
-                document.body.appendChild(successMessage);
-                setTimeout(() => {
-                  if (document.body.contains(successMessage)) {
-                    document.body.removeChild(successMessage);
-                  }
-                }, 5000);
-              }}
+              onClick={() => setShowCrisisSupport(true)}
               type="button"
             >
               Emergency Support
@@ -310,9 +298,26 @@ export const RelationshipServices: React.FC<RelationshipServicesProps> = ({ onNa
         </div>
       </div>
 
+      {bookingNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <p className="mb-4 text-sm text-gray-800">{bookingNotice}</p>
+            <button
+              onClick={() => setBookingNotice(null)}
+              className="w-full rounded-xl bg-gray-900 px-4 py-2 text-white"
+              type="button"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showCrisisSupport && <CrisisSupport onClose={() => setShowCrisisSupport(false)} />}
+
       {showBookingCalendar && (
         <BookingCalendar
-          therapists={therapists}
+          therapists={roster}
           onBookingConfirm={handleBookingConfirm}
           onClose={() => setShowBookingCalendar(false)}
           selectedTherapist={selectedTherapist}

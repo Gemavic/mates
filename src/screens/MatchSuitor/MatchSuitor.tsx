@@ -192,17 +192,29 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                 <div className="flex space-x-2">
                   <Button
                     className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm hover:scale-105 transition-all duration-300"
-                    onClick={() => {
+                    onClick={async () => {
+                      // This used to take a credit, show a star and record
+                      // nothing - the person was never super liked and never
+                      // found out. Save the like first, and only charge if it
+                      // actually saved.
                       if (!user) {
                         alert('Please sign in to send Super Likes');
                         return;
                       }
-                      if (creditManager.canAfford(user.id, 1)) {
-                        creditManager.spendCredits(user.id, 1, `Super liked ${match.name}`);
-                        alert(`⭐ Super liked ${match.name}!`);
-                      } else {
+                      if (!creditManager.canAfford(user.id, 1)) {
                         alert('Need 1 credit to send a Super Like!');
+                        return;
                       }
+                      try {
+                        const { MatchManager } = await import('@/lib/database');
+                        await MatchManager.likeUser(user.id, match.id, 'super_like');
+                      } catch (err) {
+                        console.error('Super like failed:', err);
+                        alert('That could not be sent. You have not been charged.');
+                        return;
+                      }
+                      await creditManager.spendCredits(user.id, 1, `Super liked ${match.name}`);
+                      alert(`⭐ Super liked ${match.name}!`);
                     }}
                     disabled={!user || !creditManager.canAfford(user.id, 1)}
                     type="button"
