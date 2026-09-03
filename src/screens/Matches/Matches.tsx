@@ -145,9 +145,11 @@ interface ChatMessage {
 interface MatchesProps {
   onNavigate: (screen: string, params?: { userId?: string }) => void;
   onSelectChatUser?: (user: SelectedChatUser | null) => void;
+  /** Arriving from "Message" on a profile: open this conversation directly. */
+  initialRecipientId?: string | null;
 }
 
-export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
+export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [threadFilter, setThreadFilter] = useState<'active' | 'requests'>('active');
@@ -179,6 +181,31 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate }) => {
       setIsLoading(false);
     }
   }, [user]);
+
+  /**
+   * Opens one conversation straight away when the member arrived by pressing
+   * "Message" on a profile, rather than showing them a list they then have to
+   * search. The threads are loaded first: renderChat looks the thread up by id
+   * and sends the member back to the list if it cannot find it, so selecting
+   * before the list exists would bounce them straight out again.
+   */
+  useEffect(() => {
+    if (!user || !initialRecipientId || initialRecipientId === user.id) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const threadId = await MessagingManager.getOrCreateThread(user.id, initialRecipientId);
+        await loadThreads();
+        if (!cancelled) setSelectedThread(threadId);
+      } catch (err) {
+        console.error('Could not open that conversation:', err);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, initialRecipientId]);
 
   const loadThreads = async () => {
     if (!user) return;

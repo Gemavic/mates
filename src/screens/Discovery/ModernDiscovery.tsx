@@ -15,6 +15,7 @@ import { ProfileManager } from '@/lib/database';
 import { supabaseClient } from '@/lib/supabase';
 import { sendLikeNotification } from '@/lib/emailNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { MessagingManager } from '@/lib/database';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -387,15 +388,61 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     nextProfile();
   };
 
-  const handleSendMessage = (profileId: string, message: string) => {
-    // Messages are now free
-    
-    console.log('💬 Message action triggered for profile:', profileId, 'Message:', message);
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    successMessage.textContent = `💬 FREE Message sent to ${profiles.find(p => p.id === profileId)?.name}!`;
-    document.body.appendChild(successMessage);
-    setTimeout(() => document.body.removeChild(successMessage), 3000);
+  /**
+   * Sends the message typed on a discovery card.
+   *
+   * This used to show "FREE Message sent!" and do nothing whatsoever - no
+   * thread was created, no row was written, nothing reached the other person.
+   * The member was told their first approach had landed when it had not.
+   *
+   * It now writes the message and opens the conversation, which is where any
+   * reply will arrive. Chat is free, so nothing is charged.
+   */
+  const handleSendMessage = async (profileId: string, message: string) => {
+    const text = message.trim();
+    if (!text) return;
+
+    if (!user) {
+      onNavigate('signin');
+      return;
+    }
+
+    const toast = (label: string, colour: string) => {
+      const el = document.createElement('div');
+      el.className = `fixed top-4 right-4 ${colour} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+      el.textContent = label;
+      document.body.appendChild(el);
+      setTimeout(() => { if (document.body.contains(el)) document.body.removeChild(el); }, 3000);
+    };
+
+    try {
+      const threadId = await MessagingManager.getOrCreateThread(user.id, profileId);
+      const charge = await creditManager.sendMessage(user.id, threadId, text);
+
+      if (!charge.success) {
+        toast('Your message could not be sent. Please try again.', 'bg-red-500');
+        return;
+      }
+
+      const { error } = await supabaseClient.from('mail_messages').insert({
+        thread_id: threadId,
+        sender_id: user.id,
+        subject: 'Chat Message',
+        message_text: text,
+        credits_spent: charge.cost ?? 0,
+        has_photos: false,
+        is_delivered: true,
+        delivered_at: new Date().toISOString(),
+        is_read: false,
+      });
+
+      if (error) throw error;
+
+      onNavigate('matches', { userId: profileId });
+    } catch (err) {
+      console.error('Could not send message from discovery:', err);
+      toast('Your message could not be sent. Please try again.', 'bg-red-500');
+    }
   };
 
   const handleBlink = (profileId: string) => {

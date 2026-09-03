@@ -409,7 +409,7 @@ const App: React.FC = () => {
         return <ModernDiscovery onNavigate={handleNavigate} />;
 
       case 'matches':
-        return <Matches onNavigate={handleNavigate} onSelectChatUser={setSelectedChatUser} />;
+        return <Matches onNavigate={handleNavigate} onSelectChatUser={setSelectedChatUser} initialRecipientId={selectedUserId} />;
       
       case 'likes':
         return <Likes onNavigate={handleNavigate} />;
