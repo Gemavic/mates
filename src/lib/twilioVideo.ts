@@ -172,8 +172,27 @@ export class TwilioVideoManager {
     }
   }
 
-  attachTrack(track: RemoteVideoTrack | RemoteAudioTrack | LocalVideoTrack | LocalAudioTrack, container: HTMLElement) {
+  attachTrack(
+    track: RemoteVideoTrack | RemoteAudioTrack | LocalVideoTrack | LocalAudioTrack,
+    container: HTMLElement,
+    fit: 'cover' | 'contain' = 'cover'
+  ) {
     const mediaElement = track.attach();
+    // track.attach() hands back a bare <video> with no styling, and the app's
+    // base CSS gives every video `height: auto`. So the frame filled the width
+    // of its box, stopped at whatever its own aspect ratio dictated, and left
+    // the rest of the box showing through as a dead grey band. Size it to the
+    // container explicitly instead.
+    if (mediaElement instanceof HTMLVideoElement) {
+      mediaElement.style.width = '100%';
+      mediaElement.style.height = '100%';
+      mediaElement.style.display = 'block';
+      mediaElement.style.objectFit = fit;
+      // Without this, iOS Safari takes any playing video fullscreen and the
+      // call controls disappear behind it.
+      mediaElement.playsInline = true;
+      mediaElement.setAttribute('playsinline', '');
+    }
     container.appendChild(mediaElement);
     return mediaElement;
   }

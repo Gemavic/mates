@@ -60,6 +60,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopRingbackRef = useRef<(() => void) | null>(null);
   const [peerConnected, setPeerConnected] = useState(false);
+  // The self-view tile takes its shape from the camera, not the other way
+  // round. A fixed portrait box against a landscape webcam is what left a
+  // grey band under the picture.
+  const [localAspect, setLocalAspect] = useState('3 / 4');
 
   // Remote audio needs somewhere to live. The in-call view only renders video
   // containers, and it does not exist at all until a call starts - so a track
@@ -141,17 +145,42 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   useEffect(() => {
     if (!isInCall) return;
 
+    let localEl: HTMLVideoElement | null = null;
+    let onMeta: (() => void) | null = null;
+
     if (localVideoRef.current && localTrackRef.current) {
       localVideoRef.current.replaceChildren();
-      twilioVideoManager.attachTrack(localTrackRef.current, localVideoRef.current);
+      const el = twilioVideoManager.attachTrack(
+        localTrackRef.current,
+        localVideoRef.current,
+        'cover'
+      );
+      if (el instanceof HTMLVideoElement) {
+        localEl = el;
+        // Never play our own audio back at us.
+        el.muted = true;
+        onMeta = () => {
+          if (el.videoWidth && el.videoHeight) {
+            setLocalAspect(`${el.videoWidth} / ${el.videoHeight}`);
+          }
+        };
+        if (el.readyState >= 1) onMeta();
+        el.addEventListener('loadedmetadata', onMeta);
+      }
     }
 
     if (remoteVideoRef.current && pendingRemoteTracks.current.length) {
       for (const track of pendingRemoteTracks.current) {
-        twilioVideoManager.attachTrack(track, remoteVideoRef.current);
+        // The other person is never cropped: fit the whole frame inside the
+        // screen rather than filling it.
+        twilioVideoManager.attachTrack(track, remoteVideoRef.current, 'contain');
       }
       pendingRemoteTracks.current = [];
     }
+
+    return () => {
+      if (localEl && onMeta) localEl.removeEventListener('loadedmetadata', onMeta);
+    };
   }, [isInCall]);
 
   // Release the camera and mic if the screen is left while a call (or a failed
@@ -290,7 +319,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         if (track.kind !== 'video') return;
         const videoTrack = track as RemoteVideoTrack;
         if (remoteVideoRef.current) {
-          twilioVideoManager.attachTrack(videoTrack, remoteVideoRef.current);
+          twilioVideoManager.attachTrack(videoTrack, remoteVideoRef.current, 'contain');
         } else {
           // Anyone already in the room publishes during joinRoom(), i.e.
           // before the in-call view renders. Queue them instead of dropping.
@@ -487,7 +516,10 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
           </div>
 
           {/* Local Video */}
-          <div className="absolute top-20 right-4 w-32 h-48 bg-gray-800 rounded-2xl overflow-hidden border-2 border-white/20">
+          <div
+            className="absolute top-20 right-4 w-32 sm:w-40 bg-gray-800 rounded-2xl overflow-hidden border-2 border-white/20"
+            style={{ aspectRatio: localAspect }}
+          >
             <div ref={localVideoRef} className="w-full h-full" />
             {!isVideoOn && (
               <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
