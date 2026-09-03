@@ -6,6 +6,7 @@ import { sendProfileViewNotification } from '@/lib/emailNotifications';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { initialsAvatar } from '@/lib/avatar';
 
 interface Profile {
   id: string;
@@ -67,7 +68,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
     if (user) {
       sendProfileViewNotification(profile.id, {
         name: 'You',
-        image: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+        image: initialsAvatar('You', user.id),
         id: user.id
       });
     }

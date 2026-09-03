@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, Camera, ShieldCheck } from 'lucide-react';
+import { initialsAvatar } from '@/lib/avatar';
 
 // Each intent gets its own label, colour and glyph so the badge reads at a
 // glance in a grid rather than being five identically-coloured pills.
@@ -38,7 +39,7 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
   onLike
 }) => {
   const photoCount = images.length;
-  const mainPhoto = images[0] || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=800';
+  const mainPhoto = images[0] || initialsAvatar(name, id);
 
   return (
     <div className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">

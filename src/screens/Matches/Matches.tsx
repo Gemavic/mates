@@ -24,6 +24,7 @@ import { compressImage } from '@/lib/photoUpload';
 import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePricing';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
+import { BLANK_AVATAR } from '@/lib/avatar';
 
 // A conversation opens on its most recent messages, not its entire history.
 // Loading every message meant a long thread sent megabytes over mobile data
@@ -71,7 +72,10 @@ async function resolveLocked(list: ChatMessage[], userId: string): Promise<ChatM
     : m);
 }
 
-const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
+// Was a stock photograph of a stranger, used for every member with no picture
+// of their own - on this screen and seven others, so one person's face stood
+// in for many different members at once.
+const DEFAULT_AVATAR = BLANK_AVATAR;
 
 const EMOJIS = [
   '😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '✨',

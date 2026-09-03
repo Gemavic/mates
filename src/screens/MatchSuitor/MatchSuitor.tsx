@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Crown, Star, Zap, Target } from 'lucide-react';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
+import { initialsAvatar } from '@/lib/avatar';
 
 interface MatchSuitorProps {
   onNavigate: (screen: string, params?: { userId?: string }) => void;
@@ -79,7 +80,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                 name: profile.first_name || profile.full_name || 'User',
                 age: profile.age || 25,
                 compatibility: Math.floor(Math.random() * 15) + 80,
-                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                image: photo?.photo_url || initialsAvatar(profile.first_name || profile.full_name, profile.user_id),
                 reasons
               };
             })

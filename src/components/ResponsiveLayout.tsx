@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils';
 import { Menu } from './Menu';
 import { Footer } from './Footer';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/hooks/useAuth';
+import { loadCallableMatches, type CallableMatch } from '@/lib/callMatches';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -21,6 +23,21 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   currentScreen = 'discovery',
   onNavigate = () => {}
 }) => {
+  // This sidebar listed four invented people - Emma, Sarah, Jessica, Alex -
+  // with stock photographs of real strangers, described as online now, on every
+  // desktop screen. It shows actual members, or nothing.
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  const [onlineNow, setOnlineNow] = React.useState<CallableMatch[]>([]);
+  React.useEffect(() => {
+    if (!currentUserId) return;
+    let cancelled = false;
+    loadCallableMatches(currentUserId, 4).then((rows) => {
+      if (!cancelled) setOnlineNow(rows.filter((r) => r.status === 'online'));
+    });
+    return () => { cancelled = true; };
+  }, [currentUserId]);
+
   const { theme } = useTheme();
   return (
     <div className={cn(
@@ -162,12 +179,10 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
             <div className="p-6">
               <h3 className="text-white font-semibold mb-4">Online Now</h3>
               <div className="space-y-3">
-                {[
-                  { name: 'Emma', image: 'https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&w=100' },
-                  { name: 'Sarah', image: 'https://images.pexels.com/photos/1239288/pexels-photo-1239288.jpeg?auto=compress&cs=tinysrgb&w=100' },
-                  { name: 'Jessica', image: 'https://images.pexels.com/photos/1172207/pexels-photo-1172207.jpeg?auto=compress&cs=tinysrgb&w=100' },
-                  { name: 'Alex', image: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100' }
-                ].map((user, i) => (
+                {onlineNow.length === 0 && (
+                  <p className="text-white/60 text-sm">Nobody is online right now.</p>
+                )}
+                {onlineNow.map((user, i) => (
                   <button 
                     key={i} 
                     onClick={() => onNavigate('matches')}

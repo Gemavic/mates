@@ -5,6 +5,7 @@ import { Heart, Star, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { MatchManager } from '@/lib/database';
+import { initialsAvatar } from '@/lib/avatar';
 
 interface LikedProfile {
   id: string;
@@ -67,7 +68,7 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
                 id: like.target_user_id,
                 name: profile?.first_name || profile?.full_name || 'User',
                 age: profile?.age || 25,
-                image: photo?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+                image: photo?.photo_url || initialsAvatar(profile?.first_name || profile?.full_name, like.target_user_id),
                 type: like.like_type === 'super_like' ? 'super-like' : 'like'
               };
             })
@@ -80,7 +81,7 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
           const likersWithBlur = receivedLikes.slice(0, 5).map((like: any) => ({
             id: like.user_id,
             name: 'Someone likes you!',
-            image: like.user_profile?.photo_url || 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400',
+            image: like.user_profile?.photo_url || initialsAvatar(null, like.user_id),
             blurred: true
           }));
           setWhoLikesYou(likersWithBlur);

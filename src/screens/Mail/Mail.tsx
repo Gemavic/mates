@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { MessagingManager } from '@/lib/database';
 import { creditManager } from '@/lib/creditSystem';
 import { supabaseClient } from '@/lib/supabase';
+import { BLANK_AVATAR } from '@/lib/avatar';
 
 interface MailProps {
   onNavigate: (screen: string) => void;
@@ -84,7 +85,9 @@ import { compressImage } from '@/lib/photoUpload';
 
 const ATTACHMENT_BUCKET = 'mail-attachments';
 
-const DEFAULT_AVATAR = 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=100';
+// Was a stock photograph of a stranger standing in for anyone without a
+// picture of their own.
+const DEFAULT_AVATAR = BLANK_AVATAR;
 
 export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) => {
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'starred' | 'exclusive'>('inbox');

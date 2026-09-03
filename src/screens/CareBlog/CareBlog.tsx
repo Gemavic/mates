@@ -20,6 +20,7 @@ import {
   DollarSign,
   Sparkles
 } from 'lucide-react';
+import { initialsAvatar } from '@/lib/avatar';
 
 interface BlogPost {
   id: string;
@@ -42,6 +43,15 @@ interface CareBlogProps {
   onNavigate: (screen: string) => void;
 }
 
+/**
+ * Every article was signed by an invented person with invented credentials -
+ * "Sarah Johnson, CFP", "Jennifer Davis, CPA", "Dr. Lisa Wong, Economist" -
+ * each with a stock photograph of a real stranger as their headshot. People
+ * were being given money and health advice by professionals who do not exist.
+ * Until real writers are credited, the site owns what it publishes.
+ */
+const EDITORIAL_BYLINE = 'Dates.care Editorial';
+
 export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<'read' | 'write'>('read');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -59,8 +69,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Financial Planning for Couples: Building Your Future Together',
       excerpt: 'Learn how to manage finances as a couple and build a secure financial foundation for your relationship.',
       content: 'Money conversations can be challenging for couples, but they\'re essential for a healthy relationship...',
-      author: 'Sarah Johnson, CFP',
-      authorImage: 'https://images.pexels.com/photos/1130623/pexels-photo-1130623.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'education',
       publishedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
       readTime: 8,
@@ -75,8 +85,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Smart Budgeting: Dating Without Breaking the Bank',
       excerpt: 'Discover creative and affordable date ideas that don\'t compromise on fun or romance.',
       content: 'Dating doesn\'t have to be expensive to be meaningful. Here are budget-friendly ways to connect...',
-      author: 'Michael Chen, Financial Advisor',
-      authorImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'education',
       publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
       readTime: 6,
@@ -90,8 +100,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Investing in Your Future: Financial Goals for Singles',
       excerpt: 'Build financial independence and security while dating. Learn investment basics for young adults.',
       content: 'Being financially independent makes you more attractive and confident in relationships...',
-      author: 'Dr. Lisa Wong, Economist',
-      authorImage: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'education',
       publishedAt: new Date(Date.now() - 16 * 60 * 60 * 1000),
       readTime: 10,
@@ -105,8 +115,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Emergency Fund Basics: Financial Security for Peace of Mind',
       excerpt: 'Why every adult should have an emergency fund and how to build one step by step.',
       content: 'Financial stress can strain relationships. Here\'s how to build financial security...',
-      author: 'Jennifer Davis, CPA',
-      authorImage: 'https://images.pexels.com/photos/3763789/pexels-photo-3763789.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'education',
       publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
       readTime: 7,
@@ -120,8 +130,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Credit Score and Dating: Why Financial Health Matters',
       excerpt: 'Understanding how your credit score affects your dating life and future relationship goals.',
       content: 'A good credit score opens doors to better loan rates, housing options, and financial opportunities...',
-      author: 'Robert Kim, Credit Specialist',
-      authorImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'education',
       publishedAt: new Date(Date.now() - 32 * 60 * 60 * 1000),
       readTime: 5,
@@ -135,8 +145,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: '7 Tips for Creating an Irresistible Dating Profile',
       excerpt: 'Make your profile stand out with these proven strategies that attract quality matches.',
       content: 'Your dating profile is your digital first impression. Here are the secrets to making it unforgettable...',
-      author: 'Dr. Emily Chen',
-      authorImage: 'https://images.pexels.com/photos/1130623/pexels-photo-1130623.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'dating-tips',
       publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
       readTime: 5,
@@ -151,8 +161,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'How Sarah and Mike Found Love on Dates',
       excerpt: 'A heartwarming success story of two people who found their perfect match through our platform.',
       content: 'Sarah was almost ready to give up on online dating when she matched with Mike...',
-      author: 'Dates Editorial',
-      authorImage: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'success-stories',
       publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
       readTime: 3,
@@ -166,8 +176,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Building Confidence for Your First Date',
       excerpt: 'Overcome first date nerves with these practical tips from relationship experts.',
       content: 'First date jitters are completely normal. Here\'s how to turn those nerves into excitement...',
-      author: 'Dr. Marcus Rodriguez',
-      authorImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'relationship-advice',
       publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
       readTime: 4,
@@ -181,8 +191,8 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
       title: 'Self-Love: The Foundation of Healthy Relationships',
       excerpt: 'Discover why loving yourself is the key to finding lasting love with someone else.',
       content: 'Before you can truly love someone else, you must first learn to love yourself...',
-      author: 'Jessica Williams',
-      authorImage: 'https://images.pexels.com/photos/3763789/pexels-photo-3763789.jpeg?auto=compress&cs=tinysrgb&w=100',
+      author: EDITORIAL_BYLINE,
+      authorImage: initialsAvatar(EDITORIAL_BYLINE),
       category: 'self-improvement',
       publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
       readTime: 6,

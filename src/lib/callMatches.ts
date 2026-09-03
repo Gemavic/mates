@@ -1,5 +1,10 @@
 import { supabaseClient } from './supabase';
 import { isOnlineFrom } from './presence';
+// One implementation, in one place. There were two - this file's and the one
+// the profile screens used - which is exactly how a fix lands in the copy
+// nobody opens.
+export { initialsAvatar } from './avatar';
+import { initialsAvatar } from './avatar';
 
 export interface CallableMatch {
   id: string;
@@ -25,42 +30,6 @@ function displayName(profile: { first_name?: string | null; full_name?: string |
   return { name: candidate, isReal: true };
 }
 
-/**
- * Neutral initials avatar for members with no photo. Replaces a hardcoded stock
- * photo of one particular man that was previously shown for *everybody* without
- * a picture - wrong for most of them, and misleading on a dating app.
- */
-export function initialsAvatar(name: string): string {
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('') || '?';
-
-  // Deterministic hue per name so a given member keeps the same colour.
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) % 360;
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-<rect width="200" height="200" fill="hsl(${hash} 55% 42%)"/>
-<text x="100" y="100" dy="0.35em" text-anchor="middle" fill="#ffffff"
- font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="86" font-weight="600">${initials}</text>
-</svg>`;
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-/**
- * People this user can call, best first.
- *
- * The previous version selected `.limit(5)` with no ORDER BY, so Postgres
- * returned an arbitrary five profiles - in practice the blank seeded accounts,
- * while real members with photos never appeared. It also issued one photo query
- * per profile (N+1). This orders deliberately and fetches photos in one round
- * trip.
- */
 export async function loadCallableMatches(
   currentUserId: string,
   limit = 5

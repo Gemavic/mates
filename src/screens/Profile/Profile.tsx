@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { uploadProfilePhoto } from '@/lib/photoUpload';
 import { ProfileManager } from '@/lib/database';
+import { initialsAvatar } from '@/lib/avatar';
 
 const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
   if (Array.isArray(value)) return value;
@@ -500,7 +501,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
               src={
                 profile?.photo_url ||
                 userPhotos.find(p => p.isPrimary)?.url ||
-                'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400'
+                initialsAvatar(profile?.full_name, profile?.user_id)
               }
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-white/30"
