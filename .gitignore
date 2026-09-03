@@ -34,3 +34,5 @@ vite.config.ts.timestamp-*.mjs
 
 # Backups
 *.legacy.bak
+
+supabase/.temp/
