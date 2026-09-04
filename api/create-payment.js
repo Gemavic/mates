@@ -1,25 +1,15 @@
 // /api/create-payment — creates a NOWPayments hosted invoice.
-// The PRICE and CONTENTS of every product are defined HERE, server-side.
-// The client only sends a product id; it can never set its own price.
+// The PRICE and CONTENTS of every product come from api/_catalog.js,
+// server-side. The client only sends a product id; it can never set its
+// own price, and it can never disagree with what the webhook grants.
 //
 // Required Vercel environment variables:
 //   NOWPAYMENTS_API_KEY        (from nowpayments.io dashboard)
 //   SUPABASE_URL               (https://<project>.supabase.co)
-//   SUPABASE_SERVICE_ROLE_KEY  (Supabase → Settings → API → service_role)
+//   SUPABASE_SERVICE_ROLE_KEY  (Supabase -> Settings -> API -> service_role)
 
-const CATALOG = {
-  credits: {
-    starter: { usd: 12.99, credits: 60, label: 'Starter — 50 credits + 10 bonus' },
-    popular: { usd: 18.99, credits: 125, label: 'Popular — 100 credits + 25 bonus' },
-    premium: { usd: 50.99, credits: 500, label: 'Premium — 450 credits + 50 bonus' },
-  },
-  sub: {
-    silver: { usd: 19.99, label: 'Silver monthly subscription' },
-    gold: { usd: 39.99, label: 'Gold monthly subscription' },
-    platinum: { usd: 79.99, label: 'Platinum monthly subscription' },
-    elite: { usd: 149.99, label: 'Elite monthly subscription' },
-  },
-};
+import crypto from 'node:crypto';
+import { CATALOG } from './_catalog.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -52,7 +42,21 @@ export default async function handler(req, res) {
     const product = CATALOG[kind]?.[id];
     if (!product) return res.status(400).json({ error: 'unknown_product' });
 
-    // 3. Create the hosted invoice
+    // 3. Create the hosted invoice.
+    //
+    // The order id carries a per-attempt nonce. Without one, every
+    // Starter purchase by the same person had the identical order id, and
+    // the webhook's "first contact for this payment" fallback matches the
+    // most recent still-pending row with that id — so if someone abandoned
+    // one checkout and started another, the two payments' references could
+    // be stamped onto each other's rows. The receipt would then quote a
+    // blockchain payment that was not the one the buyer made, which is
+    // exactly the document they would take to their bank.
+    //
+    // The webhook reads the id as kind:userId:productId by position, so a
+    // fourth segment is ignored by every existing reader.
+    const nonce = crypto.randomUUID().slice(0, 8);
+    const orderId = `${kind}:${user.id}:${id}:${nonce}`;
     const origin = `https://${req.headers.host}`;
     const invoiceResp = await fetch('https://api.nowpayments.io/v1/invoice', {
       method: 'POST',
@@ -63,7 +67,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         price_amount: product.usd,
         price_currency: 'usd',
-        order_id: `${kind}:${user.id}:${id}`,
+        order_id: orderId,
         order_description: product.label,
         ipn_callback_url: `${origin}/api/crypto-webhook`,
         success_url: `${origin}/#success`,
@@ -94,7 +98,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           user_id: user.id,
-          order_id: `${kind}:${user.id}:${id}`,
+          order_id: orderId,
           kind,
           product_id: id,
           amount_usd: product.usd,

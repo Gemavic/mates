@@ -120,7 +120,7 @@ export const PaymentModelChoice: React.FC<PaymentModelChoiceProps> = ({
 
             <div className="bg-blue-500/10 rounded-lg p-3 mb-4">
               <p className="text-white/80 text-xs text-center">
-                Starting at <span className="text-blue-300 font-bold text-lg">$9.99</span> for 100 credits
+                Starting at <span className="text-blue-300 font-bold text-lg">$12.99</span> for 75 credits
               </p>
             </div>
 

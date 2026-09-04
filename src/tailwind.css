@@ -253,3 +253,72 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+/* ---------------------------------------------------------------------
+   Printing a receipt.
+
+   The Billing screen offers "Print or save as PDF" so a person has
+   something to keep or hand to their bank. Two things have to be undone
+   for that to produce a usable page.
+
+   First, the rest of the app: the header, the back button, the bottom
+   navigation, the button they just pressed. `visibility` rather than
+   `display` because hiding an ancestor with display:none would take the
+   receipt with it.
+
+   Second — and this is the part that is easy to miss — Layout wraps every
+   screen in a `max-w-xs sm:max-w-md mx-auto relative overflow-hidden`
+   column. That column is the receipt's containing block AND clips it, so
+   without the ancestor rule below the printed receipt comes out as a
+   narrow strip down the left of the page, silently cut off at the bottom
+   of the first screenful. `*:has(#dc-receipt)` is every ancestor of the
+   receipt, which is exactly the set that needs relaxing.
+
+   :has() is required for the isolation. An engine without it simply
+   prints the page as it used to, which is the old behaviour rather than a
+   broken one.
+   --------------------------------------------------------------------- */
+@media print {
+  body:has(#dc-receipt) * {
+    visibility: hidden;
+  }
+
+  /* Every ancestor of the receipt: stop clipping it and stop capping it
+     to the phone-width app column. */
+  body:has(#dc-receipt) *:has(#dc-receipt) {
+    overflow: visible !important;
+    max-width: none !important;
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body:has(#dc-receipt) #dc-receipt,
+  body:has(#dc-receipt) #dc-receipt * {
+    visibility: visible;
+  }
+
+  body:has(#dc-receipt) #dc-receipt {
+    position: static;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+    background: #fff;
+    color: #111827;
+  }
+
+  /* The action button belongs on screen, not on the paper. */
+  #dc-receipt-actions {
+    display: none !important;
+  }
+
+  @page {
+    margin: 16mm;
+  }
+}

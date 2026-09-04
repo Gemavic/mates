@@ -3,6 +3,10 @@ import { ChevronUp, Search, User, Mail, MessageCircle, MessageSquare, CreditCard
 import { whatsappSupportLink } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
+import {
+  MAIL_SEND_COST, MAIL_OPEN_COST, MAIL_PHOTO_COST, MAIL_AUDIO_COST,
+  MAIL_VIDEO_COST, EXCLUSIVE_SEND_COST, AUDIO_CALL_PER_MINUTE, VIDEO_CALL_PER_MINUTE,
+} from '@/lib/exclusivePricing';
 
 interface FooterProps {
   activeTab?: string;
@@ -153,9 +157,14 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <div className="text-center pt-3 border-t border-gray-100 space-y-1">
-              <p className="text-xs text-pink-600 font-medium">Live chat, likes and winks: free • Mail: 5 credits • Photos: 10 credits</p>
-              <p className="text-xs text-purple-600 font-medium">Mail: First letter 10 credits, following 30 credits • First photo FREE, following 10 credits</p>
-              <p className="text-xs text-pink-600 font-medium">Video calls: 60 credits/min • Audio calls: 50 credits/min</p>
+              {/* Driven by the price constants rather than typed out, because
+                  these three lines had drifted into contradicting both each
+                  other and the biller: mail was quoted at 5 on one line and
+                  10-then-30 on the next, and calls were advertised at 60/50
+                  when the app charges 50/40. */}
+              <p className="text-xs text-pink-600 font-medium">Live chat, likes and winks: free • Mail: {MAIL_SEND_COST} credits to send, {MAIL_OPEN_COST} to open</p>
+              <p className="text-xs text-purple-600 font-medium">Photos: {MAIL_PHOTO_COST} credits • Audio note: {MAIL_AUDIO_COST} • Video note: {MAIL_VIDEO_COST} • Exclusive: {EXCLUSIVE_SEND_COST}</p>
+              <p className="text-xs text-pink-600 font-medium">Video calls: {VIDEO_CALL_PER_MINUTE} credits/min • Audio calls: {AUDIO_CALL_PER_MINUTE} credits/min — the caller pays, answering is free</p>
             </div>
 
             <div className="text-center pt-3 border-t border-gray-100 pb-2">

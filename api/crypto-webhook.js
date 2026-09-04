@@ -12,10 +12,8 @@
 //   SUPABASE_SERVICE_ROLE_KEY
 
 import crypto from 'node:crypto';
-
-// Must mirror the credits catalog in create-payment.js
-const CREDIT_PACKAGES = { starter: 60, popular: 125, premium: 500 };
-const TIERS = ['silver', 'gold', 'platinum', 'elite'];
+import { CATALOG, TIERS, creditsFor } from './_catalog.js';
+import { sendEmail, publicHost, escapeHtml, BUSINESS } from './_email.js';
 
 function sortObject(obj) {
   if (Array.isArray(obj)) return obj.map(sortObject);
@@ -30,44 +28,50 @@ function sortObject(obj) {
   return obj;
 }
 
-async function sendReceiptEmail(userId, subject, lines) {
-  // Optional: requires RESEND_API_KEY and RECEIPT_FROM_EMAIL env vars.
-  // Silently skipped when not configured — never blocks crediting.
-  const { RESEND_API_KEY, RECEIPT_FROM_EMAIL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
-  if (!RESEND_API_KEY || !RECEIPT_FROM_EMAIL) return;
-  try {
-    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-      headers: {
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-    });
-    if (!userResp.ok) return;
-    const user = await userResp.json();
-    if (!user?.email) return;
-
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: RECEIPT_FROM_EMAIL,
-        to: user.email,
-        subject,
-        text:
-          lines.join('\n') +
-          '\n\nThis charge will appear from Dates (dates.care).' +
-          '\nRefund & cancellation policy: https://' +
-          (process.env.PUBLIC_HOST || 'dates.care') +
-          '/#payment-refund' +
-          '\nQuestions? Reply to this email or use Help & Support in the app.',
-      }),
-    });
-  } catch (err) {
-    console.error('Receipt email failed (non-fatal):', err);
+// A purchase receipt is a transactional message: CASL s.6(6)(b) exempts a
+// message that "facilitates, completes or confirms a commercial
+// transaction the person previously agreed to" from the consent and
+// unsubscribe requirements, and CAN-SPAM treats it as a transactional or
+// relationship message. So this is sent whatever the person's notification
+// preferences say — it is their record of what they paid, and withholding
+// it because they turned off match alerts would be indefensible.
+//
+// It still carries full sender identification and a mailing address,
+// because a receipt without one reads like a phishing attempt.
+async function sendReceiptEmail(userId, subject, lines, host) {
+  const { sent, reason } = await sendEmail({
+    userId,
+    subject,
+    lines,
+    html: receiptHtml(subject, lines, host),
+    kind: 'transactional',
+    host,
+  });
+  if (!sent && reason !== 'not_configured') {
+    console.error('Receipt email not delivered:', reason);
   }
+  return sent;
+}
+
+function receiptHtml(subject, lines, host) {
+  const rows = lines
+    .filter((l) => l !== '')
+    .map((l) => {
+      const idx = l.indexOf(': ');
+      if (idx > 0 && idx < 40) {
+        return `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">${escapeHtml(l.slice(0, idx))}</td>` +
+               `<td style="padding:6px 0;text-align:right;color:#111827;font-size:14px;font-weight:600">${escapeHtml(l.slice(idx + 2))}</td></tr>`;
+      }
+      return `<tr><td colspan="2" style="padding:6px 0;color:#374151;font-size:14px">${escapeHtml(l)}</td></tr>`;
+    })
+    .join('');
+  return `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:560px;margin:0 auto;padding:24px">
+    <h1 style="margin:0 0 4px;font-size:20px;color:#111827">${escapeHtml(subject)}</h1>
+    <p style="margin:0 0 20px;color:#6b7280;font-size:13px">Receipt from ${escapeHtml(BUSINESS.name)} &middot; ${new Date().toLocaleDateString('en-CA')}</p>
+    <table style="width:100%;border-collapse:collapse;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb">${rows}</table>
+    <p style="margin:20px 0 0;color:#374151;font-size:14px">This charge appears on your statement from <strong>Dates (dates.care)</strong>.</p>
+    <p style="margin:8px 0 0"><a href="https://${escapeHtml(host)}/#credit-history" style="color:#db2777;font-size:14px">View your billing history</a></p>
+  </div>`;
 }
 
 async function callRpc(name, args) {
@@ -157,6 +161,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const host = publicHost(req);
     const body = req.body || {};
 
     // 1. Verify signature (HMAC-SHA512 of the alphabetically-sorted JSON body)
@@ -204,21 +209,35 @@ export default async function handler(req, res) {
 
     const paymentRef = `nowpayments:${paymentId}`;
 
-    if (kind === 'credits' && CREDIT_PACKAGES[itemId]) {
+    if (kind === 'credits' && creditsFor(itemId) !== null) {
+      const granted = creditsFor(itemId);
+      const pack = CATALOG.credits[itemId];
       const { ok, data } = await callRpc('credit_purchase', {
         p_user_id: userId,
-        p_credits: CREDIT_PACKAGES[itemId],
+        p_credits: granted,
         p_payment_ref: paymentRef,
       });
       console.log('credit_purchase:', ok, JSON.stringify(data));
       if (data?.success === true) {
-        await sendReceiptEmail(userId, 'Your Dates purchase receipt', [
-          'Thank you for your purchase!',
-          '',
-          `Item: ${CREDIT_PACKAGES[itemId]} credits (${itemId} pack)`,
-          `Payment reference: ${paymentRef}`,
-          `New balance: ${data.total_credits} credits`,
-        ]);
+        await sendReceiptEmail(
+          userId,
+          'Your Dates.care purchase receipt',
+          [
+            'Thank you for your purchase.',
+            '',
+            `Item: ${pack.label}`,
+            `Credits added: ${granted}`,
+            `Amount paid: USD $${pack.usd.toFixed(2)}`,
+            `Paid with: Cryptocurrency (NOWPayments)`,
+            `Payment reference: ${paymentRef}`,
+            `Date: ${new Date().toISOString().slice(0, 10)}`,
+            `New balance: ${data.total_credits} credits`,
+            '',
+            'Credits are a prepaid balance for features inside Dates.care.',
+            'They have no cash value and do not expire.',
+          ],
+          host
+        );
       }
       // duplicate_payment_ref on retries is expected and fine
       return res.status(200).json({ received: true, credited: data?.success === true });
@@ -234,15 +253,29 @@ export default async function handler(req, res) {
       });
       console.log('activate_subscription:', ok, JSON.stringify(data));
       if (data?.success === true) {
-        await sendReceiptEmail(userId, `Your Dates ${itemId} subscription is active`, [
-          'Thank you for subscribing!',
-          '',
-          `Plan: ${itemId.charAt(0).toUpperCase() + itemId.slice(1)} (31 days)`,
-          `Active until: ${periodEnd}`,
-          `Payment reference: ${paymentRef}`,
-          '',
-          'Crypto subscriptions do not auto-renew — you are never charged automatically.',
-        ]);
+        const tierPrice = CATALOG.sub[itemId]?.usd;
+        await sendReceiptEmail(
+          userId,
+          `Your Dates.care ${itemId} subscription is active`,
+          [
+            'Thank you for subscribing.',
+            '',
+            `Plan: ${itemId.charAt(0).toUpperCase() + itemId.slice(1)} (31 days)`,
+            ...(tierPrice ? [`Amount paid: USD $${tierPrice.toFixed(2)}`] : []),
+            `Paid with: Cryptocurrency (NOWPayments)`,
+            `Active until: ${periodEnd.slice(0, 10)}`,
+            `Payment reference: ${paymentRef}`,
+            '',
+            // The disclosure California's Automatic Renewal Law wants on
+            // the acknowledgement: what the terms are, and how to cancel.
+            'This plan does NOT auto-renew. Crypto payments cannot be charged',
+            'again without you starting a new payment yourself, so you will',
+            'never be billed automatically.',
+            'You can end the plan at any time under Settings -> Subscription,',
+            'or by replying to this email.',
+          ],
+          host
+        );
       }
       return res.status(200).json({ received: true, activated: data?.success === true });
     }

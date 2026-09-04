@@ -25,6 +25,7 @@ import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePrici
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
 import { BLANK_AVATAR } from '@/lib/avatar';
+import { currentNotificationSettings, playAlert } from '@/lib/notificationSettings';
 
 // A conversation opens on its most recent messages, not its entire history.
 // Loading every message meant a long thread sent megabytes over mobile data
@@ -378,6 +379,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
       }, (payload) => {
         const msg = payload.new;
         if (msg.sender_id !== user.id) {
+          if (currentNotificationSettings().sound_active_chats) playAlert('message');
           const thread = threads.find(t => t.id === selectedThread);
           setMessages(prev => {
             if (prev.some(m => m.id === msg.id)) return prev;

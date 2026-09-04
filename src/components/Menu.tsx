@@ -6,6 +6,10 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useStaffAccess } from '@/hooks/useStaffAccess';
 import { creditManager } from '@/lib/creditSystem';
+import {
+  MAIL_SEND_COST, MAIL_OPEN_COST, MAIL_PHOTO_COST, MAIL_AUDIO_COST,
+  MAIL_VIDEO_COST, EXCLUSIVE_SEND_COST, AUDIO_CALL_PER_MINUTE, VIDEO_CALL_PER_MINUTE,
+} from '@/lib/exclusivePricing';
 
 interface MenuProps {
   onNavigate: (screen: any) => void;
@@ -282,9 +286,9 @@ export const Menu: React.FC<MenuProps> = ({
               </a>
             </div>
             <div className="text-center text-white/50 text-xs space-y-0.5 mb-4">
-              <p>Live chat, likes and winks: free • Mail: 5 credits • Photos: 10 credits</p>
-              <p>Mail: First letter 10 credits, following 30 • First photo FREE</p>
-              <p>Video: 60 credits/min • Audio: 50 credits/min</p>
+              <p>Live chat, likes and winks: free • Mail: {MAIL_SEND_COST} to send, {MAIL_OPEN_COST} to open</p>
+              <p>Photos: {MAIL_PHOTO_COST} • Audio note: {MAIL_AUDIO_COST} • Video note: {MAIL_VIDEO_COST} • Exclusive: {EXCLUSIVE_SEND_COST}</p>
+              <p>Video: {VIDEO_CALL_PER_MINUTE} credits/min • Audio: {AUDIO_CALL_PER_MINUTE} credits/min (caller pays)</p>
             </div>
             <div className="text-center text-white/60 text-xs sm:text-sm">
               <p>© 2026 Dates</p>

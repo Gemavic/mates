@@ -16,6 +16,11 @@ import {
   Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { CREDIT_COSTS } from '@/lib/creditSystem';
+import {
+  MAIL_SEND_COST, MAIL_OPEN_COST, MAIL_PHOTO_COST, MAIL_AUDIO_COST,
+  MAIL_VIDEO_COST, EXCLUSIVE_SEND_COST, AUDIO_CALL_PER_MINUTE, VIDEO_CALL_PER_MINUTE,
+} from '@/lib/exclusivePricing';
 
 interface WelcomeProps {
   onNavigate?: (screen: string) => void;
@@ -38,17 +43,30 @@ interface WelcomeProps {
  */
 
 const CREDIT_PACKS = [
-  { name: 'Starter', credits: 50, bonus: 10, price: '12.99' },
-  { name: 'Popular', credits: 100, bonus: 25, price: '18.99', popular: true },
-  { name: 'Premium', credits: 450, bonus: 50, price: '50.99' },
+  // Must match getCreditPackages() in src/lib/creditSystem.tsx and
+  // CATALOG in api/_catalog.js. The homepage was still advertising the
+  // pre-increase amounts, which meant the public page and the checkout
+  // quoted different products at the same price.
+  { name: 'Starter', credits: 65, bonus: 10, price: '12.99' },
+  { name: 'Popular', credits: 130, bonus: 30, price: '18.99', popular: true },
+  { name: 'Premium', credits: 580, bonus: 70, price: '50.99' },
 ];
 
+// Quoted from the same constants the biller uses. This list previously
+// advertised 50/min audio and 100/min video, neither of which was what a
+// caller was actually charged.
 const SPEND = [
+  { what: 'Live chat, likes and winks', cost: 'Free' },
+  { what: 'Mail', cost: `${MAIL_SEND_COST} to send, ${MAIL_OPEN_COST} to open` },
+  { what: 'Photo in mail', cost: `${MAIL_PHOTO_COST} credits` },
+  { what: 'Audio note', cost: `${MAIL_AUDIO_COST} credits` },
+  { what: 'Video note', cost: `${MAIL_VIDEO_COST} credits` },
+  { what: 'Exclusive', cost: `${EXCLUSIVE_SEND_COST} credits each way` },
   { what: 'Virtual gift', cost: 'from 5 credits' },
-  { what: 'Super like', cost: '25 credits' },
-  { what: 'Profile boost (30 min)', cost: '50 credits' },
-  { what: 'Audio call', cost: '50 credits' },
-  { what: 'Video call', cost: '100 credits' },
+  { what: 'Super like', cost: `${CREDIT_COSTS.SUPER_LIKE} credits` },
+  { what: 'Profile boost (30 min)', cost: `${CREDIT_COSTS.BOOST} credits` },
+  { what: 'Audio call', cost: `${AUDIO_CALL_PER_MINUTE} credits/min (caller pays)` },
+  { what: 'Video call', cost: `${VIDEO_CALL_PER_MINUTE} credits/min (caller pays)` },
 ];
 
 const FAQ = [
