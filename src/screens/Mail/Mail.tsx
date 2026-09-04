@@ -508,8 +508,16 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
 
       const { data: currentProfile } = await supabaseClient
         .from('user_profiles').select('first_name, full_name').eq('user_id', user.id).single();
+      // maybeSingle with an ordering fallback, not .single() on is_primary:
+      // .single() errors outright when the person has no primary row, and
+      // "no primary" is a state that used to be reachable simply by deleting
+      // your main photo.
       const { data: currentPhoto } = await supabaseClient
-        .from('user_photos').select('photo_url').eq('user_id', user.id).eq('is_primary', true).single();
+        .from('user_photos').select('photo_url').eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .order('display_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true })
+        .limit(1).maybeSingle();
 
       const optimistic: MailMessage = {
         id: `temp-${Date.now()}`, senderId: user.id,

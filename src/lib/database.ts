@@ -43,7 +43,33 @@ export class ProfileManager {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    if (!data) return data;
+
+    // user_profiles has no photo_url column - a person's pictures live in
+    // user_photos, one row each, with is_primary marking the one they chose
+    // to lead with. Six places in the app nevertheless read `profile.photo_url`
+    // and quietly fell back to a placeholder when it came back undefined,
+    // which it always did. That is why a member who had uploaded and set a
+    // profile picture still saw a grey "?" beside their own chat messages.
+    //
+    // Rather than change six call sites (and wait for the seventh to be
+    // written), the profile object is completed here: whatever the rest of the
+    // app already asks for, it now gets.
+    //
+    // is_primary first, then the person's own ordering, then oldest - so
+    // somebody who uploaded pictures but never explicitly chose a main one
+    // still gets a real photograph rather than a placeholder.
+    const { data: photo } = await supabaseClient
+      .from('user_photos')
+      .select('photo_url')
+      .eq('user_id', userId)
+      .order('is_primary', { ascending: false })
+      .order('display_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    return { ...data, photo_url: photo?.photo_url ?? null };
   }
 
   static async updateProfile(userId: string, updates: Partial<UserProfile>) {

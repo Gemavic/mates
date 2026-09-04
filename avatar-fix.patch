@@ -1,0 +1,129 @@
+diff --git a/src/lib/database.ts b/src/lib/database.ts
+index 157ac8e..cdd4bd3 100644
+--- a/src/lib/database.ts
++++ b/src/lib/database.ts
+@@ -45,3 +45,29 @@ export class ProfileManager {
+     if (error) throw error;
+-    return data;
++    if (!data) return data;
++
++    // user_profiles has no photo_url column - a person's pictures live in
++    // user_photos, one row each, with is_primary marking the one they chose
++    // to lead with. Six places in the app nevertheless read `profile.photo_url`
++    // and quietly fell back to a placeholder when it came back undefined,
++    // which it always did. That is why a member who had uploaded and set a
++    // profile picture still saw a grey "?" beside their own chat messages.
++    //
++    // Rather than change six call sites (and wait for the seventh to be
++    // written), the profile object is completed here: whatever the rest of the
++    // app already asks for, it now gets.
++    //
++    // is_primary first, then the person's own ordering, then oldest - so
++    // somebody who uploaded pictures but never explicitly chose a main one
++    // still gets a real photograph rather than a placeholder.
++    const { data: photo } = await supabaseClient
++      .from('user_photos')
++      .select('photo_url')
++      .eq('user_id', userId)
++      .order('is_primary', { ascending: false })
++      .order('display_order', { ascending: true, nullsFirst: false })
++      .order('created_at', { ascending: true })
++      .limit(1)
++      .maybeSingle();
++
++    return { ...data, photo_url: photo?.photo_url ?? null };
+   }
+diff --git a/src/screens/Mail/Mail.tsx b/src/screens/Mail/Mail.tsx
+index 17852af..337c0b9 100644
+--- a/src/screens/Mail/Mail.tsx
++++ b/src/screens/Mail/Mail.tsx
+@@ -510,4 +510,12 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
+         .from('user_profiles').select('first_name, full_name').eq('user_id', user.id).single();
++      // maybeSingle with an ordering fallback, not .single() on is_primary:
++      // .single() errors outright when the person has no primary row, and
++      // "no primary" is a state that used to be reachable simply by deleting
++      // your main photo.
+       const { data: currentPhoto } = await supabaseClient
+-        .from('user_photos').select('photo_url').eq('user_id', user.id).eq('is_primary', true).single();
++        .from('user_photos').select('photo_url').eq('user_id', user.id)
++        .order('is_primary', { ascending: false })
++        .order('display_order', { ascending: true, nullsFirst: false })
++        .order('created_at', { ascending: true })
++        .limit(1).maybeSingle();
+ 
+diff --git a/src/screens/Profile/Profile.tsx b/src/screens/Profile/Profile.tsx
+index d45c05d..ec6651f 100644
+--- a/src/screens/Profile/Profile.tsx
++++ b/src/screens/Profile/Profile.tsx
+@@ -344,3 +344,8 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
+ 
++      // Reload the profile too, not just the grid. Deleting your main photo
++      // promotes another one (a database trigger keeps exactly one primary),
++      // and the avatar shown around the app comes from the profile - so
++      // without this the header still shows the picture that no longer exists.
+       await loadUserPhotos();
++      await loadUserProfile();
+ 
+diff --git a/supabase/migrations/20260904000000_always_keep_exactly_one_primary_photo.sql b/supabase/migrations/20260904000000_always_keep_exactly_one_primary_photo.sql
+new file mode 100644
+index 0000000..39fe4fb
+--- /dev/null
++++ b/supabase/migrations/20260904000000_always_keep_exactly_one_primary_photo.sql
+@@ -0,0 +1,57 @@
++-- A person's avatar is resolved from user_photos.is_primary in a dozen places,
++-- almost all of them with a bare .eq('is_primary', true). That works only for
++-- as long as exactly one row per user carries the flag, and nothing was
++-- guaranteeing it. Deleting your main photo removed the only flagged row and
++-- nothing promoted a replacement, so the account still had photographs but
++-- every lookup came back empty and the person vanished behind a placeholder.
++-- Applied to production on 2026-09-04.
++
++create or replace function public.ensure_one_primary_photo()
++returns trigger
++language plpgsql
++security definer
++set search_path to 'public'
++as $$
++declare
++  v_user uuid := coalesce(new.user_id, old.user_id);
++  v_primaries integer;
++begin
++  select count(*) into v_primaries
++  from public.user_photos where user_id = v_user and is_primary;
++
++  if v_primaries = 1 then
++    return null;
++  end if;
++
++  if v_primaries = 0 then
++    update public.user_photos set is_primary = true
++    where id = (
++      select id from public.user_photos where user_id = v_user
++      order by display_order asc nulls last, created_at asc limit 1
++    );
++  else
++    update public.user_photos set is_primary = false
++    where user_id = v_user and is_primary
++      and id <> (
++        select id from public.user_photos where user_id = v_user and is_primary
++        order by display_order asc nulls last, created_at desc limit 1
++      );
++  end if;
++
++  return null;
++end;
++$$;
++
++drop trigger if exists trg_ensure_one_primary_photo on public.user_photos;
++create trigger trg_ensure_one_primary_photo
++  after insert or update or delete on public.user_photos
++  for each row execute function public.ensure_one_primary_photo();
++
++update public.user_photos p set is_primary = true
++where p.id = (
++  select id from public.user_photos q where q.user_id = p.user_id
++  order by display_order asc nulls last, created_at asc limit 1
++)
++and not exists (
++  select 1 from public.user_photos r where r.user_id = p.user_id and r.is_primary
++);

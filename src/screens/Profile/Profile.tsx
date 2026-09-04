@@ -342,7 +342,12 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
       if (error) throw error;
 
+      // Reload the profile too, not just the grid. Deleting your main photo
+      // promotes another one (a database trigger keeps exactly one primary),
+      // and the avatar shown around the app comes from the profile - so
+      // without this the header still shows the picture that no longer exists.
       await loadUserPhotos();
+      await loadUserProfile();
 
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
