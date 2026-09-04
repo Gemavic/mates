@@ -76,18 +76,17 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="absolute inset-0 flex items-center justify-center">
         {title && (
           <div className="flex items-center space-x-3">
+            {/* One Support link in this bar, not two. There was a second one
+                here, underneath the wordmark, inside an absolutely positioned
+                container spanning the whole header - so on narrow screens the
+                green Support button on the right sat on top of it and both
+                landed across the logo. The button on the right is the one that
+                stays, and it now shows on every screen size rather than
+                disappearing below the medium breakpoint. */}
             <div className="text-center">
               <h1 className="font-alegreya font-bold text-white text-2xl">
                 Dates
               </h1>
-              <a
-                href={whatsappSupportLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-pink-600 underline transition-colors"
-              >
-                <WhatsAppIcon className="w-3.5 h-3.5 inline mr-1" />Support
-              </a>
             </div>
           </div>
         )}
@@ -100,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
           href={whatsappSupportLink()}
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden md:flex items-center space-x-1 bg-green-500 hover:bg-green-600 rounded-lg px-3 py-1.5 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
+          className="flex items-center space-x-1 bg-green-500 hover:bg-green-600 rounded-lg px-2.5 py-1.5 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation"
         >
           <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
           <span className="text-white text-xs font-medium">Support</span>
