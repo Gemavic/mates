@@ -6,6 +6,37 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabaseClient } from '@/lib/supabase';
 
+// Every column of verification_requests EXCEPT otp_code and otp_expires_at.
+//
+// The one-time code is deliberately unreadable by the member who is being
+// verified - that is the whole point of generating it server-side. Postgres
+// enforces that with a column-level grant, and a `select('*')` therefore asks
+// for a column this role cannot see and is refused outright:
+//
+//   permission denied for table verification_requests
+//
+// which surfaced as "Failed to upload" on a photo that had in fact already
+// been stored. The write was never the problem; reading the row back was.
+// Ask for the columns we are allowed to have, by name.
+const VERIFICATION_FIELDS = [
+  'id',
+  'user_id',
+  'full_name',
+  'phone_number',
+  'phone_verified',
+  'selfie_url',
+  'government_id_url',
+  'address_proof_url',
+  'address_info',
+  'verification_status',
+  'rejection_reason',
+  'reviewed_at',
+  'reviewed_by',
+  'submitted_at',
+  'created_at',
+  'updated_at',
+].join(', ');
+
 interface VerificationStep {
   id: string;
   title: string;
@@ -84,7 +115,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
     try {
       const { data, error } = await supabaseClient
         .from('verification_requests')
-        .select('*')
+        .select(VERIFICATION_FIELDS)
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -209,7 +240,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
             ...updateData,
             updated_at: new Date().toISOString()
           }, { onConflict: 'user_id' })
-          .select()
+          .select(VERIFICATION_FIELDS)
           .single();
 
         if (error) throw error;
