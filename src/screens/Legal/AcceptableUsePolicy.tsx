@@ -300,7 +300,7 @@ export const AcceptableUsePolicy: React.FC = () => {
                 If you have questions about this policy or need to report a violation:
               </p>
               <ul className="space-y-2 text-gray-700">
-                <li><strong>Email:</strong> safety@dates.care</li>
+                <li><strong>Email:</strong> admin@dates.care</li>
                 <li><strong>In-App:</strong> Use the "Report User" button</li>
                 <li><strong>Emergency:</strong> Contact local law enforcement immediately for threats or illegal activity</li>
               </ul>

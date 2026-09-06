@@ -39,7 +39,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
               </p>
               <p className="text-sm">
                 Please read this Policy carefully (especially Section 4 on refunds). If you have any questions,
-                please contact us at: <strong>support@dates.care</strong>
+                please contact us at: <strong>admin@dates.care</strong>
               </p>
               <p className="text-sm text-gray-600">
                 We may amend the Policy from time to time, and the amendments will become effective when posted
@@ -179,7 +179,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
                   <li>Use the Subscription Page in your account, or</li>
-                  <li>Contact customer support at support@dates.care</li>
+                  <li>Contact customer support at admin@dates.care</li>
                 </ul>
                 <p className="text-sm mt-2">
                   After cancellation, you can use remaining Credits and won't be charged for the next period.
@@ -341,7 +341,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-2">4.13 How to Submit</h4>
                 <p className="mb-2">
-                  To submit a refund request, contact us at <strong>support@dates.care</strong>. Please describe
+                  To submit a refund request, contact us at <strong>admin@dates.care</strong>. Please describe
                   your issue in detail and explain why refunding would be suitable.
                 </p>
                 <p>
@@ -404,9 +404,9 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
           <section className="border-t pt-6">
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Contact Information</h3>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
-              <p><strong>For refund requests:</strong> support@dates.care</p>
-              <p><strong>For general inquiries:</strong> support@bestdates.com</p>
-              <p><strong>Legal matters:</strong> legal@bestdates.com</p>
+              <p><strong>For refund requests:</strong> admin@dates.care</p>
+              <p><strong>For general inquiries:</strong> admin@dates.care</p>
+              <p><strong>Legal matters:</strong> admin@dates.care</p>
             </div>
           </section>
 

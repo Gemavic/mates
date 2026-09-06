@@ -111,7 +111,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
                 <h4 className="font-semibold text-yellow-900 mb-2">Reporting Mechanisms</h4>
                 <p className="text-yellow-800 text-sm">
                   If you see content that could be related to modern slavery or human trafficking, immediately
-                  click the abuse report button or contact us at <strong>support@dates.care</strong>
+                  click the abuse report button or contact us at <strong>admin@dates.care</strong>
                 </p>
               </div>
 
@@ -209,7 +209,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
 
               <p className="text-sm font-semibold">
                 If you suspect scamming, click the report button on their profile or email{' '}
-                <strong>support@dates.care</strong>
+                <strong>admin@dates.care</strong>
               </p>
             </div>
           </section>
@@ -256,7 +256,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
               </div>
 
               <p className="text-sm">
-                Use the abuse report button or contact <strong>support@dates.care</strong> if you encounter
+                Use the abuse report button or contact <strong>admin@dates.care</strong> if you encounter
                 abuse or sexual harassment.
               </p>
             </div>
@@ -303,7 +303,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
 
               <p className="text-sm font-semibold">
                 If you encounter potential CSAM, immediately click the abuse report button and select "Child
-                safety concerns" or email <strong>support@dates.care</strong>
+                safety concerns" or email <strong>admin@dates.care</strong>
               </p>
             </div>
           </section>
@@ -367,7 +367,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
                 <h4 className="font-semibold text-blue-900 mb-2">How to Appeal:</h4>
                 <p className="text-blue-800 text-sm mb-2">
                   If you disagree with our content or account moderation decision, contact Customer Support at{' '}
-                  <strong>support@dates.care</strong>
+                  <strong>admin@dates.care</strong>
                 </p>
                 <p className="text-blue-800 text-sm font-semibold mb-2">Required information:</p>
                 <ul className="list-disc list-inside space-y-1 ml-4 text-blue-800 text-sm">
@@ -390,7 +390,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Contact Information</h3>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
               <p><strong>Report Abuse:</strong> Use the abuse report button on any profile</p>
-              <p><strong>Email Support:</strong> support@dates.care</p>
+              <p><strong>Email Support:</strong> admin@dates.care</p>
               <p><strong>Child Safety Concerns:</strong> Report immediately via abuse button or email</p>
             </div>
             <p className="text-xs text-gray-500 mt-4">

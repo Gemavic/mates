@@ -119,7 +119,7 @@ export const Privacy: React.FC<PrivacyProps> = ({ onNavigate = () => {} }) => {
                 <div>
                   <div className="flex items-center mb-2">
                     <Mail className="w-4 h-4 mr-2 text-blue-500" />
-                    <span><strong>Email:</strong> privacy@dates.care</span>
+                    <span><strong>Email:</strong> admin@dates.care</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <Phone className="w-4 h-4 mr-2 text-green-500" />

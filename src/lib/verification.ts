@@ -70,11 +70,11 @@ export interface VerificationRequirements {
 class UserVerificationManager {
   private verificationRequests: Map<string, VerificationRequest> = new Map();
   private staffMembers: Set<string> = new Set([
-    'admin@dates.care',
-    'support@dates.care',
-    'verification@dates.care',
-    'moderator@dates.care'
-  ]);
+      'admin@dates.care',
+      'creditmanager@dates.care',
+      'support@dates.care',
+      'moderator@dates.care',
+    ]);
 
   // Verification requirements
   private requirements: VerificationRequirements = {
@@ -343,7 +343,7 @@ class UserVerificationManager {
         <p>We've reviewed your verification documents and need some updates before we can approve your account.</p>
         <p><strong>Reason:</strong> ${reason}</p>
         <p>Please log into your account and resubmit the required documents. Our team is here to help if you have any questions.</p>
-        <p>Contact us at verification@dates.care or call +1-209-348-6842 for assistance.</p>
+        <p>Contact us at admin@dates.care or call +1-209-348-6842 for assistance.</p>
         <p>Best regards,<br>The Dates.care Team</p>
       `
     };

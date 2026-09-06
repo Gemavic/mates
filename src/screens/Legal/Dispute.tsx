@@ -158,7 +158,7 @@ export const Dispute: React.FC<DisputeProps> = ({ onNavigate = () => {} }) => {
               <Mail className="w-4 h-4" />
               <div>
                 <p className="font-medium">Dispute Email:</p>
-                <p>disputes@dates.care</p>
+                <p>admin@dates.care</p>
               </div>
             </div>
           </div>

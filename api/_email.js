@@ -37,7 +37,7 @@ const BUSINESS = {
   // to your real one — the fallback is deliberately obvious so an
   // unconfigured deployment is easy to spot in a test send.
   address: process.env.BUSINESS_ADDRESS || 'Dates.care, Ontario, Canada',
-  supportEmail: process.env.SUPPORT_EMAIL || 'support@dates.care',
+  supportEmail: process.env.SUPPORT_EMAIL || 'admin@dates.care',
 };
 
 export function publicHost(req) {

@@ -218,7 +218,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </p>
               <p>
                 A User may voluntarily terminate their account temporarily or permanently by sending a letter to
-                support@dates.care
+                admin@dates.care
               </p>
             </div>
           </section>
@@ -233,7 +233,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </p>
               <p>
                 Any activity that infringes intellectual property rights is not allowed. To report copyright
-                infringement, contact us at legal@dates.care
+                infringement, contact us at admin@dates.care
               </p>
               <p className="font-semibold mt-3">7.1 License</p>
               <p>
@@ -307,7 +307,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
                   Before initiating arbitration, both parties must attempt informal resolution:
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Send written notice to legal@dates.care with details of your dispute</li>
+                  <li>Send written notice to admin@dates.care with details of your dispute</li>
                   <li>Participate in good faith for a 90-day period</li>
                   <li>Attend at least one individualized conference</li>
                 </ul>
@@ -367,8 +367,8 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
               <p><strong>Company:</strong> Datescare</p>
               <p><strong>Address:</strong> 5515 Eglington Avenue West, Etobicoke, ON M9C 5K5, Canada</p>
-              <p><strong>Legal:</strong> legal@dates.care</p>
-              <p><strong>Customer Support:</strong> support@dates.care</p>
+              <p><strong>Legal:</strong> admin@dates.care</p>
+              <p><strong>Customer Support:</strong> admin@dates.care</p>
             </div>
             <p className="text-xs text-gray-500 mt-4 text-center">
               All Rights Reserved © {new Date().getFullYear()} Datescare

@@ -152,7 +152,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     setCancelling(false);
     if (error || !data?.success) {
       setCancelResult(
-        "We couldn't cancel that automatically. Email support@dates.care and we will cancel it for you the same day."
+        "We couldn't cancel that automatically. Email admin@dates.care and we will cancel it for you the same day."
       );
       return;
     }

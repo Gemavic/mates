@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       }
     }
 
-    webpush.setVapidDetails('mailto:support@dates.care', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    webpush.setVapidDetails('mailto:admin@dates.care', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
     const subsResp = await fetch(
       `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${targetUserId}`,

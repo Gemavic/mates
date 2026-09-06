@@ -3,10 +3,25 @@ export const APP_CONFIG = {
   name: import.meta.env.VITE_APP_NAME || 'Dates',
   version: import.meta.env.VITE_APP_VERSION || '1.0.0',
   url: import.meta.env.VITE_APP_URL || 'https://dates.care',
-  supportEmail: 'support@dates.care',
-  legalEmail: 'legal@dates.care',
-  privacyEmail: 'privacy@dates.care',
-  disputeEmail: 'disputes@dates.care',
+  // One mailbox, because one mailbox is what is actually read.
+  //
+  // This used to be four aliases here and fourteen more typed by hand across
+  // the legal pages, the help screen and the API - support@, legal@,
+  // privacy@, disputes@, safety@, moderator@, compliance@, verification@ and
+  // the rest. None of them existed. A member emailing support@dates.care to
+  // report a scam, or legal@dates.care to exercise a privacy right, was
+  // writing to nowhere and getting no bounce to tell them so.
+  //
+  // Worse, two of them were on bestdates.com - a domain that is not ours.
+  //
+  // CASL and CAN-SPAM both require a contact address that works. The aliases
+  // below are kept so existing imports do not break, but they all resolve to
+  // the one address that reaches somebody.
+  contactEmail: 'admin@dates.care',
+  supportEmail: 'admin@dates.care',
+  legalEmail: 'admin@dates.care',
+  privacyEmail: 'admin@dates.care',
+  disputeEmail: 'admin@dates.care',
   phone: '+1-209-348-6842',
   // WhatsApp is the primary support channel: free for members wherever they
   // are, written rather than spoken so a scam or payment report arrives with

@@ -98,7 +98,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       icon: Mail,
       title: 'Email Support',
       description: 'Get help via email',
-      contact: 'support@dates.care',
+      contact: 'admin@dates.care',
       responseTime: '24-48 hours'
     },
     {
@@ -534,7 +534,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             Chat on WhatsApp
           </Button>
           <Button
-            onClick={() => window.open('mailto:support@dates.care')}
+            onClick={() => window.open('mailto:admin@dates.care')}
             className="bg-blue-500 text-white font-semibold hover:bg-blue-600 py-3"
             type="button"
           >
@@ -594,7 +594,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
               Emergency Line
             </Button>
             <Button
-              onClick={() => window.open('mailto:emergency@dates.care')}
+              onClick={() => window.open('mailto:admin@dates.care')}
               className="flex-1 bg-red-600 text-white font-semibold hover:bg-red-700"
               type="button"
             >

@@ -223,7 +223,7 @@ export const CreditHistory: React.FC<CreditHistoryProps> = ({ onNavigate = () =>
               <h2 className="text-lg font-bold">Dates.care receipt</h2>
             </div>
             <p className="text-xs text-gray-500 mb-5">
-              Ontario, Canada · support@dates.care
+              Ontario, Canada · admin@dates.care
             </p>
 
             <dl className="text-sm divide-y divide-gray-200">

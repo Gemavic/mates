@@ -356,12 +356,12 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
 
         {/* Contact Info */}
         <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-          <h3 className="text-white font-semibold text-lg mb-3">Development Team Contact</h3>
+          <h3 className="text-white font-semibold text-lg mb-3">Contact us</h3>
           <div className="space-y-2 text-white/80 text-sm">
-            <p><strong>Product Team:</strong> product@dates.care</p>
-            <p><strong>Development:</strong> dev@dates.care</p>
-            <p><strong>Design:</strong> design@dates.care</p>
-            <p><strong>Business:</strong> business@dates.care</p>
+            {/* One address, one line. This listed four departments - product,
+                development, design, business - each with its own address,
+                none of which existed. */}
+            <p><strong>Email:</strong> admin@dates.care</p>
             <p><strong>Phone:</strong> +1 (424) 488-7950</p>
           </div>
         </div>

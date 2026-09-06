@@ -72,29 +72,11 @@ export class TwilioService {
     }
   }
 
-  static async sendSMSVerification(phoneNumber: string, otp: string): Promise<boolean> {
-    try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms-verification`;
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber, otp }),
-      });
-
-      const data = await response.json();
-      return data.success || false;
-    } catch (error) {
-      console.error('Error sending SMS:', error);
-      return false;
-    }
-  }
+  // sendSMSVerification(phoneNumber, otp) used to live here. It is gone
+  // rather than updated: it took the verification code as an argument, which
+  // is the shape of the bug this change removes. Nothing calls it, and the
+  // deployed function no longer accepts a caller-supplied code - but a
+  // ready-made "post your own code" helper sitting in the codebase is an
+  // invitation to reintroduce the hole. The Verification screen calls the
+  // edge function directly with only a phone number.
 }

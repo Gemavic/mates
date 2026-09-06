@@ -86,8 +86,8 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ onNavigate = () => {} })
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
                 <div>
-                  <p><strong>Legal Department:</strong> legal@dates.care</p>
-                  <p><strong>Compliance Officer:</strong> compliance@dates.care</p>
+                  <p><strong>Legal Department:</strong> admin@dates.care</p>
+                  <p><strong>Compliance Officer:</strong> admin@dates.care</p>
                   <p><strong>Phone:</strong> +1-209-348-6842</p>
                 </div>
                 <div>

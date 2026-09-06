@@ -71,7 +71,7 @@ export const CancelPage: React.FC<CancelPageProps> = ({ onNavigate = () => {} })
             Need help with payment?
           </p>
           <p className="text-white/80 text-sm">
-            Contact support: support@dates.care
+            Contact support: admin@dates.care
           </p>
           <p className="text-white/60 text-xs mt-2">
             Multiple secure payment options available

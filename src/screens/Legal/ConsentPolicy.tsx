@@ -182,10 +182,10 @@ export const ConsentPolicy: React.FC<ConsentPolicyProps> = ({ onNavigate = () =>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">How to Withdraw Consent:</h4>
                 <ul className="list-disc list-inside space-y-1 ml-4 text-blue-800 text-sm">
-                  <li><strong>Content Marketing:</strong> Contact us at support@dates.care to opt-out</li>
+                  <li><strong>Content Marketing:</strong> Contact us at admin@dates.care to opt-out</li>
                   <li><strong>Email Communications:</strong> Use the unsubscribe link in emails</li>
                   <li><strong>Cookie Consent:</strong> Manage preferences in your account settings</li>
-                  <li><strong>Data Processing:</strong> Submit request via legal@dates.care</li>
+                  <li><strong>Data Processing:</strong> Submit request via admin@dates.care</li>
                   <li><strong>Account/Platform:</strong> Delete your account to withdraw platform consent</li>
                 </ul>
               </div>
@@ -223,7 +223,7 @@ export const ConsentPolicy: React.FC<ConsentPolicyProps> = ({ onNavigate = () =>
                 <li><strong>Right to Lodge a Complaint:</strong> File complaints with data protection authorities</li>
               </ul>
               <p className="mt-3 font-semibold">
-                To exercise these rights, contact us at <strong>legal@dates.care</strong>
+                To exercise these rights, contact us at <strong>admin@dates.care</strong>
               </p>
             </div>
           </section>
@@ -240,7 +240,7 @@ export const ConsentPolicy: React.FC<ConsentPolicyProps> = ({ onNavigate = () =>
                 <p className="text-red-800 text-sm">
                   The Website does not and will not knowingly process personal data of individuals under 18.
                   We do not seek or accept consent from minors. If it becomes evident that a minor is using
-                  the website, please contact us immediately at <strong>legal@dates.care</strong>
+                  the website, please contact us immediately at <strong>admin@dates.care</strong>
                 </p>
               </div>
             </div>
@@ -271,9 +271,9 @@ export const ConsentPolicy: React.FC<ConsentPolicyProps> = ({ onNavigate = () =>
           <section className="border-t pt-6">
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Contact Information</h3>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
-              <p><strong>Content Marketing Opt-out:</strong> support@dates.care</p>
-              <p><strong>Legal/Privacy Rights:</strong> legal@dates.care</p>
-              <p><strong>General Support:</strong> support@bestdates.com</p>
+              <p><strong>Content Marketing Opt-out:</strong> admin@dates.care</p>
+              <p><strong>Legal/Privacy Rights:</strong> admin@dates.care</p>
+              <p><strong>General Support:</strong> admin@dates.care</p>
             </div>
           </section>
 

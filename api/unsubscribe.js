@@ -57,7 +57,7 @@ function page(title, message, ok) {
 <p><a href="/#settings">Manage all notification settings</a></p>
 <div class="addr">${process.env.BUSINESS_NAME || 'Dates.care'}<br>
 ${process.env.BUSINESS_ADDRESS || 'Dates.care, Ontario, Canada'}<br>
-${process.env.SUPPORT_EMAIL || 'support@dates.care'}</div>
+${process.env.SUPPORT_EMAIL || 'admin@dates.care'}</div>
 </div></body></html>`;
 }
 
@@ -87,7 +87,7 @@ function confirmPage(token) {
 <a href="/#settings">No — take me to my notification settings</a>
 <div class="addr">${process.env.BUSINESS_NAME || 'Dates.care'}<br>
 ${process.env.BUSINESS_ADDRESS || 'Dates.care, Ontario, Canada'}<br>
-${process.env.SUPPORT_EMAIL || 'support@dates.care'}</div>
+${process.env.SUPPORT_EMAIL || 'admin@dates.care'}</div>
 </div></body></html>`;
 }
 
