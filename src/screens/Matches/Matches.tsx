@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import {
   MessageCircle, Mail as MailIcon, User, Users,
   Newspaper, MessageSquare, CreditCard, ArrowLeft, Send,
-  Smile, Gift, X, Image as ImageIcon, Camera, Lock
+  Smile, Gift, X, Image as ImageIcon, Camera, Lock, Zap
 } from 'lucide-react';
+import { LowOnCredits } from '@/components/LowOnCredits';
 import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
@@ -162,6 +163,9 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
   const [exclusiveMode, setExclusiveMode] = useState(false);
   const [sendingPhoto, setSendingPhoto] = useState(false);
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
+  // Set when an unlock was refused for want of credits. Holds what the thing
+  // cost and what they actually had, so the panel can show both.
+  const [lowCredits, setLowCredits] = useState<{ needed: number; balance?: number } | null>(null);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
@@ -592,7 +596,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
    * Pays for one locked photo. unlock_message() charges before it records
    * anything, and the unlock row is what the storage policy consults.
    */
-  const handleUnlockPhoto = useCallback(async (messageId: string, storagePath: string) => {
+  const handleUnlockPhoto = useCallback(async (messageId: string, storagePath: string, cost: number) => {
     if (!user) return;
     setUnlockingId(messageId);
     try {
@@ -600,9 +604,13 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
 
       if (error || !data?.success) {
         const why = data?.error ?? (error as any)?.message;
-        alert(why === 'insufficient_credits'
-          ? 'You do not have enough credits to unlock this photo.'
-          : 'Could not unlock this photo. Please try again.');
+        if (why === 'insufficient_credits') {
+          // Not a dead end. Show them what it costs, what they have, and
+          // the smallest package that closes the gap.
+          setLowCredits({ needed: cost, balance: data?.total_credits });
+          return;
+        }
+        alert('Could not unlock this photo. Please try again.');
         return;
       }
 
@@ -809,26 +817,48 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
                           </div>
                         );
                       })()}
-                      {msg.unlocked === false ? (
-                        <div className="w-52 max-w-full">
-                          <div className="relative h-32 overflow-hidden rounded-xl bg-gradient-to-br from-fuchsia-300 via-pink-300 to-amber-200">
-                            <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
-                              <Lock className="w-8 h-8 text-white/90 drop-shadow" />
+                      {msg.unlocked === false ? (() => {
+                        // The locked card. It has to do two things honestly:
+                        // look worth buying, and never imply there is more
+                        // behind it than there is. A "+2" badge over a single
+                        // photo would sell something that does not exist, so
+                        // the count is only ever drawn from real media.
+                        const cost = msg.unlockCost ?? EXCLUSIVE_UNLOCK_COST;
+                        return (
+                        <div className="w-60 max-w-full">
+                          <div className="rounded-2xl bg-gradient-to-r from-fuchsia-500 via-pink-500 to-teal-400 p-[2px]">
+                            <div className="rounded-2xl bg-white p-2.5 dark:bg-night-800">
+                              <div className="relative mb-2 flex justify-center">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-fuchsia-500 to-pink-500 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
+                                  <Zap className="h-3 w-3 fill-current" />
+                                  Exclusive post
+                                </span>
+                              </div>
+
+                              <div className="relative h-36 overflow-hidden rounded-xl bg-gradient-to-br from-fuchsia-300 via-pink-300 to-amber-200">
+                                <div className="absolute inset-0 flex items-center justify-center backdrop-blur-md">
+                                  <Lock className="h-9 w-9 text-white/90 drop-shadow" />
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleUnlockPhoto(msg.id, msg.message, cost)}
+                                disabled={unlockingId === msg.id}
+                                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-3 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-orange-600 disabled:opacity-60"
+                              >
+                                <Lock className="h-4 w-4" />
+                                {unlockingId === msg.id ? 'Unlocking...' : 'Get the access'}
+                              </button>
+
+                              <p className="mt-1.5 text-center text-[11px] text-gray-500 dark:text-slate-400">
+                                Unlock exclusive post for {cost} cr
+                              </p>
                             </div>
-                            <span className="absolute left-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-semibold text-white">
-                              Exclusive
-                            </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleUnlockPhoto(msg.id, msg.message)}
-                            disabled={unlockingId === msg.id}
-                            className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
-                          >
-                            {unlockingId === msg.id ? 'Unlocking...' : `Unlock for ${msg.unlockCost ?? EXCLUSIVE_UNLOCK_COST} credits`}
-                          </button>
                         </div>
-                      ) : msg.isExclusive && msg.signedUrl ? (
+                        );
+                      })() : msg.isExclusive && msg.signedUrl ? (
                         <div>
                           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                             <Lock className="w-3 h-3" />
@@ -1047,6 +1077,17 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
             </Button>
             </div>
           </div>
+
+          <LowOnCredits
+            open={lowCredits !== null}
+            partnerName={thread.participantName}
+            partnerImage={thread.participantImage}
+            myImage={userProfileImage}
+            needed={lowCredits?.needed ?? EXCLUSIVE_UNLOCK_COST}
+            balance={lowCredits?.balance}
+            onClose={() => setLowCredits(null)}
+            onNavigate={onNavigate}
+          />
         </div>
       </PageTransition>
     );
