@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Upload, CheckCircle, AlertCircle, Shield, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,15 +91,28 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
     email: true // Email is always verified via Supabase auth
   });
 
-  // Check if user is already verified - if so, skip to discovery
+  // Someone who was ALREADY verified before opening this screen has nothing
+  // to do here, so they go straight on.
+  //
+  // This used to redirect on every change to `profile`, which meant it also
+  // fired the moment verification succeeded *during* the flow: confirming the
+  // phone code awards the badge, the refreshed profile came back with
+  // is_verified true, and the browser jumped to Discovery mid-wizard. The
+  // person never reached the ID step, and nothing explained why the screen
+  // had vanished - it reads as the app breaking at the exact moment it
+  // actually worked.
+  //
+  // So latch on the first profile we see. Arriving verified redirects.
+  // Becoming verified while you are standing here does not.
+  const arrivedVerified = useRef<boolean | null>(null);
   useEffect(() => {
-    if (user && profile) {
-      if (profile.is_verified === true) {
-        console.log('✅ User already verified, skipping verification');
-        onNavigate('discovery');
-      }
+    if (!user || !profile) return;
+    if (arrivedVerified.current !== null) return;
+    arrivedVerified.current = profile.is_verified === true;
+    if (arrivedVerified.current) {
+      onNavigate('discovery');
     }
-  }, [user, profile]);
+  }, [user, profile, onNavigate]);
 
   // Load existing verification request
   useEffect(() => {
@@ -369,17 +382,31 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
       setCompletedSteps((prev) => ({ ...prev, phone: true }));
       setShowCodeInput(false);
       setVerificationCode('');
-      alert('Phone number verified.');
       await loadVerificationRequest();
-      await checkVerificationComplete();
+      const nowVerified = await checkVerificationComplete();
+
+      // Say what actually happened. A selfie plus a confirmed phone number is
+      // all the platform checks, so the badge is awarded here - but the ID
+      // step is still on screen and still worth doing, and being told nothing
+      // while the wizard moves under you is how a working flow feels broken.
+      alert(nowVerified
+        ? 'Phone number verified - your account is now verified.\n\nGovernment ID is optional and adds credibility to your profile.'
+        : 'Phone number verified.');
+
+      // Move to whatever is still outstanding. Email is confirmed at sign-up,
+      // so from here that is the ID upload - the step people expect next.
+      const doneNow: Record<string, boolean> = { ...completedSteps, phone: true };
+      const nextIndex = verificationSteps.findIndex((s, i) => i > currentStep && !doneNow[s.id]);
+      if (nextIndex !== -1) setCurrentStep(nextIndex);
     } catch (err: any) {
       console.error('Phone verification failed:', err);
       alert('We could not check that code just now. Please try again.');
     }
   };
 
-  const checkVerificationComplete = async () => {
-    if (!user) return;
+  /** Returns true if this call is what tipped the account into verified. */
+  const checkVerificationComplete = async (): Promise<boolean> => {
+    if (!user) return false;
 
     try {
       // The badge is awarded by the server, which re-reads the row and
@@ -395,20 +422,22 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
       const { data, error } = await supabaseClient.rpc('submit_verification');
       if (error) {
         console.error('Could not submit verification:', error);
-        return;
+        return false;
       }
       if (!data?.success) {
         // 'incomplete' is the normal case while steps are still outstanding.
         if (data?.error && data.error !== 'incomplete') {
           console.warn('Verification not submitted:', data.error);
         }
-        return;
+        return false;
       }
 
       await loadUserProfile();
       await loadVerificationRequest();
+      return true;
     } catch (error) {
       console.error('Error completing verification:', error);
+      return false;
     }
   };
 
