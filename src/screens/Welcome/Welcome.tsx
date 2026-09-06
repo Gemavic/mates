@@ -449,10 +449,10 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
                 </button>
               ))}
               <a
-                href="mailto:support@dates.care"
+                href="mailto:admin@dates.care"
                 className="text-slate-300 hover:text-white transition-colors"
               >
-                support@dates.care
+                admin@dates.care
               </a>
             </nav>
           </div>

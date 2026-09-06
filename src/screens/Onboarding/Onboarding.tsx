@@ -15,7 +15,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
-    age: '',
     location: '',
     occupation: '',
     bio: '',
@@ -63,16 +62,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
                   className="bg-white/90"
                 />
               </div>
-              <div>
-                <label className="block text-white font-medium mb-2">Age</label>
-                <Input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => updateFormData('age', e.target.value)}
-                  placeholder="Enter your age"
-                  className="bg-white/90"
-                />
-              </div>
+              {/* No age box here.
+                  This asked for an age as a free-typed number, with no lower
+                  bound, on the screen straight after sign-up had already
+                  asked for a date of birth - and then discarded the answer
+                  without saving it anywhere. Two chances to give two
+                  different ages, neither of them binding. Age now comes from
+                  the declared date of birth and nowhere else. */}
               <div>
                 <label className="block text-white font-medium mb-2">Location</label>
                 <Input
@@ -225,7 +221,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
             onClick={handleNext}
             className="w-full h-12 bg-white text-pink-600 hover:bg-white/90 font-semibold rounded-xl"
             disabled={
-              (currentStep === 1 && (!formData.name || !formData.age || !formData.location)) ||
+              (currentStep === 1 && (!formData.name || !formData.location)) ||
               (currentStep === 3 && !formData.bio) ||
               (currentStep === 4 && !formData.idealDate)
             }

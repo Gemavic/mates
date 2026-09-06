@@ -54,7 +54,6 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [, setVerificationRequest] = useState<any>(null);
-  const [, setSentOTP] = useState<string>('');
   const [isResendDisabled, setIsResendDisabled] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({
@@ -190,10 +189,13 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         const photoUrl = fileName;
 
         // Create or update verification request
+        // verification_status is deliberately absent. It is set by the
+        // server now, and a client UPDATE that changes it is refused - so
+        // including it here made every re-upload fail with a raw database
+        // message in an alert box.
         const updateData: any = {
           full_name: fullName || profile?.full_name || 'User',
           phone_number: phoneNumber || null,
-          verification_status: 'incomplete'
         };
 
         if (type === 'selfie') updateData.selfie_url = photoUrl;
@@ -236,71 +238,57 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
 
   const handleSendCode = async () => {
     if (phoneNumber.length < 10) {
-      alert('Please enter a valid phone number');
+      alert('Please enter a valid phone number, including the country code.');
       return;
     }
 
     try {
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOTP(otp);
-
-      // Save OTP and phone to database
-      if (user) {
-        const { error } = await supabaseClient
-          .from('verification_requests')
-          .upsert({
-            user_id: user.id,
-            phone_number: phoneNumber,
-            otp_code: otp,
-            otp_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
-            full_name: fullName || profile?.full_name || 'User',
-            verification_status: 'incomplete',
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id' });
-
-        if (error) throw error;
-
-        // Send SMS via Twilio Edge Function
-        try {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-          const smsResponse = await fetch(`${supabaseUrl}/functions/v1/send-sms-verification`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseAnonKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              phoneNumber: phoneNumber,
-              otp: otp
-            })
-          });
-
-          const smsResult = await smsResponse.json();
-          console.log('SMS Response:', smsResult);
-
-          if (smsResult.success) {
-            alert(`✅ Verification code sent to ${phoneNumber}\n\nPlease check your phone for the SMS message.`);
-          } else if (smsResult.testMode) {
-            // Twilio not configured - show code in alert for testing
-            alert(`✅ Verification code: ${otp}\n\n⚠️ SMS service is in test mode.\nYour code is shown here for testing.\n\nTo enable real SMS, configure Twilio credentials.`);
-          } else {
-            // Show detailed error message
-            const errorMsg = smsResult.error || 'Failed to send SMS';
-            const details = smsResult.details ? `\n\n${smsResult.details}` : '';
-            console.error('Twilio error:', smsResult);
-
-            // Still show the code to user even if SMS fails
-            alert(`⚠️ SMS delivery failed\n\nYour verification code: ${otp}\n\nError: ${errorMsg}${details}\n\nYou can still use the code above to verify.`);
-          }
-        } catch (smsError: any) {
-          console.error('SMS sending failed:', smsError);
-          // Fallback to showing code in alert
-          alert(`✅ Verification code: ${otp}\n\n⚠️ SMS delivery failed.\nYour code is shown here.\n\nError: ${smsError.message}`);
-        }
+      // The browser no longer generates, stores, or ever sees the code.
+      //
+      // It used to do all three: it made the six digits, wrote them to the
+      // database, and - whenever Twilio was unconfigured or refused the
+      // message - displayed them in an alert box. Anyone could therefore
+      // "verify" a phone number they did not own, which made the verified
+      // badge meaningless. The badge is a safety signal on a site where
+      // people arrange to meet strangers, so it has to mean something.
+      //
+      // Now the edge function generates it, stores it, and sends it. If the
+      // SMS cannot be sent, verification simply does not happen.
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        alert('Your session has expired. Please sign in again.');
+        return;
       }
+
+      const smsResponse = await fetch(`${supabaseUrl}/functions/v1/send-sms-verification`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      const smsResult = await smsResponse.json().catch(() => ({}));
+
+      if (!smsResult.success) {
+        // Say what is actually wrong. "Failed to send" tells a member
+        // nothing they can act on, and told us nothing either.
+        const reason =
+          smsResult.errorCode === 'SMS_NOT_CONFIGURED'
+            ? 'Text-message verification is not switched on yet. Please contact admin@dates.care and we will verify you by hand.'
+            : smsResult.errorCode === 'UNVERIFIED_TRIAL_NUMBER'
+              ? 'This number cannot receive our texts yet because our SMS account is still in trial mode. Please contact admin@dates.care.'
+              : smsResult.errorCode === 'RATE_LIMIT_EXCEEDED'
+                ? 'Too many attempts. Please wait a few minutes and try again.'
+                : smsResult.error || 'We could not send the code. Please check the number and try again.';
+        alert(reason);
+        return;
+      }
+
+      alert(`A verification code has been sent to ${phoneNumber}. It expires in 10 minutes.`);
 
       setShowCodeInput(true);
 
@@ -318,75 +306,44 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         });
       }, 1000);
 
-      console.log(`📱 OTP sent: ${otp} to ${phoneNumber}`);
     } catch (error: any) {
-      console.error('Failed to send OTP:', error);
-      alert('Failed to send verification code. Please try again.');
+      console.error('Failed to request a verification code:', error);
+      alert('We could not send a code just now. Please try again in a moment.');
     }
   };
 
   const handleVerifyCode = async () => {
-    if (verificationCode.length !== 6) {
-      alert('Please enter a 6-digit code');
-      return;
-    }
-
+    if (!user) return;
     try {
-      // Verify OTP from database
-      if (user) {
-        const { data, error } = await supabaseClient
-          .from('verification_requests')
-          .select('otp_code, otp_expires_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      // Compared on the server. The client cannot read otp_code any more -
+      // the column-level SELECT grant was revoked - so there is nothing to
+      // compare against here even if it wanted to.
+      const { data, error } = await supabaseClient.rpc('confirm_phone_verification', {
+        p_code: verificationCode,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (!data || !data.otp_code) {
-          alert('No verification code found. Please request a new code.');
-          return;
-        }
-
-        // Check if OTP expired
-        const expiresAt = new Date(data.otp_expires_at);
-        if (expiresAt < new Date()) {
-          alert('Verification code expired. Please request a new code.');
-          setShowCodeInput(false);
-          return;
-        }
-
-        // Verify OTP
-        if (verificationCode === data.otp_code) {
-          // Update verification status
-          await supabaseClient
-            .from('verification_requests')
-            .update({
-              phone_verified: true,
-              otp_code: null, // Clear OTP after successful verification
-              otp_expires_at: null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
-
-          // Update completed steps
-          setCompletedSteps(prev => ({ ...prev, phone: true }));
-
-          alert('✅ Phone number verified successfully!');
-          setShowCodeInput(false);
-          setVerificationCode('');
-
-          // Check if verification is complete
-          await checkVerificationComplete();
-
-          // Move to next step
-          setCurrentStep(Math.min(verificationSteps.length - 1, currentStep + 1));
-        } else {
-          alert('❌ Invalid verification code. Please try again.');
-        }
+      if (!data?.success) {
+        const message =
+          data?.error === 'code_expired'
+            ? 'That code has expired. Please request a new one.'
+            : data?.error === 'no_code_requested'
+              ? 'No code has been requested for this account yet.'
+              : 'That code is not correct. Please check and try again.';
+        alert(message);
+        return;
       }
-    } catch (error: any) {
-      console.error('Failed to verify OTP:', error);
-      alert('Failed to verify code. Please try again.');
+
+      setCompletedSteps((prev) => ({ ...prev, phone: true }));
+      setShowCodeInput(false);
+      setVerificationCode('');
+      alert('Phone number verified.');
+      await loadVerificationRequest();
+      await checkVerificationComplete();
+    } catch (err: any) {
+      console.error('Phone verification failed:', err);
+      alert('We could not check that code just now. Please try again.');
     }
   };
 
@@ -394,48 +351,33 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
     if (!user) return;
 
     try {
-      // Get latest verification request
-      const { data } = await supabaseClient
-        .from('verification_requests')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!data) return;
-
-      // Check if all required steps are complete
-      const hasPhoto = !!data.selfie_url;
-      const hasPhone = !!data.phone_verified;
-      const hasEmail = true; // Email is always verified via Supabase
-
-      const allRequiredComplete = hasPhoto && hasPhone && hasEmail;
-
-      if (allRequiredComplete) {
-        // Mark verification as complete
-        await supabaseClient
-          .from('verification_requests')
-          .update({
-            verification_status: 'submitted',
-            submitted_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-
-        // Update user profile to mark as verified
-        await supabaseClient
-          .from('user_profiles')
-          .update({
-            is_verified: true,
-            verification_status: 'verified'
-          })
-          .eq('user_id', user.id);
-
-        // Reload profile
-        await loadUserProfile();
-
-        console.log('✅ Verification complete!');
+      // The badge is awarded by the server, which re-reads the row and
+      // checks the evidence itself. This used to be two direct writes from
+      // the browser - verification_status here, is_verified on the profile -
+      // which meant the badge was granted because the browser said the
+      // checklist looked done, not because anything had been verified.
+      //
+      // Those writes are now refused by the database, and supabase-js
+      // returns errors rather than throwing, so had they been left in place
+      // they would have failed silently and nobody would ever have been
+      // marked verified again.
+      const { data, error } = await supabaseClient.rpc('submit_verification');
+      if (error) {
+        console.error('Could not submit verification:', error);
+        return;
       }
+      if (!data?.success) {
+        // 'incomplete' is the normal case while steps are still outstanding.
+        if (data?.error && data.error !== 'incomplete') {
+          console.warn('Verification not submitted:', data.error);
+        }
+        return;
+      }
+
+      await loadUserProfile();
+      await loadVerificationRequest();
     } catch (error) {
-      console.error('Error checking verification completion:', error);
+      console.error('Error completing verification:', error);
     }
   };
 

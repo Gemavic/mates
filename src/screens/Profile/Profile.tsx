@@ -48,7 +48,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   const { user, getFirstName, getFullName, profile, loadUserProfile } = useAuth();
   const [profileData, setProfileData] = useState({
     name: getFullName(),
-    age: '25',
+    age: '',
     location: 'New York, NY',
     occupation: 'Professional',
     education: 'University',
@@ -74,7 +74,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
     if (profile) {
       setProfileData({
         name: profile.full_name || getFullName(),
-        age: profile.age?.toString() || '25',
+        age: profile.age?.toString() || '',
         location: profile.location || 'New York, NY',
         occupation: profile.occupation || 'Professional',
         education: profile.education || 'University',
@@ -109,6 +109,55 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
     }
   };
 
+  // Date of birth is declared once and then derives the age. It used to be
+  // the other way round: a free-typed "Age" number box wrote straight to the
+  // profile, so a member could be any age they fancied, and the date of
+  // birth collected at sign-up was thrown away without ever being stored.
+  // Two questions, two answers, neither binding.
+  const [birthDate, setBirthDate] = useState('');
+
+  // Worked out here rather than read from the stored column, because the
+  // stored one is only recomputed when the row is next written - so a member
+  // who never edits their profile would keep last year's number, and the box
+  // below would present it as current.
+  const derivedAge = React.useMemo(() => {
+    const dob = profile?.date_of_birth;
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    const today = new Date();
+    let years = today.getFullYear() - d.getFullYear();
+    const m = today.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) years--;
+    return years;
+  }, [profile?.date_of_birth]);
+  const [birthDateError, setBirthDateError] = useState('');
+  const eighteenYearsAgo = React.useMemo(() => {
+    // Built from local date parts. toISOString() converts to UTC first,
+    // which for anyone east of UTC whose local date has already rolled over
+    // makes the bound a day early - so somebody turning 18 today could not
+    // pick their own birthday even though the server would accept it.
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }, []);
+
+  const saveBirthDateIfNeeded = async (): Promise<boolean> => {
+    if (profile?.date_of_birth || !birthDate) return true;
+    setBirthDateError('');
+    const { data, error } = await supabaseClient.rpc('set_my_birth_date', { p_date: birthDate });
+    if (error) {
+      setBirthDateError('We could not save that date. Please try again.');
+      return false;
+    }
+    if (!data?.success) {
+      setBirthDateError(data?.message || 'Please enter a valid date of birth.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSaveProfile = async () => {
     if (!user) {
       const errorMessage = document.createElement('div');
@@ -138,12 +187,16 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
     }
 
     try {
+      // The birth date goes through its own guarded call, because the server
+      // decides whether it is acceptable - not this form.
+      if (!(await saveBirthDateIfNeeded())) {
+        return;
+      }
       console.log('Updating profile for user:', user.id);
 
       const updateData = {
         full_name: profileData.name.trim(),
         first_name: profileData.name.trim().split(' ')[0],
-        age: parseInt(profileData.age) || null,
         location: profileData.location || null,
         occupation: profileData.occupation || null,
         education: profileData.education || null,
@@ -391,12 +444,38 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
             <div>
               <label className="block text-white font-medium mb-2">Age</label>
-              <Input
-                type="number"
-                value={profileData.age}
-                onChange={(e) => setProfileData(prev => ({ ...prev, age: e.target.value }))}
-                className="bg-white/20 text-white placeholder-white/50 border-white/30"
-              />
+              {profile?.date_of_birth ? (
+                <>
+                  <Input
+                    type="text"
+                    value={derivedAge !== null ? `${derivedAge} years old` : 'Not set'}
+                    readOnly
+                    disabled
+                    className="bg-white/10 text-white/70 border-white/20 cursor-not-allowed"
+                  />
+                  <p className="text-white/50 text-xs mt-1">
+                    Worked out from the date of birth you gave when you joined.
+                    Contact admin@dates.care if it is wrong.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Input
+                    type="date"
+                    value={birthDate}
+                    max={eighteenYearsAgo}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="bg-white/20 text-white border-white/30"
+                  />
+                  <p className="text-white/50 text-xs mt-1">
+                    Your date of birth. Dates.care is strictly for adults aged 18 and over.
+                    This is saved once and is never shown on your profile - only your age is.
+                  </p>
+                  {birthDateError && (
+                    <p className="text-red-300 text-xs mt-1">{birthDateError}</p>
+                  )}
+                </>
+              )}
             </div>
 
             <div>
@@ -617,7 +696,13 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
             </button>
           </div>
           <h2 className="text-2xl font-bold text-white mt-4">{profileData.name}</h2>
-          <p className="text-white/80">{profileData.age} years old</p>
+          <p className="text-white/80">
+            {derivedAge !== null
+              ? `${derivedAge} years old`
+              : profileData.age
+                ? `${profileData.age} years old`
+                : 'Age not set'}
+          </p>
         </div>
 
         {/* Profile Stats */}
