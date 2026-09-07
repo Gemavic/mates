@@ -36,7 +36,7 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ onNavigate = () => {} })
             </h3>
             <div className="space-y-3 text-gray-700">
               <p className="leading-relaxed">
-                The services provided by Dates.care Inc. are offered "as is" and "as available" without 
+                The services provided by Dates.care are offered "as is" and "as available" without 
                 warranties of any kind, either express or implied, to the fullest extent permitted by Ontario 
                 and Canadian law.
               </p>
@@ -79,10 +79,16 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ onNavigate = () => {} })
           <section>
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Legal Contact Information</h3>
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              {/* Dates.care is not incorporated. It said "Dates.care Inc." here, and
+                  carried an HST number of 123456789RT0001 - the placeholder from
+                  the CRA's own examples, not a registration anyone holds. Both were
+                  untrue statements on a public legal page, and a payment processor
+                  checks exactly these details when underwriting. Add the Master
+                  Business Licence number once the sole proprietorship is registered,
+                  and the HST number only if and when actually registered for HST. */}
               <div>
-                <h4 className="font-semibold text-gray-900">Dates.care Inc.</h4>
-                <p className="text-gray-700">BIN Registration #1000890862</p>
-                <p className="text-gray-700">HST/GST Registration #123456789RT0001</p>
+                <h4 className="font-semibold text-gray-900">Dates.care</h4>
+                <p className="text-gray-700">A sole proprietorship operating from Ontario, Canada</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
                 <div>
@@ -91,7 +97,7 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ onNavigate = () => {} })
                   <p><strong>Phone:</strong> +1-209-348-6842</p>
                 </div>
                 <div>
-                  <p><strong>Registered Office:</strong></p>
+                  <p><strong>Business address:</strong></p>
                   <p>5515 Eglinton Ave</p>
                   <p>Etobicoke, ON M9C 5K5</p>
                   <p>Canada</p>

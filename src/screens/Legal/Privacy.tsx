@@ -113,7 +113,7 @@ export const Privacy: React.FC<PrivacyProps> = ({ onNavigate = () => {} }) => {
                   <Shield className="w-4 h-4 mr-2" />
                   Chief Privacy Officer
                 </h4>
-                <p className="text-gray-700">Dates.care Inc.</p>
+                <p className="text-gray-700">Dates.care</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
                 <div>
@@ -132,7 +132,7 @@ export const Privacy: React.FC<PrivacyProps> = ({ onNavigate = () => {} }) => {
                     <div>
                       <p><strong>Address:</strong></p>
                       <p>Chief Privacy Officer</p>
-                      <p>Dates.care Inc.</p>
+                      <p>Dates.care</p>
                       <p>5515 Eglinton Ave</p>
                       <p>Etobicoke, ON M9C 5K5</p>
                       <p>Canada</p>

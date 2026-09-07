@@ -201,11 +201,90 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
             </div>
           </section>
 
+          {/* Meeting other members. The single most important section in a
+              dating platform's terms, and it was absent entirely: nothing said
+              members meet at their own risk, nothing said we run no background
+              checks, and there was no safety guidance anywhere on the site. */}
+          <section>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">6. Meeting Other Members</h3>
+            <div className="space-y-3 text-gray-700 text-sm">
+              <p>
+                Dates.care is a place to meet people. What happens after that is between you and them.
+                Please read this section before you arrange to see anyone.
+              </p>
+
+              <p className="font-semibold text-gray-900">6.1 We do not screen members</p>
+              <p>
+                We do not run criminal background checks, sex-offender registry searches or credit
+                checks, and we are not able to. Our verification confirms that a person holds the
+                phone number they gave us and that their selfie matches the photographs on their
+                profile. That is all it confirms. It does not confirm that they are honest, safe,
+                single, employed, solvent, of good character or free of a criminal record.
+              </p>
+
+              <p className="font-semibold text-gray-900">6.2 Meetings happen at your own risk</p>
+              <p>
+                Any communication, meeting or relationship with another member - online, by
+                telephone, by video call, or in person - is entirely at your own risk. We are not a
+                party to it, we do not supervise it, and we cannot control what another person says
+                or does. We are not responsible or liable for the conduct of any member, on
+                Dates.care or anywhere else, and that includes anything that happens when you meet
+                someone offline.
+              </p>
+
+              <p className="font-semibold text-gray-900">6.3 Please take these precautions</p>
+              <p>
+                Following this guidance is not a legal requirement and does not make us responsible
+                for the outcome. It is what we would tell a friend.
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Talk on Dates.care first. Video call before meeting in person.</li>
+                <li>Meet somewhere public for the first few times, and stay somewhere public.</li>
+                <li>Arrange your own transport, both ways, and keep control of it.</li>
+                <li>Tell a friend or relative where you are going, who with, and when you expect to be back.</li>
+                <li>Do not leave drinks, food, bags, phones or documents unattended.</li>
+                <li>
+                  Never send money, gift cards or cryptocurrency to someone you met online, and never
+                  share bank details, card numbers, passwords or one-time codes - however convincing
+                  the reason. Anyone who asks for money is very likely defrauding you. Report them.
+                </li>
+                <li>Do not share your home or work address, or your daily routine, until you know someone well.</li>
+                <li>Leave whenever you want to. You never owe anyone an explanation.</li>
+                <li>
+                  If you feel unsafe, contact your local emergency services. In Canada and the United
+                  States, that is 911.
+                </li>
+              </ul>
+
+              <p className="font-semibold text-gray-900">6.4 Report anyone who worries you</p>
+              <p>
+                Use the report control on any profile, message or photograph, or write to
+                admin@dates.care. We read every report. We can suspend and remove accounts, and we
+                cooperate with law enforcement where the law requires it or a person is at risk of harm.
+              </p>
+            </div>
+          </section>
+
+          {/* Indemnity */}
+          <section>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">7. Your Responsibility to Us</h3>
+            <div className="space-y-3 text-gray-700 text-sm">
+              <p>
+                You agree to indemnify, defend and hold harmless Dates.care and the person operating
+                it against any claim, demand, loss, liability, damage, cost or expense - including
+                reasonable legal fees - arising out of or connected with your use of the Services,
+                your content, your dealings with other members, or your breach of these Terms or of
+                any law or of anyone else&apos;s rights. We may take over the defence of any such
+                claim, and you agree to cooperate with us if we do.
+              </p>
+            </div>
+          </section>
+
           {/* Account Termination */}
           <section>
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
               <Ban className="w-6 h-6 mr-2 text-red-500" />
-              6. Termination of Account
+              8. Termination of Account
             </h3>
             <div className="space-y-3 text-gray-700 text-sm">
               <p>
@@ -225,7 +304,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
 
           {/* Copyright */}
           <section>
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">7. Copyright Policy</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">9. Copyright Policy</h3>
             <div className="space-y-3 text-gray-700 text-sm">
               <p>
                 Datescare owns, possesses, and has title over the intellectual property, licenses, or otherwise
@@ -235,7 +314,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
                 Any activity that infringes intellectual property rights is not allowed. To report copyright
                 infringement, contact us at admin@dates.care
               </p>
-              <p className="font-semibold mt-3">7.1 License</p>
+              <p className="font-semibold mt-3">9.1 License</p>
               <p>
                 By posting User Content, you grant us an unrestricted, irrevocable, non-exclusive, sub-licensable,
                 free, worldwide license to use, copy, perform, display, reproduce, adapt, modify, publish and
@@ -246,7 +325,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
 
           {/* Warranty Disclaimers */}
           <section>
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">8. Warranty Disclaimers</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">10. Warranty Disclaimers</h3>
             <div className="space-y-3 text-gray-700 text-sm">
               <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
                 <p className="font-semibold mb-2">THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE"</p>
@@ -265,7 +344,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
 
           {/* Limitation of Liability */}
           <section>
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">9. Limitation of Liability</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">11. Limitation of Liability</h3>
             <div className="space-y-3 text-gray-700 text-sm">
               <p>
                 To the fullest extent permitted by law, Datescare shall not be liable for any direct, indirect,
@@ -282,7 +361,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
           <section>
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
               <Gavel className="w-6 h-6 mr-2 text-blue-500" />
-              10. Dispute Resolution by Mandatory Binding Arbitration
+              12. Dispute Resolution by Mandatory Binding Arbitration
             </h3>
             <div className="space-y-4 text-gray-700 text-sm">
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
@@ -294,7 +373,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">10.1 Scope and Applicability</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">12.1 Scope and Applicability</h4>
                 <p>
                   This Arbitration Agreement applies to all disputes, claims, or controversies between you and
                   Datescare, including those arising from these Terms or your use of the Services.
@@ -302,7 +381,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">10.2 Pre-Arbitration Informal Dispute Resolution</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">12.2 Pre-Arbitration Informal Dispute Resolution</h4>
                 <p className="mb-2">
                   Before initiating arbitration, both parties must attempt informal resolution:
                 </p>
@@ -314,7 +393,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">10.3 Arbitration Agreement</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">12.3 Arbitration Agreement</h4>
                 <p className="mb-2">For U.S. residents:</p>
                 <p>
                   Arbitration will be administered by National Arbitration and Mediation (NAM) under their
@@ -328,7 +407,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">10.4 Class Action Waiver</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">12.4 Class Action Waiver</h4>
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                   <p className="font-semibold text-yellow-900">
                     TO THE FULLEST EXTENT PERMITTED BY LAW, BOTH YOU AND WE WAIVE ANY RIGHT TO BRING OR PARTICIPATE
@@ -342,17 +421,17 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
 
           {/* Governing Law */}
           <section>
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">11. Miscellaneous</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">13. Miscellaneous</h3>
             <div className="space-y-3 text-gray-700 text-sm">
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">11.1 Governing Law and Venue</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">13.1 Governing Law and Venue</h4>
                 <p>
                   This Agreement shall be governed by and construed under the laws of Ontario, Canada. Each party
                   submits to the exclusive jurisdiction of the courts of Ontario, Canada.
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">11.2 Force Majeure</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">13.2 Force Majeure</h4>
                 <p>
                   Datescare shall not be responsible for any failure to perform due to unforeseen circumstances
                   including acts of God, war, terrorism, strikes, or system failures.
@@ -363,7 +442,7 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
 
           {/* Contact Information */}
           <section className="border-t pt-6">
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">12. Contact Information</h3>
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">14. Contact Information</h3>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
               <p><strong>Company:</strong> Datescare</p>
               <p><strong>Address:</strong> 5515 Eglington Avenue West, Etobicoke, ON M9C 5K5, Canada</p>
