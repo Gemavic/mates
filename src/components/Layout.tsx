@@ -29,8 +29,12 @@ export const Layout: React.FC<LayoutProps> = ({
   showClose = true,
   showProfile = false,
   showSettings = false,
-  showFooter = true,
-  showQuickNav = true,
+  // Both default to false now. Navigation is rendered once, app-wide, in App
+  // so that it is identical on every screen. Screens used to opt in by passing
+  // onNavigate, and the six that forgot - video chat, voice chat, profile,
+  // settings, onboarding, staff panel - rendered no navigation at all.
+  showFooter = false,
+  showQuickNav = false,
   activeTab,
   onBack,
   onClose,

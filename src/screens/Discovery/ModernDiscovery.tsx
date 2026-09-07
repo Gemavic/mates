@@ -5,7 +5,6 @@ import { GridProfileCard } from '@/components/GridProfileCard';
 import { IntentPrompt } from '@/components/IntentPrompt';
 import { PhotoPrompt } from '@/components/PhotoPrompt';
 import { ModernHeader } from '@/components/ModernHeader';
-import { Footer } from '@/components/Footer';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { CategoryNavigation } from '@/components/CategoryNavigation';
@@ -772,22 +771,6 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               </div>
             )}
           </div>
-        </div>
-        
-        {/* Mobile Footer */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30">
-          <Footer
-            activeTab="discovery"
-            onNavigate={onNavigate}
-          />
-        </div>
-        
-        {/* Desktop Footer */}
-        <div className="hidden lg:block fixed bottom-0 left-0 right-0 z-30">
-          <Footer
-            activeTab="discovery"
-            onNavigate={onNavigate}
-          />
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronUp, Search, User, Mail, MessageCircle, MessageSquare, CreditCard, Facebook, Twitter, Instagram, Linkedin, Heart, X } from 'lucide-react';
+import { ChevronUp, Search, User, Mail, MessageCircle, Facebook, Twitter, Instagram, Linkedin, Heart, X } from 'lucide-react';
 import { whatsappSupportLink } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
@@ -21,13 +21,15 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const [showMore, setShowMore] = useState(false);
 
+  // Five destinations, because six plus "More" left no room for labels on a
+  // phone and the labels are what make a bar navigable. Everything else -
+  // credits, gifts, feedback, the legal pages - lives one tap away in More.
   const tabs = [
-    { id: 'discovery', icon: Search, label: 'Search', onClick: () => onNavigate('discovery') },
-    { id: 'chat', icon: MessageCircle, label: 'Chat', onClick: () => onNavigate('matches') },
-    { id: 'profile', icon: User, label: 'Profile', onClick: () => onNavigate('profile') },
-    { id: 'credits', icon: CreditCard, label: 'Credits', onClick: () => onNavigate('credits') },
+    { id: 'discovery', icon: Search, label: 'Browse', onClick: () => onNavigate('discovery') },
+    { id: 'matches', icon: MessageCircle, label: 'Chat', onClick: () => onNavigate('matches') },
     { id: 'mail', icon: Mail, label: 'Mail', onClick: () => onNavigate('mail') },
-    { id: 'feedback', icon: MessageSquare, label: 'Feedback', onClick: () => onNavigate('feedback') },
+    { id: 'likes', icon: Heart, label: 'Likes', onClick: () => onNavigate('likes') },
+    { id: 'profile', icon: User, label: 'Profile', onClick: () => onNavigate('profile') },
   ];
 
   const socialLinks = [
@@ -43,8 +45,10 @@ export const Footer: React.FC<FooterProps> = ({
       links: [
         { label: 'Buy Credits', screen: 'credits' },
         { label: 'Gift Shop', screen: 'gift-shop' },
+        { label: 'Video Chat', screen: 'video-chat' },
         { label: 'Services', screen: 'relationship-services' },
         { label: 'Help & FAQs', screen: 'help' },
+        { label: 'Send Feedback', screen: 'feedback' },
       ],
     },
     {
@@ -215,10 +219,7 @@ export const Footer: React.FC<FooterProps> = ({
                     "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mb-0.5 drop-shadow-sm flex-shrink-0",
                     isActive && 'fill-current'
                   )} />
-                  <span className="text-xs font-medium drop-shadow-sm truncate hidden sm:block">{tab.label}</span>
-                  {isActive && (
-                    <span className="text-xs font-medium drop-shadow-sm truncate sm:hidden">{tab.label}</span>
-                  )}
+                  <span className="text-[10px] sm:text-xs font-medium drop-shadow-sm truncate">{tab.label}</span>
                 </button>
               );
             })}
@@ -230,7 +231,7 @@ export const Footer: React.FC<FooterProps> = ({
               aria-label="More options"
             >
               <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mb-0.5 flex-shrink-0" />
-              <span className="text-xs font-medium truncate hidden sm:block">More</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate">More</span>
             </button>
           </div>
         </div>

@@ -3,7 +3,6 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
 import { HeartAnimation } from '@/components/HeartAnimation';
-import { Footer } from '@/components/Footer';
 import { Heart, X, Sliders } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -475,12 +474,6 @@ export const Discovery: React.FC<DiscoveryProps> = ({ onNavigate }) => {
               )}
             </div>
           </div>
-
-          {/* Footer Navigation */}
-          <Footer
-            activeTab="discovery"
-            onNavigate={onNavigate}
-          />
         </div>
       </div>
     </PageTransition>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { trackPageView } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import { Menu } from '@/components/Menu';
+import { Footer } from '@/components/Footer';
+import { BottomNavProvider, useBottomNav } from '@/contexts/BottomNavContext';
 import { SEO } from '@/components/SEO';
 import { IncomingCallHost } from '@/components/IncomingCallHost';
 import { PresenceHeartbeat } from '@/components/PresenceHeartbeat';
@@ -78,6 +80,42 @@ function ScreenLoadingFallback() {
   );
 }
 
+/**
+ * Screens with no bottom navigation: the ones a person passes through rather
+ * than lives in. Everything else gets the bar - which is the point. It used to
+ * appear on some screens and not others, by no rule anyone could predict.
+ */
+const SCREENS_WITHOUT_BOTTOM_NAV = new Set([
+  'welcome', 'signin', 'signup', 'auth-callback', 'reset-password',
+  'onboarding', 'verification', 'checkout', 'payment-setup', 'success', 'cancel',
+]);
+
+/**
+ * Which tab should look selected on a given screen. Screens belonging to a
+ * tab's world light that tab; anything else lights none - which is honest.
+ * The bar previously defaulted to "Search", so it claimed you were browsing
+ * while you read the refund policy.
+ */
+const bottomNavTabFor = (screen: string): string => {
+  switch (screen) {
+    case 'discovery':
+    case 'view-profile':
+      return 'discovery';
+    case 'matches':
+      return 'matches';
+    case 'mail':
+      return 'mail';
+    case 'likes':
+      return 'likes';
+    case 'profile':
+    case 'settings':
+    case 'credit-history':
+      return 'profile';
+    default:
+      return '';
+  }
+};
+
 const App: React.FC = () => {
   const { theme } = useTheme();
   // Seeded rather than defaulted to 'welcome': when the tab was opened by an
@@ -93,6 +131,9 @@ const App: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const { user, loading } = useAuth();
+  const { hidden: bottomNavHidden } = useBottomNav();
+  const showBottomNav =
+    !bottomNavHidden && !SCREENS_WITHOUT_BOTTOM_NAV.has(currentScreen);
   const { staffAuth, isStaff, isAdmin, loading: staffLoading } = useStaffAccess();
 
   // A password-reset link signs the user in and lands them wherever the app
@@ -593,8 +634,23 @@ const App: React.FC = () => {
           currentScreen={currentScreen}
         />
 
-        {/* Current Screen Content */}
-        <div className="relative z-10 w-full min-h-screen">
+        {/* The one bottom navigation bar. Rendered here rather than by each
+            screen, so it is present, identical and correctly highlighted
+            everywhere instead of on roughly half the app. */}
+        {showBottomNav && (
+          <Footer
+            activeTab={bottomNavTabFor(currentScreen)}
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {/* Current Screen Content. The bar is fixed to the bottom of the
+            viewport, so the content it floats over needs room to scroll clear
+            of it - otherwise the last row of every list sits under the tabs. */}
+        <div className={cn(
+          "relative z-10 w-full min-h-screen",
+          showBottomNav && "pb-20 sm:pb-24"
+        )}>
           <div className={cn(
             "transition-all duration-300",
             isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
@@ -633,4 +689,10 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+const AppWithNavChrome: React.FC = () => (
+  <BottomNavProvider>
+    <App />
+  </BottomNavProvider>
+);
+
+export default AppWithNavChrome;

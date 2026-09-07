@@ -556,7 +556,6 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       showBack={true}
       onBack={() => onNavigate('discovery')}
       showClose={false}
-      showFooter={true}
       activeTab="profile"
       onNavigate={onNavigate}
     >

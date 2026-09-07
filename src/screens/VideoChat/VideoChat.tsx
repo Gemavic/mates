@@ -20,6 +20,7 @@ import {
 } from '@/lib/callSignals';
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVideoManager } from '@/lib/twilioVideo';
+import { useHideBottomNav } from '@/contexts/BottomNavContext';
 import type {
   LocalVideoTrack,
   RemoteAudioTrack,
@@ -36,6 +37,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isInCall, setIsInCall] = useState(false);
+  // A call owns the whole display; the bottom bar would sit on the controls.
+  useHideBottomNav(isInCall);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showVideoSettings, setShowVideoSettings] = useState(false);

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { PageTransition } from '@/components/PageTransition';
-import { QuickNavBar } from '@/components/QuickNavBar';
 import { MissedCallsNotice } from '@/components/MissedCallsNotice';
 import { QuickGiftBar } from '@/components/QuickGiftBar';
 import { GiftMessage, type GiftPayload } from '@/components/GiftMessage';
@@ -1117,7 +1116,6 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
             </div>
           </div>
 
-          <QuickNavBar onNavigate={onNavigate} activeScreen="matches" />
 <MissedCallsNotice onNavigate={onNavigate} />
 
           <div className="flex-1 overflow-y-auto pb-20">

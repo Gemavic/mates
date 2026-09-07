@@ -720,7 +720,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
       title="Settings"
       onBack={() => onNavigate('discovery')}
       showClose={false}
-      showFooter={true}
       activeTab="settings"
       onNavigate={onNavigate}
     >

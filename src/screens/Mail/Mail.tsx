@@ -899,8 +899,6 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         title="Private Mail"
         onBack={() => onNavigate('matches')}
         showClose={false}
-        showFooter={true}
-        showQuickNav={true}
         activeTab="mail"
         onNavigate={onNavigate}
       >

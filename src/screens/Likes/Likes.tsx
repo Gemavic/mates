@@ -101,7 +101,6 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
       title="Likes"
       onBack={() => onNavigate('discovery')}
       showClose={false}
-      showFooter={true}
       activeTab="likes"
       onNavigate={onNavigate}
     >

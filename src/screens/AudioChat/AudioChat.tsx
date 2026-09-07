@@ -18,6 +18,7 @@ import {
 } from '@/lib/callSignals';
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVoiceManager } from '@/lib/twilioVoice';
+import { useHideBottomNav } from '@/contexts/BottomNavContext';
 
 interface AudioChatProps {
   onNavigate: (screen: string) => void;
@@ -26,6 +27,8 @@ interface AudioChatProps {
 export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isInCall, setIsInCall] = useState(false);
+  // A call owns the whole display; the bottom bar would sit on the controls.
+  useHideBottomNav(isInCall);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showAudioSettings, setShowAudioSettings] = useState(false);
