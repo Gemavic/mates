@@ -1,13 +1,12 @@
+# Fragments are not visible to a crawler - a rule like "Disallow: /#checkout"
+# matches nothing, because the # and everything after it never reaches the
+# server. Only real paths can be disallowed here.
+
 User-agent: *
 Allow: /
+Disallow: /api/
 Disallow: /staff-panel
 Disallow: /checkout
 Disallow: /payment-setup
-Disallow: /#staff-panel
-Disallow: /#checkout
-Disallow: /#payment-setup
 
 Sitemap: https://dates.care/sitemap.xml
-
-# Crawl-delay
-Crawl-delay: 1

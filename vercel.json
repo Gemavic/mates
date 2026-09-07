@@ -5,19 +5,30 @@
   "framework": "vite",
   "redirects": [
     {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.dates.care"
+        }
+      ],
+      "destination": "https://dates.care/$1",
+      "permanent": true
+    },
+    {
       "source": "/legal",
       "destination": "/terms",
-      "permanent": false
+      "permanent": true
     },
     {
       "source": "/tos",
       "destination": "/terms",
-      "permanent": false
+      "permanent": true
     },
     {
       "source": "/pp",
       "destination": "/privacy",
-      "permanent": false
+      "permanent": true
     }
   ],
   "rewrites": [

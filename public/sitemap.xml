@@ -1,120 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <!-- Main Pages -->
+<!--
+  Only real, crawlable URLs belong here.
+
+  This file used to list eighteen entries, fifteen of which were fragments
+  (/#signin, /#discovery, /#help and so on). A fragment is never sent to the
+  server, so Google discards everything from the # onwards: all fifteen
+  collapsed into a duplicate of the homepage. The sitemap was claiming
+  eighteen pages and describing three, which is exactly what produces a
+  column of "Alternative page with proper canonical tag" in Search Console.
+
+  The app routes by fragment, so three URLs is genuinely all there is. If we
+  later want the feature pages indexed, they need to be real paths that
+  return their own HTML - listing them here without that changes nothing.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://dates.care/</loc>
-    <lastmod>2026-08-29</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <lastmod>2026-09-06</lastmod>
   </url>
-
-  <!-- Authentication -->
-  <url>
-    <loc>https://dates.care/#signin</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#signup</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Core Features -->
-  <url>
-    <loc>https://dates.care/#discovery</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#video-chat</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#audio-chat</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#couple-therapy</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#counselling</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Information & Support -->
-  <url>
-    <loc>https://dates.care/#help</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#care-blog</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#feedback</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
-  <!-- Legal Pages -->
   <url>
     <loc>https://dates.care/terms</loc>
-    <lastmod>2026-08-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <lastmod>2026-09-06</lastmod>
   </url>
   <url>
     <loc>https://dates.care/privacy</loc>
-    <lastmod>2026-08-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#disclaimer</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#consent</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#dispute</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#payment-refund</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://dates.care/#misconduct</loc>
-    <lastmod>2025-10-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <lastmod>2026-09-06</lastmod>
   </url>
 </urlset>
