@@ -314,7 +314,7 @@ Deno.serve(async (req: Request) => {
       maxSeconds = session.max_seconds;
 
       const callback = `${Deno.env.get('SUPABASE_URL')}/functions/v1/twilio-call-status?session=${sessionId}`;
-      const room = await twilioVideo(TWILIO_API_KEY, TWILIO_API_SECRET, '/Rooms', {
+      const roomParams = {
         UniqueName: roomName,
         Type: 'group',
         MaxParticipants: '2',
@@ -323,14 +323,25 @@ Deno.serve(async (req: Request) => {
         UnusedRoomTimeout: '2',
         StatusCallback: callback,
         StatusCallbackMethod: 'POST',
-      });
+      };
+      let room = await twilioVideo(TWILIO_API_KEY, TWILIO_API_SECRET, '/Rooms', roomParams);
+
+      if (room.body?.code === 53113) {
+        // A room by this name is still in progress at Twilio. This used to be
+        // treated as "a very fast redial - join it", and that was the bug
+        // behind a ten-minute video call that was never billed: the old room
+        // carried the OLD session's callback and cap, so the new session was
+        // never marked answered and the call was cut off by a cap that had
+        // nothing to do with this caller's balance. Room names are unique per
+        // call now, so this is rare; when it does happen, complete the stale
+        // room and create ours. Never join a room we did not configure.
+        console.warn('Room already in progress; completing it and retrying', { roomName });
+        await twilioVideo(TWILIO_API_KEY, TWILIO_API_SECRET, `/Rooms/${encodeURIComponent(roomName)}`, { Status: 'completed' });
+        room = await twilioVideo(TWILIO_API_KEY, TWILIO_API_SECRET, '/Rooms', roomParams);
+      }
 
       if (room.status === 201 && room.body?.sid) {
         await serviceRpc('attach_call_provider_sid', { p_session_id: sessionId, p_provider_sid: room.body.sid });
-      } else if (room.body?.code === 53113) {
-        // A room by this name is already in progress (a very fast redial).
-        // It carries the cap and callback of the session that created it.
-        console.log('Room already in progress; joining it', { roomName });
       } else {
         // No room means no cap and no callbacks - a call we could not meter.
         // Refuse rather than connect it for free.

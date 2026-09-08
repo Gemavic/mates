@@ -55,7 +55,8 @@ export class TwilioVideoManager {
     userId: string,
     onParticipantConnected?: (participant: RemoteParticipant) => void,
     onParticipantDisconnected?: (participant: RemoteParticipant) => void,
-    onTrackSubscribed?: (track: RemoteTrack, participant: RemoteParticipant) => void
+    onTrackSubscribed?: (track: RemoteTrack, participant: RemoteParticipant) => void,
+    onDisconnected?: (reason: string | null) => void
   ): Promise<Room> {
     try {
       const token = await this.getToken(roomName, userId);
@@ -87,6 +88,17 @@ export class TwilioVideoManager {
       room.on('participantDisconnected', (participant) => {
         console.log(`Participant disconnected: ${participant.identity}`);
         if (onParticipantDisconnected) onParticipantDisconnected(participant);
+      });
+
+      // Twilio taking us out of the room: the server ended it (credits ran
+      // out), the duration cap fired, or the network dropped. Until this was
+      // wired, the screen kept its clock running over a black frame and the
+      // person had no idea the call was already over.
+      room.on('disconnected', (_room, error) => {
+        if (this.room === room) this.room = null;
+        const reason = error ? `${error.code ?? ''} ${error.message ?? ''}`.trim() : null;
+        console.log('Room disconnected', reason ?? '(by us)');
+        if (onDisconnected) onDisconnected(reason);
       });
 
       room.participants.forEach((participant) => {

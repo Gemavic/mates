@@ -34,12 +34,18 @@ export interface CallerPreview {
 export const RING_TIMEOUT_MS = 45_000;
 
 /**
- * Deterministic from the two ids, so both sides compute the same room without
- * having to exchange it. Kept identical to the original VideoChat formula so
- * in-flight behaviour does not change.
+ * One room per call, never per pair. The name used to be deterministic from
+ * the two ids, and the callee learns it from the invite row anyway - so the
+ * determinism bought nothing and cost a great deal: a redial within a minute
+ * or two of the last attempt found the previous room still open at Twilio
+ * (rooms linger briefly after they empty) and joined it. That room carried
+ * the previous session's status callback and duration cap, so the new call
+ * was never marked answered, never billed, and was cut off when the OLD cap
+ * ran out. A ten-minute video call went through for nothing that way.
  */
 export function roomNameFor(a: string, b: string): string {
-  return `room_${[a, b].sort().join('_')}`;
+  const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  return `room_${[a, b].sort().join('_')}_${stamp}`;
 }
 
 export async function ringUser(

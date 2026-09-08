@@ -313,6 +313,13 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       (participant: RemoteParticipant) => {
         console.log('Participant disconnected:', participant.identity);
         setPeerConnected(false);
+        // The other person is gone. The server stops billing on their
+        // disconnect callback; the room itself lingers, so leave it too
+        // rather than sit on a black frame with the clock running.
+        if ((window as any).callTimer) {
+          endCall();
+          showCallToast(`${currentMatchName || 'The other person'} left the call.`);
+        }
       },
       (track: RemoteTrack, _participant: RemoteParticipant) => {
         // Audio first, and this used to be missing entirely: the handler began
@@ -338,6 +345,23 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
           // Anyone already in the room publishes during joinRoom(), i.e.
           // before the in-call view renders. Queue them instead of dropping.
           pendingRemoteTracks.current.push(videoTrack);
+        }
+      },
+      (reason: string | null) => {
+        // Twilio ended our side of the room. `reason` is null when we
+        // disconnected ourselves (endCall already ran); anything else means
+        // the room was completed under us - the server hung it up, the
+        // duration cap fired, or the connection dropped.
+        if (reason === null) return;
+        const wasInCall = !!(window as any).callTimer;
+        endCall();
+        if (wasInCall) {
+          showCallToast(
+            /53118|53205|completed/i.test(reason)
+              ? 'The call ended.'
+              : 'The call was disconnected.',
+            'error'
+          );
         }
       }
     );
