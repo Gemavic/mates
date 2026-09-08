@@ -35,6 +35,35 @@ export async function compressImage(file: File): Promise<Blob> {
 }
 
 /**
+ * A deliberately tiny copy of a photo - about 16px on its longest side -
+ * for showing a recipient the SHAPE of a picture they have not paid to
+ * see. Stored beside the original in the private chat-photos bucket as
+ * <path>.preview.jpg; the storage policy serves previews to any member and
+ * originals only to the sender or a paid reveal.
+ */
+export async function makePreviewBlob(source: Blob, longestSide = 16): Promise<Blob> {
+  const bitmap = await createImageBitmap(source);
+  const scale = Math.min(1, longestSide / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas context unavailable');
+  ctx.drawImage(bitmap, 0, 0, width, height);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Preview generation failed'))),
+      'image/jpeg',
+      0.5
+    );
+  });
+}
+
+/**
  * Compresses and uploads a profile photo to real Supabase Storage,
  * returning a stable, publicly-cacheable URL — replaces the previous
  * pattern of embedding the entire file as a base64 data URL directly in

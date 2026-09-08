@@ -20,6 +20,7 @@ import {
 } from '@/lib/callSignals';
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVideoManager } from '@/lib/twilioVideo';
+import { watchCallSession } from '@/lib/callMeter';
 import { useHideBottomNav } from '@/contexts/BottomNavContext';
 import type {
   LocalVideoTrack,
@@ -202,6 +203,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         clearInterval((window as any).callTimer);
         (window as any).callTimer = null;
       }
+      stopMeterWatchRef.current?.();
+      stopMeterWatchRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -231,17 +234,25 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
    */
   const isCallerRef = useRef(false);
 
+  /** Stops the server-meter watcher (caller only); see startCallClock. */
+  const stopMeterWatchRef = useRef<(() => void) | null>(null);
+
   /** So the low-credit warning is given once per call, not every minute. */
   const lowBalanceWarnedRef = useRef(false);
 
   /**
-   * The clock and the meter are two different things, and conflating them was a
-   * bug: when billing became caller-only, the receiver stopped being charged
-   * *and* stopped seeing a timer, so their call sat at 00:00 for its whole
-   * duration. Both sides always run the clock. Only the caller is charged.
+   * The clock and the meter are two different things. Both sides run the
+   * clock; only the caller pays - and since batch 3 the caller pays on the
+   * SERVER: twilio-video-token opens a call_sessions row, Twilio's callbacks
+   * mark it answered and ended, and pg_cron bills it minute by minute. This
+   * timer moves no credits. What it does for the caller is watch that
+   * session, so the balance on screen is real, the low-credit warning is
+   * given while there is still time to top up, and a call the server hung up
+   * for want of credit is torn down here too.
    *
    * Either way it starts when the other person actually arrives, not when we
-   * join the room - otherwise an unanswered call bills for an empty room.
+   * join the room - otherwise an unanswered call shows a running clock for an
+   * empty room.
    */
   const startCallClock = (userId: string, charge: boolean) => {
     if ((window as any).callTimer) return;
@@ -249,39 +260,33 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     setCallDuration(0);
 
     const timer = setInterval(() => {
-      setCallDuration((prev) => {
-        const newDuration = prev + 1;
-        if (charge && newDuration % 60 === 0) {
-          void (async () => {
-            // Price is the server's; the browser only names the action.
-            const success = await creditManager.chargeAction(userId, 'video_call');
-            if (success) {
-              const remaining = creditManager.getTotalCredits(userId);
-              setUserBalance(remaining);
-
-              // Say so before the money runs out, not as the call dies. Below
-              // two more minutes there is time to wrap up or top up.
-              if (!lowBalanceWarnedRef.current && remaining < VIDEO_CALL_PER_MINUTE * 2) {
-                lowBalanceWarnedRef.current = true;
-                showCallToast(
-                  `About ${Math.max(1, Math.floor(remaining / VIDEO_CALL_PER_MINUTE))} more minute(s) of credit. The call will end when it runs out.`
-                );
-              }
-            } else if (!(await creditManager.hasFreeCallingAccess(userId))) {
-              endCall();
-              const errorMessage = document.createElement('div');
-              errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-              errorMessage.textContent = 'Insufficient credits for video call!';
-              document.body.appendChild(errorMessage);
-              setTimeout(() => document.body.removeChild(errorMessage), 3000);
-            }
-          })();
-        }
-        return newDuration;
-      });
+      setCallDuration((prev) => prev + 1);
     }, 1000);
 
     (window as any).callTimer = timer;
+
+    if (charge && !stopMeterWatchRef.current) {
+      stopMeterWatchRef.current = watchCallSession({
+        userId,
+        kind: 'video',
+        onTick: ({ balance, session }) => {
+          setUserBalance(balance);
+          if (session?.free_reason) return;
+          // Say so before the money runs out, not as the call dies. Below
+          // two more minutes there is time to wrap up or top up.
+          if (!lowBalanceWarnedRef.current && balance < VIDEO_CALL_PER_MINUTE * 2) {
+            lowBalanceWarnedRef.current = true;
+            showCallToast(
+              `About ${Math.max(1, Math.floor(balance / VIDEO_CALL_PER_MINUTE))} more minute(s) of credit. The call will end when it runs out.`
+            );
+          }
+        },
+        onCutOff: () => {
+          endCall();
+          showCallToast('Your credits ran out, so the call ended.', 'error');
+        },
+      });
+    }
   };
 
   const joinCallRoom = async (roomName: string, userId: string) => {
@@ -468,6 +473,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     if ((window as any).callTimer) {
       clearInterval((window as any).callTimer);
       (window as any).callTimer = null;
+      stopMeterWatchRef.current?.();
+      stopMeterWatchRef.current = null;
     }
   };
 

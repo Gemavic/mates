@@ -18,6 +18,7 @@ import {
 } from '@/lib/callSignals';
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVoiceManager } from '@/lib/twilioVoice';
+import { watchCallSession } from '@/lib/callMeter';
 import { useHideBottomNav } from '@/contexts/BottomNavContext';
 
 interface AudioChatProps {
@@ -45,11 +46,17 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   const lowBalanceWarnedRef = useRef(false);
 
   /**
-   * The clock and the meter are two different things, and treating them as one
-   * was a bug: only the caller pays, so only the caller ran the interval - and
-   * the person who answered watched their call sit at 00:00 the whole way
-   * through. Both sides run the clock now. Only the caller is charged.
+   * The clock and the meter are two different things. Both sides run the
+   * clock; only the caller pays - and since batch 3 the caller pays on the
+   * SERVER: twilio-voice-twiml opens a call_sessions row, Twilio's callbacks
+   * mark it answered and ended, and pg_cron bills it minute by minute. This
+   * timer moves no credits. For the caller it also watches that session, so
+   * the balance on screen is real, the low-credit warning comes while there
+   * is still time to top up, and a call the server hung up for want of
+   * credit is torn down here too.
    */
+  const stopMeterWatchRef = useRef<(() => void) | null>(null);
+
   const startCallClock = (charge: boolean) => {
     if ((window as any).callTimer) return;
     if (!user?.id) return;
@@ -58,34 +65,32 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     setCallDuration(0);
 
     const timer = setInterval(() => {
-      setCallDuration(prev => {
-        const newDuration = prev + 1;
-        if (charge && newDuration % 60 === 0) {
-          void (async () => {
-            // Price is the server's; the browser only names the action.
-            const success = await creditManager.chargeAction(payerId, 'audio_call');
-            if (success) {
-              const remaining = creditManager.getTotalCredits(payerId);
-              setUserBalance(remaining);
-
-              // Warn while there is still time to wrap up or top up,
-              // rather than letting the call simply stop.
-              if (!lowBalanceWarnedRef.current && remaining < AUDIO_CALL_PER_MINUTE * 2) {
-                lowBalanceWarnedRef.current = true;
-                showCallToast(
-                  `About ${Math.max(1, Math.floor(remaining / AUDIO_CALL_PER_MINUTE))} more minute(s) of credit. The call will end when it runs out.`
-                );
-              }
-            } else if (!(await creditManager.hasFreeCallingAccess(payerId))) {
-              endCall();
-              showCallToast('Your credits ran out, so the call ended.', 'error');
-            }
-          })();
-        }
-        return newDuration;
-      });
+      setCallDuration(prev => prev + 1);
     }, 1000);
     (window as any).callTimer = timer;
+
+    if (charge && !stopMeterWatchRef.current) {
+      stopMeterWatchRef.current = watchCallSession({
+        userId: payerId,
+        kind: 'audio',
+        onTick: ({ balance, session }) => {
+          setUserBalance(balance);
+          if (session?.free_reason) return;
+          // Warn while there is still time to wrap up or top up,
+          // rather than letting the call simply stop.
+          if (!lowBalanceWarnedRef.current && balance < AUDIO_CALL_PER_MINUTE * 2) {
+            lowBalanceWarnedRef.current = true;
+            showCallToast(
+              `About ${Math.max(1, Math.floor(balance / AUDIO_CALL_PER_MINUTE))} more minute(s) of credit. The call will end when it runs out.`
+            );
+          }
+        },
+        onCutOff: () => {
+          endCall();
+          showCallToast('Your credits ran out, so the call ended.', 'error');
+        },
+      });
+    }
   };
 
   // Pulled out of the effect so a failed attempt can be retried from the
@@ -136,6 +141,8 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       // (holding the mic) after leaving the screen. destroy() no-ops when there
       // is no device.
       void twilioVoiceManager.destroy();
+      stopMeterWatchRef.current?.();
+      stopMeterWatchRef.current = null;
     };
   }, [user?.id]);
 
@@ -315,6 +322,8 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     if ((window as any).callTimer) {
       clearInterval((window as any).callTimer);
       (window as any).callTimer = null;
+      stopMeterWatchRef.current?.();
+      stopMeterWatchRef.current = null;
     }
   };
 

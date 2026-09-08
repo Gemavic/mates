@@ -13,6 +13,40 @@ interface TokenRequest {
 }
 
 /**
+ * Twilio's REST API, authenticated with the same API key that signs tokens.
+ */
+async function twilioVideo(
+  apiKey: string,
+  apiSecret: string,
+  path: string,
+  form: Record<string, string>
+): Promise<{ status: number; body: any }> {
+  const resp = await fetch(`https://video.twilio.com/v1${path}`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + btoa(`${apiKey}:${apiSecret}`),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(form).toString(),
+  });
+  const body = await resp.json().catch(() => null);
+  return { status: resp.status, body };
+}
+
+async function serviceRpc(name: string, args: Record<string, unknown>): Promise<any> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const resp = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  const body = await resp.json().catch(() => null);
+  if (!resp.ok) console.error(`rpc ${name} failed`, resp.status, body);
+  return resp.ok ? body : null;
+}
+
+/**
  * Read a secret with surrounding whitespace removed.
  *
  * A secret pasted into the dashboard can arrive with a trailing newline. It
@@ -236,6 +270,82 @@ Deno.serve(async (req: Request) => {
 
     const identity = `user_${user.id}`;
 
+    // The meter. For the caller, open a call_sessions row and create the
+    // Twilio room ourselves - with the callback that reports who joined and
+    // left, and a MaxParticipantDuration equal to what this caller can pay
+    // for. The browser used to run the meter; Twilio and the database now do.
+    // The callee joins the room that already exists and pays nothing.
+    let sessionId: string | null = null;
+    let maxSeconds: number | null = null;
+    if (!isCallee) {
+      // Who is being called is on the invite the caller just wrote.
+      const { data: outgoing } = await supabaseClient
+        .from('call_invites')
+        .select('callee_id')
+        .eq('room_name', roomName)
+        .eq('caller_id', user.id)
+        .gte('created_at', tenMinutesAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const session = await serviceRpc('start_call_session', {
+        p_caller_id: user.id,
+        p_callee_id: outgoing?.callee_id ?? null,
+        p_kind: 'video',
+        p_room_name: roomName,
+        p_provider_sid: null,
+      });
+      if (!session?.allowed || !session.session_id) {
+        const reason = session?.reason ?? 'session_failed';
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: reason === 'insufficient_credits'
+              ? `You need at least ${session?.per_minute ?? 50} credits to start a video call.`
+              : 'You cannot start a call right now.',
+            errorCode: String(reason).toUpperCase(),
+          }),
+          { status: reason === 'insufficient_credits' ? 402 : 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      sessionId = session.session_id;
+      maxSeconds = session.max_seconds;
+
+      const callback = `${Deno.env.get('SUPABASE_URL')}/functions/v1/twilio-call-status?session=${sessionId}`;
+      const room = await twilioVideo(TWILIO_API_KEY, TWILIO_API_SECRET, '/Rooms', {
+        UniqueName: roomName,
+        Type: 'group',
+        MaxParticipants: '2',
+        MaxParticipantDuration: String(maxSeconds),
+        EmptyRoomTimeout: '1',
+        UnusedRoomTimeout: '2',
+        StatusCallback: callback,
+        StatusCallbackMethod: 'POST',
+      });
+
+      if (room.status === 201 && room.body?.sid) {
+        await serviceRpc('attach_call_provider_sid', { p_session_id: sessionId, p_provider_sid: room.body.sid });
+      } else if (room.body?.code === 53113) {
+        // A room by this name is already in progress (a very fast redial).
+        // It carries the cap and callback of the session that created it.
+        console.log('Room already in progress; joining it', { roomName });
+      } else {
+        // No room means no cap and no callbacks - a call we could not meter.
+        // Refuse rather than connect it for free.
+        console.error('Could not create Twilio room', room.status, room.body);
+        await serviceRpc('end_call_session', {
+          p_session_id: sessionId, p_at: new Date().toISOString(),
+          p_reason: 'room_create_failed', p_duration_seconds: null, p_event: 'token',
+        });
+        return new Response(
+          JSON.stringify({ success: false, error: 'Video calling is temporarily unavailable. Please try again shortly.', errorCode: 'ROOM_CREATE_FAILED' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const videoToken = await generateVideoToken(
       TWILIO_ACCOUNT_SID,
       TWILIO_API_KEY,
@@ -249,7 +359,9 @@ Deno.serve(async (req: Request) => {
         success: true,
         token: videoToken,
         roomName,
-        identity
+        identity,
+        sessionId,
+        maxSeconds,
       }),
       {
         status: 200,

@@ -13,14 +13,14 @@ import {
   Smile, Gift, X, Image as ImageIcon, Camera, Lock, Zap
 } from 'lucide-react';
 import { LowOnCredits } from '@/components/LowOnCredits';
-import { ProtectedMedia, looksLikeImage } from '@/components/ProtectedMedia';
+import { ProtectedMedia, looksLikeImage, isPrivatePhotoPath } from '@/components/ProtectedMedia';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { MessagingManager } from '@/lib/database';
 import { creditManager } from '@/lib/creditSystem';
 import { maskContactInfo } from '@/lib/maskContacts';
 import { uploadScreenedImage } from '@/lib/screenedUpload';
-import { compressImage } from '@/lib/photoUpload';
+import { compressImage, makePreviewBlob } from '@/lib/photoUpload';
 import { EXCLUSIVE_SEND_COST, EXCLUSIVE_UNLOCK_COST } from '@/lib/exclusivePricing';
 import { sendMessageNotification } from '@/lib/emailNotifications';
 import { cn } from '@/lib/utils';
@@ -38,7 +38,11 @@ const MESSAGE_PAGE_SIZE = 50;
 // file is gone - if a conversation needs to change, it changes here.
 const PHOTO_COST = 10;
 const EXCLUSIVE_BUCKET = 'chat-exclusive';
-const PUBLIC_CHAT_BUCKET = 'chat-media';
+// Ordinary chat photos used to go to the PUBLIC chat-media bucket, so the
+// full-size file reached the recipient before the 10-credit reveal. They now
+// go to a private bucket with a tiny preview beside them; the original is
+// served only to the sender or after reveal_media() has taken the charge.
+const PRIVATE_CHAT_BUCKET = 'chat-photos';
 
 /**
  * Fills in signed URLs for the locked photos this reader is entitled to - the
@@ -70,6 +74,46 @@ async function resolveLocked(list: ChatMessage[], userId: string): Promise<ChatM
 
   return list.map(m => m.isExclusive
     ? { ...m, unlocked: m.senderId === userId || paid.has(m.id), signedUrl: signed[m.message] ?? null }
+    : m);
+}
+
+/**
+ * Fills in what this reader may see of the private chat photos: a signed
+ * preview for every one, and the signed original for the ones they sent or
+ * have already paid to reveal. The storage policy enforces the same rule; this
+ * just avoids asking for URLs it would refuse.
+ */
+async function resolvePrivatePhotos(list: ChatMessage[], userId: string): Promise<ChatMessage[]> {
+  const photos = list.filter(m => m.isPrivatePhoto);
+  if (photos.length === 0) return list;
+
+  const store = supabaseClient.storage.from(PRIVATE_CHAT_BUCKET);
+  const { data: reveals } = await supabaseClient
+    .from('media_reveals')
+    .select('message_id')
+    .in('message_id', photos.map(m => m.id));
+  const revealed = new Set((reveals || []).map((r: { message_id: string }) => r.message_id));
+
+  const previewPaths = photos.filter(m => m.senderId !== userId).map(m => `${m.message}.preview.jpg`);
+  const originalPaths = photos.filter(m => m.senderId === userId || revealed.has(m.id)).map(m => m.message);
+
+  const signed: Record<string, string> = {};
+  const sign = async (paths: string[]) => {
+    if (paths.length === 0) return;
+    const { data } = await store.createSignedUrls(paths, 60 * 60);
+    for (const entry of data || []) {
+      if (entry.path && entry.signedUrl) signed[entry.path] = entry.signedUrl;
+    }
+  };
+  await Promise.all([sign(previewPaths), sign(originalPaths)]);
+
+  return list.map(m => m.isPrivatePhoto
+    ? {
+        ...m,
+        previewUrl: signed[`${m.message}.preview.jpg`] ?? null,
+        signedUrl: signed[m.message] ?? null,
+        unlocked: m.senderId === userId || revealed.has(m.id),
+      }
     : m);
 }
 
@@ -139,6 +183,11 @@ interface ChatMessage {
   unlockCost?: number;
   unlocked?: boolean;
   signedUrl?: string | null;
+  // An ordinary photo in the private bucket: `message` is its path,
+  // previewUrl is the tiny signed preview, signedUrl the original once
+  // this viewer is entitled to it (sender, or after a paid reveal).
+  isPrivatePhoto?: boolean;
+  previewUrl?: string | null;
 }
 
 interface MatchesProps {
@@ -274,7 +323,13 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
           participantName: p?.first_name || p?.full_name || 'User',
           participantImage: photo || p?.photo_url || DEFAULT_AVATAR,
           participantAge: p?.age || 25,
-          lastMessage: threadMsgs?.latest?.message_text || 'Start a conversation...',
+          lastMessage: (() => {
+            const text = threadMsgs?.latest?.message_text;
+            if (!text) return 'Start a conversation...';
+            // A photo travels as a storage path; do not show the path.
+            if (isPrivatePhotoPath(text) || looksLikeImage(text)) return '📷 Photo';
+            return text;
+          })(),
           timestamp: threadMsgs?.latest?.created_at || thread.created_at,
           unreadCount: threadMsgs?.unreadCount || 0,
           isOnline: p?.is_online || false,
@@ -351,10 +406,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
             unlockCost: (msg as any).unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
             unlocked: isMe || ((msg as any).unlock_cost ?? 0) === 0,
             signedUrl: null,
+            isPrivatePhoto: (msg as any).is_exclusive !== true && isPrivatePhotoPath(msg.message_text),
           };
         });
 
-        const resolved = await resolveLocked(loaded, user.id);
+        const resolved = await resolvePrivatePhotos(await resolveLocked(loaded, user.id), user.id);
         if (cancelled) return;
 
         setMessages(resolved);
@@ -464,11 +520,12 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
           unlockCost: (msg as any).unlock_cost ?? EXCLUSIVE_UNLOCK_COST,
           unlocked: isMe || ((msg as any).unlock_cost ?? 0) === 0,
           signedUrl: null,
+          isPrivatePhoto: (msg as any).is_exclusive !== true && isPrivatePhotoPath(msg.message_text),
         };
       });
 
       setHasOlderMessages((data || []).length === MESSAGE_PAGE_SIZE);
-      const olderResolved = await resolveLocked(older, user.id);
+      const olderResolved = await resolvePrivatePhotos(await resolveLocked(older, user.id), user.id);
       setMessages(prev => [...olderResolved, ...prev]);
     } catch (err) {
       console.error('Could not load earlier messages:', err);
@@ -509,14 +566,14 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
       }
 
       setSendingPhoto(true);
-      const bucket = exclusive ? EXCLUSIVE_BUCKET : PUBLIC_CHAT_BUCKET;
+      const bucket = exclusive ? EXCLUSIVE_BUCKET : PRIVATE_CHAT_BUCKET;
       let path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
 
       try {
         const payload = await compressImage(file);
 
         const screened = await uploadScreenedImage({
-          bucket, path, blob: payload, userId: user.id, isPublicBucket: !exclusive,
+          bucket, path, blob: payload, userId: user.id, isPublicBucket: false,
         });
 
         if (!screened.ok) {
@@ -527,6 +584,21 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
         // Covering writes a new file and deletes the original.
         path = screened.path ?? path;
 
+        // The recipient is shown a 16px preview until they choose to reveal.
+        // It sits beside the original; the storage policy serves it to any
+        // member and the original only after reveal_media() has charged.
+        if (!exclusive) {
+          try {
+            const preview = await makePreviewBlob(payload);
+            await supabaseClient.storage.from(bucket)
+              .upload(`${path}.preview.jpg`, preview, { contentType: 'image/jpeg', upsert: true });
+          } catch (previewErr) {
+            // Without a preview the recipient sees a plain locked card,
+            // which is safe; it is not a reason to fail the send.
+            console.warn('Preview could not be made:', previewErr);
+          }
+        }
+
         if (!isStaff && cost > 0) {
           const paid = await creditManager.deductCredits(user.id, cost, 'Sent photo');
           if (!paid) {
@@ -536,15 +608,11 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
           }
         }
 
-        // A public photo travels as a URL. A locked one travels as its storage
-        // path, because both people can read the row.
-        const stored = exclusive
-          ? path
-          : supabaseClient.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-
-        const signedUrl = exclusive
-          ? (await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60)).data?.signedUrl ?? null
-          : null;
+        // Every photo now travels as its storage path; who may sign it is
+        // the storage policy's decision, not the row's.
+        const stored = path;
+        const signedUrl =
+          (await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60)).data?.signedUrl ?? null;
 
         const optimistic: ChatMessage = {
           id: `temp-${Date.now()}`, senderId: user.id, senderName: 'You',
@@ -554,6 +622,8 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
           unlockCost: exclusive ? EXCLUSIVE_UNLOCK_COST : 0,
           unlocked: true,
           signedUrl,
+          isPrivatePhoto: !exclusive,
+          previewUrl: null,
         };
         setMessages(prev => [...prev, optimistic]);
         setExclusiveMode(false);
@@ -626,6 +696,32 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
     } finally {
       setUnlockingId(null);
     }
+  }, [user]);
+
+  /**
+   * Pays to see an ordinary chat photo. reveal_media() charges on the server
+   * and records the entitlement the storage policy reads; only then can the
+   * original be signed. Returns the signed URL, or null if it could not be.
+   */
+  const revealPhoto = useCallback(async (message: ChatMessage): Promise<string | null> => {
+    if (!user) return null;
+    const { data, error } = await supabaseClient.rpc('reveal_media', { p_message_id: message.id });
+    if (error || !data?.success) {
+      const why = data?.error ?? (error as any)?.message;
+      if (why === 'insufficient_credits') {
+        setLowCredits({ needed: data?.price ?? PHOTO_COST, balance: data?.total_credits });
+      }
+      return null;
+    }
+    const { data: signed } = await supabaseClient.storage
+      .from(PRIVATE_CHAT_BUCKET)
+      .createSignedUrl(String(data.path ?? message.message), 60 * 60);
+    const url = signed?.signedUrl ?? null;
+    if (url) {
+      setMessages(prev => prev.map(m => m.id === message.id ? { ...m, unlocked: true, signedUrl: url } : m));
+      void creditManager.refresh(user.id);
+    }
+    return url;
   }, [user]);
 
   const handleSendMessage = useCallback(async () => {
@@ -863,10 +959,25 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
                             <Lock className="w-3 h-3" />
                             Exclusive
                           </div>
-                          <ProtectedMedia src={msg.signedUrl} isOwnMedia={isMe} senderName={msg.senderName} />
+                          {/* Paid for (or their own): show it. It used to go
+                              through ProtectedMedia and be blurred - and
+                              charged - a second time. */}
+                          <img
+                            src={msg.signedUrl}
+                            alt="Exclusive photo"
+                            className="rounded-xl max-w-full max-h-64 object-cover"
+                          />
                         </div>
+                      ) : msg.isPrivatePhoto ? (
+                        <ProtectedMedia
+                          src={msg.signedUrl}
+                          previewSrc={msg.previewUrl}
+                          isOwnMedia={isMe || !!msg.signedUrl}
+                          reveal={() => revealPhoto(msg)}
+                          senderName={msg.senderName}
+                        />
                       ) : looksLikeImage(msg.message) ? (
-                        <ProtectedMedia src={msg.message} isOwnMedia={isMe} senderName={msg.senderName} />
+                        <ProtectedMedia src={msg.message} isOwnMedia={isMe} legacy senderName={msg.senderName} />
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
                           {maskContactInfo(msg.message)}

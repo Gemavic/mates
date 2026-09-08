@@ -16,7 +16,7 @@ import {
   VIDEO_CALL_PER_MINUTE,
 } from '@/lib/exclusivePricing';
 import { creditManager, formatPrice } from '@/lib/creditSystem';
-import { getUserCredits, getCreditTransactions } from '@/lib/database';
+import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -25,6 +25,30 @@ import { subscriptionManager } from '@/lib/subscriptionManager';
 
 interface ModernCreditsProps {
   onNavigate: (screen: string) => void;
+}
+
+/** Ledger reasons are machine names; show the member something readable. */
+function describeLedgerReason(reason: string | null | undefined): string {
+  const r = (reason || '').toLowerCase();
+  const table: Record<string, string> = {
+    video_call: 'Video call (per minute)',
+    audio_call: 'Voice call (per minute)',
+    super_like: 'Super like',
+    media_reveal: 'Photo reveal',
+    mail_send: 'Mail sent',
+    mail_open: 'Mail opened',
+    private_mail: 'Private mail',
+    exclusive_send: 'Exclusive photo sent',
+    exclusive_unlock: 'Exclusive photo unlocked',
+    gift: 'Gift sent',
+    sticker: 'Sticker sent',
+    credit_purchase: 'Credits purchased',
+    purchase: 'Credits purchased',
+    admin_grant: 'Credits added by staff',
+    welcome: 'Welcome credits',
+  };
+  if (table[r]) return table[r];
+  return r ? r.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : 'Credits';
 }
 
 export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
@@ -58,21 +82,34 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
   const loadCreditData = async () => {
     if (!user) return;
 
+    // The live balance and ledger. This page used to read the legacy
+    // user_credits / credit_transactions tables, which nothing has written to
+    // since the ledger moved - so a member with an old row there could be
+    // shown a balance that was not theirs any more.
     try {
-      try {
-        const credits = await getUserCredits(user.id);
-        const userTransactions = await getCreditTransactions(user.id);
-        setDbCredits(credits);
-        setTransactions(userTransactions);
-      } catch (dbError: any) {
-        if (dbError.status === 404 && dbError.body?.includes('42P01')) {
-          console.warn('Database tables not found - using local credit system only');
-          setDbCredits(null);
-          setTransactions([]);
-        } else {
-          throw dbError;
-        }
-      }
+      const [{ data: account }, { data: ledger }] = await Promise.all([
+        supabaseClient
+          .from('app_credit_accounts')
+          .select('complimentary_credits, purchased_credits')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabaseClient
+          .from('app_credit_ledger')
+          .select('amount, reason, created_at')
+          .eq('user_id', user.id)
+          .neq('amount', 0)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
+      setDbCredits(account ?? null);
+      setTransactions(
+        (ledger ?? []).reverse().map((row: any) => ({
+          transaction_type: row.amount > 0 ? 'earn' : 'spend',
+          amount: Math.abs(row.amount),
+          description: describeLedgerReason(row.reason),
+          created_at: row.created_at,
+        }))
+      );
     } catch (error) {
       console.warn('Failed to load credit data - using local credit system:', error);
       setDbCredits(null);
@@ -175,7 +212,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                   <Coins className="w-8 h-8 text-yellow-400" />
                 </div>
                 <p className="text-white/80 text-sm">Complimentary</p>
-                <p className="text-2xl font-bold text-white">{dbCredits?.complimentary_credits || userData.complimentaryCredits}</p>
+                <p className="text-2xl font-bold text-white">{dbCredits?.complimentary_credits ?? userData.complimentaryCredits}</p>
               </ModernCard>
 
               <ModernCard background="gradient" className="text-center">
@@ -183,7 +220,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                   <CreditCard className="w-8 h-8 text-blue-400" />
                 </div>
                 <p className="text-white/80 text-sm">Purchased</p>
-                <p className="text-2xl font-bold text-white">{dbCredits?.purchased_credits || userData.purchasedCredits}</p>
+                <p className="text-2xl font-bold text-white">{dbCredits?.purchased_credits ?? userData.purchasedCredits}</p>
               </ModernCard>
 
               <ModernCard background="gradient" className="text-center">

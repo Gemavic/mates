@@ -173,37 +173,57 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  if (supabaseUrl && serviceKey) {
-    try {
-      const gateResp = await fetch(`${supabaseUrl}/rest/v1/rpc/can_start_call_for`, {
-        method: 'POST',
-        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_user_id: callerId, p_kind: 'audio' }),
-      });
-      const gate = await gateResp.json().catch(() => null);
-      if (!gateResp.ok || !gate?.allowed) {
-        console.log('Voice call refused by credit gate', { callerId, reason: gate?.reason });
-        return twiml(
-          gate?.reason === 'insufficient_credits'
-            ? '<Say>You need at least forty credits to start a voice call. Please top up and try again.</Say><Hangup/>'
-            : '<Say>This call cannot be placed right now.</Say><Hangup/>'
-        );
-      }
-    } catch (err) {
-      // Fail closed: a call we cannot verify is a call we do not connect.
-      console.error('Voice credit gate errored; refusing the call', err);
-      return twiml('<Say>Calling is temporarily unavailable. Please try again shortly.</Say><Hangup/>');
-    }
-  } else {
+  if (!supabaseUrl || !serviceKey) {
     console.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing; refusing to bridge an ungated call.');
     return twiml('<Say>Calling is not fully configured. Please contact support.</Say><Hangup/>');
   }
 
-  console.log('Bridging call', { from: params.From, to, callSid: params.CallSid });
+  // Open the meter. start_call_session applies the same gate as before
+  // (credits, staff calling grant, platinum/elite) and returns the number of
+  // seconds this caller can pay for. That becomes <Dial timeLimit>, so the
+  // call cannot outrun the balance it started with, and the callbacks below
+  // tell twilio-call-status when it was answered and when it ended.
+  const calleeId = to.slice('user_'.length);
+  let session: any = null;
+  try {
+    const resp = await fetch(`${supabaseUrl}/rest/v1/rpc/start_call_session`, {
+      method: 'POST',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_caller_id: callerId,
+        p_callee_id: calleeId,
+        p_kind: 'audio',
+        p_room_name: null,
+        p_provider_sid: params.CallSid ?? null,
+      }),
+    });
+    session = await resp.json().catch(() => null);
+    if (!resp.ok || !session?.allowed || !session.session_id) {
+      console.log('Voice call refused by credit gate', { callerId, reason: session?.reason });
+      return twiml(
+        session?.reason === 'insufficient_credits'
+          ? '<Say>You need at least forty credits to start a voice call. Please top up and try again.</Say><Hangup/>'
+          : '<Say>This call cannot be placed right now.</Say><Hangup/>'
+      );
+    }
+  } catch (err) {
+    // Fail closed: a call we cannot meter is a call we do not connect.
+    console.error('Voice credit gate errored; refusing the call', err);
+    return twiml('<Say>Calling is temporarily unavailable. Please try again shortly.</Say><Hangup/>');
+  }
+
+  const statusUrl = `${supabaseUrl}/functions/v1/twilio-call-status?session=${session.session_id}`;
+  const timeLimit = Math.max(60, Math.min(14400, Number(session.max_seconds) || 60));
+
+  console.log('Bridging call', { from: params.From, to, callSid: params.CallSid, session: session.session_id, timeLimit });
 
   // answerOnBridge keeps the caller hearing ringing until the callee actually
   // answers, instead of Twilio answering immediately and going silent.
   return twiml(
-    `<Dial answerOnBridge="true" timeout="30"><Client>${xmlEscape(to)}</Client></Dial>`
+    `<Dial answerOnBridge="true" timeout="30" timeLimit="${timeLimit}"` +
+    ` action="${xmlEscape(statusUrl + '&leg=dial')}" method="POST">` +
+    `<Client statusCallback="${xmlEscape(statusUrl + '&leg=client')}"` +
+    ` statusCallbackEvent="answered completed" statusCallbackMethod="POST">` +
+    `${xmlEscape(to)}</Client></Dial>`
   );
 });

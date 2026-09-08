@@ -88,42 +88,22 @@ export const StickerPicker: React.FC<StickerPickerProps> = ({ threadId, onClose,
     if (!user || sending) return;
     setSending(sticker.id);
     try {
-      const free = creditManager.isStaffMember(user.id);
-
-      if (!free) {
-        if (!creditManager.canAfford(user.id, sticker.credit_cost)) {
-          alert(`You need ${formatCredits(sticker.credit_cost)} to send a sticker.`);
-          return;
-        }
-        const charged = await creditManager.spendCredits(
-          user.id,
-          sticker.credit_cost,
-          `Sent ${sticker.name} sticker`
-        );
-        if (!charged) {
-          alert('Could not take the credits for that sticker. Nothing was sent.');
-          return;
-        }
-      }
-
-      const { error } = await supabaseClient.from('mail_messages').insert({
-        thread_id: threadId,
-        sender_id: user.id,
-        subject: 'Sticker',
-        message_text: sticker.emoji || sticker.name,
-        sticker_id: sticker.id,
-        credits_spent: 0, // charged above
-        has_photos: false,
-        is_delivered: true,
-        delivered_at: new Date().toISOString(),
-        is_read: false,
+      // Priced, charged and delivered by the server in one transaction.
+      const { data, error } = await supabaseClient.rpc('send_gift_message', {
+        p_thread_id: threadId,
+        p_gift_id: null,
+        p_sticker_id: sticker.id,
+        p_note: null,
       });
 
-      if (error) {
-        console.error('Sticker charged but not delivered:', error);
-        alert('That sticker was paid for but did not send. Please contact support.');
+      if (error || !data?.success) {
+        const why = data?.error ?? (error as any)?.message;
+        alert(why === 'insufficient_credits'
+          ? `You need ${formatCredits(sticker.credit_cost)} to send a sticker.`
+          : 'That sticker could not be sent. Nothing was charged.');
         return;
       }
+      void creditManager.refresh(user.id);
 
       const next = [sticker.id, ...recent.filter((id) => id !== sticker.id)].slice(0, 8);
       setRecent(next);

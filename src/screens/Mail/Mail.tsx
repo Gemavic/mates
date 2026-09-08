@@ -222,11 +222,9 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           .select('user_id, photo_url')
           .in('user_id', otherUserIds)
           .eq('is_primary', true),
-        supabaseClient.from('mail_messages')
-          .select('thread_id, message_text, created_at, is_read, sender_id, subject')
-          .in('thread_id', threadIds)
-          .neq('subject', 'Chat Message')
-          .order('created_at', { ascending: false })
+        // The server blanks the text of any mail this reader has not paid
+        // to open; the words no longer reach the browser to be blurred.
+        supabaseClient.rpc('mail_thread_previews', { p_thread_ids: threadIds })
       ]);
 
       const profileMap = (profilesRes.data || []).reduce((acc, p) => {
@@ -237,9 +235,8 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         acc[p.user_id] = p.photo_url; return acc;
       }, {} as Record<string, string>);
 
-      const messagesByThread = (messagesRes.data || []).reduce((acc, msg) => {
-        if (!acc[msg.thread_id]) acc[msg.thread_id] = { latest: msg, unreadCount: 0 };
-        if (!msg.is_read && msg.sender_id !== user.id) acc[msg.thread_id].unreadCount++;
+      const messagesByThread = ((messagesRes.data || []) as any[]).reduce((acc, row) => {
+        acc[row.thread_id] = { latest: row, unreadCount: Number(row.unread_count) || 0 };
         return acc;
       }, {} as Record<string, any>);
 
@@ -256,7 +253,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
           participantImage: photo || p?.photo_url || DEFAULT_AVATAR,
           lastMessage: !msgs?.latest
             ? 'No messages yet'
-            : ((msgs.latest.unlock_cost ?? 0) > 0 && msgs.latest.sender_id !== user.id
+            : (msgs.latest.unlocked === false || msgs.latest.message_text == null
                 ? 'New mail - open to read'
                 : msgs.latest.message_text),
           timestamp: msgs?.latest?.created_at || thread.created_at,
@@ -296,26 +293,15 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         return;
       }
 
-      const target = currentMessages.find(m => m.id === messageId);
-      const paths = target?.photoPaths ?? [];
-      let urls: string[] = [];
-
-      if (paths.length) {
-        const { data: signed } = await supabaseClient
-          .storage.from(ATTACHMENT_BUCKET)
-          .createSignedUrls(paths, 60 * 60);
-        urls = (signed || []).map((s: any) => s?.signedUrl).filter(Boolean);
-      }
-
-      setCurrentMessages(prev => prev.map(m =>
-        m.id === messageId ? { ...m, unlocked: true, isRead: true, photoUrls: urls } : m
-      ));
-
       // Paid for and now visible, so the sender may honestly be told it was read.
       await supabaseClient.from('mail_messages')
         .update({ is_read: true, read_at: new Date().toISOString() })
         .eq('id', messageId);
-      await loadMailThreads();
+
+      // The text and attachment paths were withheld by the server until now;
+      // fetch the thread again and they come down with the unlock recorded.
+      if (selectedThread) await loadThreadMessages(selectedThread);
+      else await loadMailThreads();
     } catch (err) {
       console.error('Unlock failed:', err);
       alert('Could not open this mail. Please try again.');
@@ -327,31 +313,17 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
   const loadThreadMessages = async (threadId: string) => {
     if (!user) return;
     try {
-      const { data: messages, error } = await supabaseClient
-        .from('mail_messages')
-        .select('*, virtual_gifts:gift_id ( id, name, icon, image_url, credit_cost )')
-        .eq('thread_id', threadId)
-        .neq('subject', 'Chat Message')
-        .order('created_at', { ascending: true });
+      // list_mail_messages() decides on the server what this reader may
+      // see: a mail they have not paid to open arrives with no text and no
+      // attachment paths. Until batch 3 the whole row came down and the
+      // browser blurred it, which is not the same thing as not having it.
+      const { data: rows, error } = await supabaseClient
+        .rpc('list_mail_messages', { p_thread_id: threadId });
 
       if (error) throw error;
+      const messages: any[] = (rows || []) as any[];
 
-      // Which exclusive messages has this reader paid for? Their own are free.
-      const lockedIds = messages
-        .filter((m: any) => (m.unlock_cost ?? 0) > 0 && m.sender_id !== user.id)
-        .map((m: any) => m.id);
-
-      const paidIds = new Set<string>();
-      if (lockedIds.length) {
-        const { data: unlocks } = await supabaseClient
-          .from('message_unlocks')
-          .select('message_id')
-          .in('message_id', lockedIds);
-        (unlocks || []).forEach((u: any) => paidIds.add(u.message_id));
-      }
-
-      const isViewable = (m: any) =>
-        (m.unlock_cost ?? 0) === 0 || m.sender_id === user.id || paidIds.has(m.id);
+      const isViewable = (m: any) => m.unlocked === true;
 
       // Attachments live in a private bucket keyed by thread, so the stored
       // value is a path, not a URL. Sign them in one batch rather than one
@@ -385,7 +357,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         senderName: profileMap[msg.sender_id]?.first_name || profileMap[msg.sender_id]?.full_name || 'User',
         senderImage: photoMap[msg.sender_id] || DEFAULT_AVATAR,
         subject: msg.subject || '',
-        message: msg.message_text,
+        message: msg.message_text ?? '',
         timestamp: new Date(msg.created_at).toLocaleString(),
         hasPhotos: msg.has_photos || false,
         isRead: msg.is_read || false,

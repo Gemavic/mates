@@ -72,50 +72,28 @@ export const QuickGiftBar: React.FC<QuickGiftBarProps> = ({
     if (!user) return;
     setSending(true);
     try {
-      const free = creditManager.isStaffMember(user.id);
-
-      if (!free) {
-        if (!creditManager.canAfford(user.id, gift.credit_cost)) {
-          alert(`You need ${formatCredits(gift.credit_cost)} to send ${gift.name}.`);
-          return;
-        }
-        const charged = await creditManager.spendCredits(
-          user.id,
-          gift.credit_cost,
-          `Sent ${gift.name} gift`
-        );
-        if (!charged) {
-          alert('Could not take the credits for that gift. Nothing was sent.');
-          return;
-        }
-      }
-
-      // Charge first, then deliver. If this insert fails the credits are gone,
-      // so say so plainly rather than pretending it arrived.
-      const text = `${gift.icon || '🎁'} Sent you a ${gift.name}!`;
-      const { error } = await supabaseClient.from('mail_messages').insert({
-        thread_id: threadId,
-        sender_id: user.id,
-        subject: 'Gift',
-        message_text: text,
-        gift_id: gift.id,
-        credits_spent: 0, // already charged above
-        has_photos: false,
-        is_delivered: true,
-        delivered_at: new Date().toISOString(),
-        is_read: false,
+      // The server looks the price up, charges it and writes the message in
+      // one transaction. The browser used to pass the price and then insert
+      // the row itself - so a gift could be paid for and never arrive.
+      const { data, error } = await supabaseClient.rpc('send_gift_message', {
+        p_thread_id: threadId,
+        p_gift_id: gift.id,
+        p_sticker_id: null,
+        p_note: null,
       });
 
-      if (error) {
-        console.error('Gift charged but not delivered:', error);
-        alert(
-          `${gift.name} was paid for but did not reach ${recipientName}. ` +
-            'Please tell support before sending another.'
-        );
+      if (error || !data?.success) {
+        const why = data?.error ?? (error as any)?.message;
+        if (why === 'insufficient_credits') {
+          alert(`You need ${formatCredits(gift.credit_cost)} to send ${gift.name}.`);
+        } else {
+          alert(`Could not send ${gift.name}. Nothing was charged.`);
+        }
         return;
       }
 
-      onSent(text, gift);
+      void creditManager.refresh(user.id);
+      onSent(String(data.text ?? `${gift.icon || '🎁'} Sent you a ${gift.name}!`), gift);
       setPending(null);
     } finally {
       setSending(false);

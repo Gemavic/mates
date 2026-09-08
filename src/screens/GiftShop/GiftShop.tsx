@@ -170,10 +170,10 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
   };
 
   const sendGift = async (
-    _giftId: string,
+    giftId: string,
     giftName: string,
     price: number,
-    emoji: string,
+    _emoji: string,
     /** Passed by the picker: state has not re-rendered when it calls this. */
     to: { id: string; name: string } | null = null
   ) => {
@@ -182,53 +182,39 @@ export const GiftShop: React.FC<GiftShopProps> = ({ onNavigate, initialRecipient
       alert('Please sign in to send gifts');
       return;
     }
-
-    const isStaffFree = creditManager.isStaffMember(user.id);
-    if (!creditManager.canAfford(user.id, price) && !isStaffFree) {
-      alert(`You need ${formatCredits(price)} to send this gift!`);
+    if (!target) {
+      // A gift needs someone to receive it; nothing is charged without one.
+      setAwaitingRecipient(null);
+      alert('Choose who to send this gift to first.');
       return;
     }
 
-    if (!isStaffFree) {
-      const success = await creditManager.spendCredits(user.id, price, `Sent ${giftName} gift`);
-      if (!success) {
-        alert('Failed to send gift. Please try again.');
+    try {
+      // The server looks the price up from the catalogue, charges it, and
+      // writes the gift into the conversation in one transaction. Either
+      // both happen or neither does.
+      const threadId = await MessagingManager.getOrCreateThread(user.id, target.id);
+      const { data, error } = await supabaseClient.rpc('send_gift_message', {
+        p_thread_id: threadId,
+        p_gift_id: giftId,
+        p_sticker_id: null,
+        p_note: null,
+      });
+
+      if (error || !data?.success) {
+        const why = data?.error ?? (error as any)?.message;
+        alert(why === 'insufficient_credits'
+          ? `You need ${formatCredits(price)} to send this gift!`
+          : 'Failed to send gift. Nothing was charged. Please try again.');
         return;
       }
-      setUserBalance(creditManager.getTotalCredits(user.id));
-    } else {
-      setUserBalance(creditManager.getTotalCredits(user.id));
-    }
 
-    // If this gift is going to a specific person (opened from their chat),
-    // actually deliver it into their real conversation — previously this
-    // function only showed a success alert with no record of who, if
-    // anyone, received anything.
-    if (target) {
-      try {
-        const threadId = await MessagingManager.getOrCreateThread(user.id, target.id);
-        await supabaseClient.from('mail_messages').insert({
-          thread_id: threadId,
-          sender_id: user.id,
-          subject: 'Gift',
-          message_text: `${emoji} Sent you a ${giftName}!`,
-          gift_id: _giftId,
-          credits_spent: 0, // already charged above via spendCredits
-          has_photos: false,
-          is_delivered: true,
-          delivered_at: new Date().toISOString(),
-          is_read: false,
-        });
-        alert(`🎁 Sent ${giftName} to ${target.name}!`);
-      } catch (err) {
-        console.error('Gift charged but failed to deliver message:', err);
-        alert(`🎁 ${giftName} purchased, but delivering it to their chat failed — please try messaging them directly.`);
-      }
-    } else {
-      // Unreachable now that a recipient is required before charging, but if it
-      // ever is reached, do not claim something was sent to someone.
-      console.error('Gift charged with no recipient set:', giftName);
-      alert(`${giftName} was charged but had no recipient. Please contact support.`);
+      const balance = await creditManager.refresh(user.id);
+      setUserBalance(balance);
+      alert(`🎁 Sent ${giftName} to ${target.name}!`);
+    } catch (err) {
+      console.error('Gift could not be sent:', err);
+      alert('Failed to send gift. Nothing was charged. Please try again.');
     }
   };
 

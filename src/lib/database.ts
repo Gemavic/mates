@@ -3,7 +3,6 @@ import type { Database } from './supabase';
 
 // Database types
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
-export type UserCredits = Database['public']['Tables']['user_credits']['Row'];
 export type CreditTransaction = Database['public']['Tables']['credit_transactions']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
@@ -164,129 +163,7 @@ export class ProfileManager {
 }
 
 // Credit System Management
-export class CreditManager {
-  static async getUserCredits(userId: string) {
-    const { data, error } = await supabaseClient
-      .from('user_credits')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data) {
-      return this.initializeUserCredits(userId);
-    }
-
-    return data;
-  }
-
-  static async initializeUserCredits(userId: string) {
-    const { data, error } = await supabaseClient
-      .from('user_credits')
-      .insert({
-        user_id: userId,
-        complimentary_credits: 20,
-        total_kobos: 20
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getTransactions(userId: string, limit = 50) {
-    const { data, error } = await supabaseClient
-      .from('credit_transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  static async spendCredits(userId: string, amount: number, description: string, category: string = 'general') {
-    const { data, error } = await supabaseClient.rpc('spend_credits_atomic', {
-      p_user_id: userId,
-      p_amount: amount,
-      p_description: description,
-      p_category: category
-    });
-
-    if (error) {
-      console.error('Failed to spend credits:', error);
-      throw error;
-    }
-
-    const result = data as any;
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to spend credits');
-    }
-
-    return true;
-  }
-
-  static async addCredits(userId: string, amount: number, description: string, isPurchased = false) {
-    const { data: credits, error: creditsError } = await supabaseClient
-      .from('user_credits')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (creditsError) throw creditsError;
-
-    const updateData = isPurchased 
-      ? { purchased_credits: credits.purchased_credits + amount }
-      : { complimentary_credits: credits.complimentary_credits + amount };
-
-    const { error: updateError } = await supabaseClient
-      .from('user_credits')
-      .update({
-        ...updateData,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId);
-
-    if (updateError) throw updateError;
-
-    // Record transaction
-    const { error: transactionError } = await supabaseClient
-      .from('credit_transactions')
-      .insert({
-        user_id: userId,
-        transaction_type: 'earn',
-        amount,
-        description
-      });
-
-    if (transactionError) throw transactionError;
-
-    return true;
-  }
-}
-
-// Matching System
 export class MatchManager {
-  static async likeUser(userId: string, targetUserId: string, likeType: 'like' | 'super_like' | 'pass' | 'blink') {
-    const { data, error } = await supabaseClient
-      .from('user_likes')
-      .upsert({
-        user_id: userId,
-        target_user_id: targetUserId,
-        like_type: likeType
-      }, { 
-        onConflict: 'user_id,target_user_id'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
   static async getUserMatches(userId: string, limit = 100) {
     const { data, error } = await supabaseClient
       .from('matches')
@@ -521,64 +398,13 @@ export class MessagingManager {
 }
 
 // Gift System
-export class GiftManager {
-  static async getGiftCatalog() {
-    const { data, error } = await supabaseClient
-      .from('virtual_gifts')
-      .select('*')
-      .eq('is_active', true)
-      .order('popularity_score', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async sendGift(senderId: string, recipientId: string, giftId: string, creditsSpent: number, message = '') {
-    const { data, error } = await supabaseClient
-      .from('sent_gifts')
-      .insert({
-        sender_id: senderId,
-        recipient_id: recipientId,
-        gift_id: giftId,
-        credits_spent: creditsSpent,
-        message
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getReceivedGifts(userId: string, limit = 100) {
-    const { data, error } = await supabaseClient
-      .from('sent_gifts')
-      .select(`
-        *,
-        gift:virtual_gifts(*),
-        sender:user_profiles!sent_gifts_sender_id_fkey(*)
-      `)
-      .eq('recipient_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data;
-  }
-}
-
 // Utility functions
 export const createUserProfile = ProfileManager.createProfile;
 export const getUserProfile = ProfileManager.getProfile;
 export const updateUserProfile = ProfileManager.updateProfile;
 export const getDiscoveryProfiles = ProfileManager.getDiscoveryProfiles;
 
-export const getUserCredits = CreditManager.getUserCredits;
-export const spendCredits = CreditManager.spendCredits;
-export const addCredits = CreditManager.addCredits;
-export const getCreditTransactions = CreditManager.getTransactions;
 
-export const likeUser = MatchManager.likeUser;
 export const getUserMatches = MatchManager.getUserMatches;
 export const getLikesReceived = MatchManager.getLikesReceived;
 
@@ -587,6 +413,3 @@ export const sendChatMessage = MessagingManager.sendChatMessage;
 export const getMailThreads = MessagingManager.getMailThreads;
 export const sendMailMessage = MessagingManager.sendMailMessage;
 
-export const getGiftCatalog = GiftManager.getGiftCatalog;
-export const sendGift = GiftManager.sendGift;
-export const getReceivedGifts = GiftManager.getReceivedGifts;

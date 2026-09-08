@@ -14,6 +14,11 @@
 //   TWILIO_ACCOUNT_SID    (starts with AC)
 //   TWILIO_AUTH_TOKEN     (32 characters - NOT the API key secret)
 //   TWILIO_PHONE_NUMBER   (an SMS-capable number you own, E.164, e.g. +1416...)
+//
+// Every secret is trimmed on read. Pasting a credential into a dashboard
+// field very easily carries a trailing newline, and the Account SID goes
+// straight into the request URL, so one invisible character is the whole
+// difference between a text arriving and silence.
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -29,6 +34,8 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+
+const secret = (name: string) => (Deno.env.get(name) ?? '').trim();
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -82,9 +89,9 @@ Deno.serve(async (req: Request) => {
       }, 400);
     }
 
-    const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER');
+    const TWILIO_ACCOUNT_SID = secret('TWILIO_ACCOUNT_SID');
+    const TWILIO_AUTH_TOKEN = secret('TWILIO_AUTH_TOKEN');
+    const TWILIO_PHONE_NUMBER = secret('TWILIO_PHONE_NUMBER');
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
       // No code is generated, stored, or revealed when we cannot actually
@@ -103,8 +110,8 @@ Deno.serve(async (req: Request) => {
       }, 200);
     }
 
-    if (!TWILIO_ACCOUNT_SID.startsWith('AC')) {
-      console.error('TWILIO_ACCOUNT_SID does not start with AC - is it an API key SID?');
+    if (!/^AC[0-9a-fA-F]{32}$/.test(TWILIO_ACCOUNT_SID)) {
+      console.error('TWILIO_ACCOUNT_SID is not a well-formed Account SID (AC + 32 hex).');
       return json({
         success: false,
         error: 'Text-message verification is misconfigured.',
