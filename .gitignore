@@ -36,3 +36,6 @@ vite.config.ts.timestamp-*.mjs
 *.legacy.bak
 
 supabase/.temp/
+
+# Patch files
+*.patch
