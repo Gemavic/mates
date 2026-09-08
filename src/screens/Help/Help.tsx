@@ -609,7 +609,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
             Dates.care v1.0.0 • Made with ❤️ in Canada
           </p>
           <p className="text-white/40 text-xs mt-1">
-            © 2026 Dates.care. All rights reserved.
+            © 2026 DATES CARE (BIN 1001737281). All rights reserved.
           </p>
         </div>
       </div>

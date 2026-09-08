@@ -132,9 +132,9 @@ export const Privacy: React.FC<PrivacyProps> = ({ onNavigate = () => {} }) => {
                     <div>
                       <p><strong>Address:</strong></p>
                       <p>Chief Privacy Officer</p>
-                      <p>Dates.care</p>
-                      <p>5515 Eglinton Ave</p>
-                      <p>Etobicoke, ON M9C 5K5</p>
+                      <p>DATES CARE (BIN 1001737281)</p>
+                      <p>22 Metropolitan Road, Suite 1175a</p>
+                      <p>Scarborough, ON M1R 2T6</p>
                       <p>Canada</p>
                     </div>
                   </div>

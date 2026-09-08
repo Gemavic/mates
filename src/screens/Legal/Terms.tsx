@@ -34,10 +34,12 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
             </h3>
             <div className="space-y-3 text-gray-700 leading-relaxed">
               <p>
-                Welcome to Datescare! These Terms of Service ("Terms") constitute a legally binding agreement
+                Welcome to Dates.care! These Terms of Service ("Terms") constitute a legally binding agreement
                 ("Agreement") between you—whether acting individually or on behalf of an organization ("User")—and
-                Datescare ("Datescare," "Website," "we," "us," or "our"). By accessing or utilizing the Website,
-                you consent to adhere to and be bound by these Terms.
+                DATES CARE, a sole proprietorship registered in Ontario, Canada under Business Identification
+                Number 1001737281, which operates the website dates.care ("Datescare," "Dates.care," "Website,"
+                "we," "us," or "our"). By accessing or utilizing the Website, you consent to adhere to and be
+                bound by these Terms.
               </p>
               <p>
                 These Terms outline the legal relationship between you and Datescare that arises from your access
@@ -444,13 +446,14 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate = () => {} }) => {
           <section className="border-t pt-6">
             <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">14. Contact Information</h3>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
-              <p><strong>Company:</strong> Datescare</p>
-              <p><strong>Address:</strong> 5515 Eglington Avenue West, Etobicoke, ON M9C 5K5, Canada</p>
+              <p><strong>Company:</strong> DATES CARE, a sole proprietorship registered in Ontario, Canada</p>
+              <p><strong>Business Identification Number (BIN):</strong> 1001737281</p>
+              <p><strong>Address:</strong> 22 Metropolitan Road, Suite 1175a, Scarborough, ON M1R 2T6, Canada</p>
               <p><strong>Legal:</strong> admin@dates.care</p>
               <p><strong>Customer Support:</strong> admin@dates.care</p>
             </div>
             <p className="text-xs text-gray-500 mt-4 text-center">
-              All Rights Reserved © {new Date().getFullYear()} Datescare
+              All Rights Reserved © {new Date().getFullYear()} DATES CARE
             </p>
           </section>
 
