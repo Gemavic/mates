@@ -151,7 +151,7 @@ export const Menu: React.FC<MenuProps> = ({
         onClick={toggleMenu}
         onTouchStart={(e) => e.stopPropagation()}
         className={cn(
-          "fixed bottom-24 right-4 z-50 p-3 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-2xl",
+          "menu-fab fixed bottom-24 right-4 z-50 p-3 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-2xl",
           "hover:scale-110 active:scale-95 transition-all duration-200 border-2 border-white/20 cursor-pointer",
           "touch-manipulation"
         )}

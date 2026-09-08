@@ -322,3 +322,9 @@
     margin: 16mm;
   }
 }
+
+/* An open conversation owns the bottom-right corner: the Send button lives
+   there, and the floating menu button was sitting directly on top of it. */
+body[data-chat-open] .menu-fab {
+  display: none;
+}

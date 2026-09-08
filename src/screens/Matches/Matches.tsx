@@ -232,6 +232,18 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
     }
   }, [user]);
 
+  // While a conversation is open, the floating menu button would sit exactly
+  // on top of the Send button (both live in the bottom-right corner). The
+  // menu hides itself for as long as this flag is on the body; the back
+  // arrow and the footer are still there to leave by.
+  useEffect(() => {
+    if (!selectedThread) return;
+    document.body.dataset.chatOpen = 'true';
+    return () => {
+      delete document.body.dataset.chatOpen;
+    };
+  }, [selectedThread]);
+
   /**
    * Opens one conversation straight away when the member arrived by pressing
    * "Message" on a profile, rather than showing them a list they then have to
@@ -1167,7 +1179,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); }}}
                 placeholder="Type your message..."
-                className="w-full h-[44px] py-2 px-4 pr-10 rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-sm bg-white dark:bg-night-900"
+                className="w-full h-[44px] py-2 pl-4 pr-[4.75rem] rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-sm bg-white dark:bg-night-900"
                 autoComplete="off" />
               <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowQuickMessages(false); }}
                 className="absolute right-10 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600">
