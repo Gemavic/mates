@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { HelpCircle, MessageCircle, Phone, Mail, Shield, CreditCard, Users, Video, Search, Book } from 'lucide-react';
 import { APP_CONFIG, whatsappSupportLink } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
+import { supabaseClient } from '@/lib/supabase';
 
 interface HelpProps {
   onNavigate: (screen: string) => void;
@@ -14,6 +15,7 @@ interface HelpProps {
 export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<'faq' | 'contact' | 'guides'>('faq');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -32,11 +34,11 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         },
         {
           question: 'How does the matching system work?',
-          answer: 'Our AI analyzes your preferences, interests, and behavior to suggest compatible matches.'
+          answer: 'Browse members in Discovery and use the filters to narrow by age, distance and what you are looking for. When two people like each other, it is a match and you can message.'
         },
         {
           question: 'How do I get verified?',
-          answer: 'Upload a government ID and selfie in the Verification section. Verified profiles get priority placement.'
+          answer: 'Confirm your phone number by SMS and upload a selfie in the Verification section. Verified profiles show a badge so other members know a real person is behind the account.'
         }
       ]
     },
@@ -45,15 +47,11 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       questions: [
         {
           question: 'How do credits work?',
-          answer: 'Credits are used for premium features like chat, video calls, and gifts. 1 credit = various actions.'
-        },
-        {
-          question: 'What are Kobos?',
-          answer: 'Kobos are special credits for chat. 1 kobo = 1 minute of live chat with matches.'
+          answer: 'Credits pay for the extras: mail attachments, super likes, boosts, gifts and voice or video calls. Chat, browsing, likes and blinks are free. Each paid action shows its cost before you confirm it.'
         },
         {
           question: 'Can I get a refund?',
-          answer: 'All purchases are final as per our Terms of Service. Contact support for special circumstances.'
+          answer: 'Credits are delivered instantly and are generally non-refundable once used. If a paid feature did not work, or you were charged twice or without authorising it, email admin@dates.care within 120 days and we will look at it. The full policy is under Payment & Refund Policy.'
         }
       ]
     },
@@ -79,11 +77,11 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       questions: [
         {
           question: 'How do video calls work?',
-          answer: 'Video calls cost 60 credits per minute. Both users need sufficient credits to start a call.'
+          answer: 'Video calls cost 50 credits per minute and voice calls 40, charged to the person who starts the call. You need at least one minute of credit to begin.'
         },
         {
           question: 'How do I send gifts?',
-          answer: 'Visit the Gift Shop and choose from virtual gifts ranging from 3-1000 credits.'
+          answer: 'Open the Gift Shop from a chat or a profile and choose a virtual gift. Prices start at 5 credits.'
         },
         {
           question: 'What\'s the difference between Chat and Mail?',
@@ -116,13 +114,6 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
       description: 'Speak with our team',
       contact: APP_CONFIG.phone,
       responseTime: 'Mon-Fri 9AM-6PM EST'
-    },
-    {
-      icon: MessageCircle,
-      title: 'Live Chat',
-      description: 'Instant messaging support',
-      contact: 'Available in app',
-      responseTime: 'Usually within 1 hour'
     }
   ];
 
@@ -166,25 +157,18 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
     {
       id: 'credit-system',
       title: 'Credit System Guide',
-      description: 'Understand how to use credits and kobos effectively',
+      description: 'What costs credits, what is free, and how to pay',
       icon: CreditCard,
-      sections: ['Credit pricing', 'Kobo usage', 'Payment methods'],
+      sections: ['Credit pricing', 'Payment methods'],
       content: [
         {
           title: 'Credit Pricing',
           items: [
-            'Chat: free and unlimited',
-            'Mail: 10-30 credits per message',
-            'Video calls: 60 credits per minute',
-            'Virtual gifts: 3-1000 credits'
-          ]
-        },
-        {
-          title: 'Kobo Usage',
-          items: [
-            '1 kobo = 1 minute of chat',
-            'Alternative to credits for chat',
-            'Purchase kobos in bulk for better value'
+            'Chat, browsing, likes and blinks: free',
+            'Mail: 5 credits to send, 5 to open, plus 10 per photo or audio and 20 per video',
+            'Super like: 25 credits',
+            'Voice calls: 40 credits per minute. Video calls: 50 per minute',
+            'Virtual gifts: from 5 credits'
           ]
         },
         {
@@ -274,45 +258,65 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
     setExpandedGuide(expandedGuide === guideId ? null : guideId);
   };
 
-  const handleContactSubmit = () => {
+  /**
+   * Files a real ticket. This used to build 'TKT-' + Math.random(), show
+   * "Support Ticket Created!" and send nothing - a member reporting a scam
+   * believed it had been filed. The reference shown now is the row the
+   * server wrote; the email is best-effort on top of it.
+   */
+  const handleContactSubmit = async () => {
     if (!contactForm.name || !contactForm.email || !contactForm.subject || !contactForm.message) {
       alert('Please fill in all fields');
       return;
     }
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    const ticketId = 'TKT-' + Math.random().toString(36).substring(2).toUpperCase();
+    const flash = (title: string, detail: string, colour: string, ms = 7000) => {
+      const wrap = document.createElement('div');
+      wrap.className = `fixed top-4 right-4 ${colour} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+      const t = document.createElement('div'); t.className = 'font-bold'; t.textContent = title;
+      const d = document.createElement('div'); d.className = 'text-sm'; d.textContent = detail;
+      wrap.appendChild(t); wrap.appendChild(d);
+      document.body.appendChild(wrap);
+      setTimeout(() => { if (document.body.contains(wrap)) document.body.removeChild(wrap); }, ms);
+    };
 
-    // ⚠️ SECURITY FIX: Replaced innerHTML with textContent to prevent XSS
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    try {
+      const { data: session } = await supabaseClient.auth.getSession();
+      const token = session?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
 
-    // Create structure using DOM methods instead of innerHTML
-    const messageContent = document.createElement('div');
-    messageContent.className = 'flex items-center space-x-2';
+      const resp = await fetch('/api/support-ticket', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(contactForm),
+      });
+      const json = await resp.json().catch(() => null);
 
-    const textDiv = document.createElement('div');
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'font-bold';
-    titleDiv.textContent = 'Support Ticket Created!';
-
-    const ticketDiv = document.createElement('div');
-    ticketDiv.className = 'text-sm';
-    ticketDiv.textContent = 'Ticket ID: ' + ticketId;
-
-    textDiv.appendChild(titleDiv);
-    textDiv.appendChild(ticketDiv);
-    messageContent.appendChild(textDiv);
-    successMessage.appendChild(messageContent);
-
-    document.body.appendChild(successMessage);
-    setTimeout(() => {
-      if (document.body.contains(successMessage)) {
-        document.body.removeChild(successMessage);
+      if (!resp.ok || !json?.ticketRef) {
+        const why =
+          json?.error === 'too_many_tickets' ? 'Too many messages from this connection. Please try again in an hour.'
+          : json?.error === 'invalid_email' ? 'That email address does not look right.'
+          : `We could not file your message. Please email ${APP_CONFIG.supportEmail} directly.`;
+        flash('Not sent', why, 'bg-red-500');
+        return;
       }
-    }, 7000);
 
-    // Reset form
-    setContactForm({ name: '', email: '', subject: '', message: '' });
+      flash(
+        'Message received',
+        `Your reference is ${json.ticketRef}. Keep it for any follow-up. We reply to ${contactForm.email}.`,
+        'bg-green-500',
+        9000
+      );
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      console.error('Support ticket failed:', err);
+      flash('Not sent', `We could not file your message. Please email ${APP_CONFIG.supportEmail} directly.`, 'bg-red-500');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderFAQ = () => (
@@ -429,6 +433,7 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
 
           <Button
             onClick={handleContactSubmit}
+            disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:scale-105 transition-all duration-300"
             type="button"
           >

@@ -99,10 +99,7 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
                     <strong>Verification Processes:</strong> User verification measures to identify and mitigate risks
                   </li>
                   <li>
-                    <strong>Internal Training:</strong> Regular trainings for staff on prevention commitments
-                  </li>
-                  <li>
-                    <strong>Moderation:</strong> Combination of AI and human moderation to detect violations
+                    <strong>Moderation:</strong> Reported content is reviewed by a person and acted on
                   </li>
                 </ul>
               </div>
@@ -140,17 +137,19 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Prevention Measures:</h4>
+                {/* This list claimed KYC/KYB, sanctions screening against FATF lists,
+                    PCI DSS compliance, velocity rules, BIN/IP filtering and a "patented
+                    anti-fraud system". None of it exists, and PCI DSS cannot apply to a
+                    site that takes no card payments. A compliance reviewer reads this
+                    page line by line. It now lists what we actually do. */}
+                <h4 className="font-semibold text-gray-900 mb-2">What we do about it:</h4>
                 <ul className="list-disc list-inside space-y-2 ml-4 text-sm">
-                  <li>Proper KYC (Know Your Customer) and KYB (Know Your Business) practices</li>
-                  <li>Identification and validation of counterparty information</li>
-                  <li>Enhanced due diligence using open sources and licensed systems</li>
-                  <li>Refusing business with entities on FATF blacklist or sanctions lists</li>
-                  <li>PCI DSS security standards compliance</li>
-                  <li>Trusted payment providers with necessary certifications</li>
-                  <li>Transaction monitoring by anti-fraud systems</li>
-                  <li>Velocity rules and BIN/IP filtering</li>
-                  <li>Patented anti-fraud system analyzing user behavior</li>
+                  <li>Every purchase is processed by an independent payment provider. Dates.care never handles or stores card details.</li>
+                  <li>Credits are delivered only after the provider confirms the payment, and each payment can be credited once.</li>
+                  <li>Members confirm a phone number by SMS before their profile is marked verified.</li>
+                  <li>Phone numbers and email addresses are masked in messages, so a conversation is harder to move somewhere we cannot help.</li>
+                  <li>Any member can report a profile or message. Accounts reported for asking for money are reviewed and removed.</li>
+                  <li>We tell members, on the site and in these terms, never to send money, gift cards or verification codes to anyone they meet here.</li>
                 </ul>
               </div>
 
@@ -282,10 +281,13 @@ export const MisconductPolicy: React.FC<MisconductPolicyProps> = ({ onNavigate =
 
               <div>
                 <h4 className="font-semibold text-gray-900 mb-2">Prevention Steps:</h4>
+                {/* Said "ongoing scans" and "AI rigorously trained to recognize CSAM".
+                    There is no hash-matching or classifier pipeline. What we can
+                    truthfully promise is what happens on a report. */}
                 <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
-                  <li>Ongoing scans to detect and prevent CSAM distribution</li>
-                  <li>Content moderators and AI rigorously trained to recognize CSAM</li>
-                  <li>Immediate removal of users and content</li>
+                  <li>Every member can report any image, profile or message in one tap</li>
+                  <li>A report of this kind is treated as the highest priority we have and reviewed by a person</li>
+                  <li>Confirmed material is removed, the account is closed permanently, and the matter is reported to law enforcement</li>
                 </ul>
               </div>
 

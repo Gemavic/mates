@@ -148,19 +148,11 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   };
 
   const handleBlink = () => {
-    // Blink is now free
+    // The parent records the blink and reports the outcome. This card
+    // used to show its own "sent!" toast before anything had happened,
+    // so a member saw two toasts - and a success even when it failed.
     onBlink(profile.id);
-    
-    // Show success message
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    successMessage.textContent = `👁️ FREE Blink sent to ${profile.name}!`;
-    document.body.appendChild(successMessage);
-    setTimeout(() => {
-      if (document.body.contains(successMessage)) {
-        document.body.removeChild(successMessage);
-      }
-    }, 3000);
+
     const blinkElement = document.createElement('div');
     blinkElement.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl animate-ping pointer-events-none z-50';
     blinkElement.textContent = '👁️';

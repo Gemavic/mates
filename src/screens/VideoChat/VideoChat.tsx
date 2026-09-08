@@ -253,7 +253,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         const newDuration = prev + 1;
         if (charge && newDuration % 60 === 0) {
           void (async () => {
-            const success = await creditManager.deductCredits(userId, VIDEO_CALL_PER_MINUTE);
+            const success = await creditManager.deductCredits(userId, VIDEO_CALL_PER_MINUTE, 'video_call');
             if (success) {
               const remaining = creditManager.getTotalCredits(userId);
               setUserBalance(remaining);

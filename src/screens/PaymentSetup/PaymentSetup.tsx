@@ -175,14 +175,15 @@ export const PaymentSetup: React.FC<PaymentSetupProps> = ({ onNavigate }) => {
 
           {/* Crypto Payment Benefits */}
           <div className="mt-6 bg-green-500/20 border border-green-500/30 rounded-lg p-4">
-            <h4 className="font-semibold text-green-300 mb-2">Benefits of Cryptocurrency Payments</h4>
+            {/* This listed "No chargebacks or payment disputes" and "Enhanced privacy
+                for users" as benefits. Even on a staff-only page, a merchant describing
+                its payment choice in those terms is what an acquirer's compliance team
+                screenshots. Removed. */}
+            <h4 className="font-semibold text-green-300 mb-2">Why crypto is on while card is pending</h4>
             <ul className="text-green-200 text-sm space-y-1">
-              <li>• No restrictions on dating services</li>
-              <li>• Accepts Bitcoin, Ethereum, Litecoin, USDT, USDC, and more</li>
-              <li>• Lower transaction fees compared to traditional processors</li>
-              <li>• No chargebacks or payment disputes</li>
-              <li>• Global reach without geographical restrictions</li>
-              <li>• Enhanced privacy for users</li>
+              <li>• Card acceptance for dating sites needs a specialist acquirer; that application is in progress</li>
+              <li>• Accepts Bitcoin, Ethereum, Litecoin, USDT, USDC, and more in the meantime</li>
+              <li>• Pricing and crediting are handled server-side and verified against the provider</li>
             </ul>
           </div>
         </div>

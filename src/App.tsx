@@ -570,7 +570,32 @@ const App: React.FC = () => {
         return <Verification onNavigate={handleNavigate} />;
       
       case 'payment-setup':
-        return <PaymentSetup onNavigate={handleNavigate} />;
+      case 'monitoring': {
+        // Internal screens. payment-setup shows wallet configuration and
+        // developer instructions; monitoring shows system health. Both were
+        // reachable by any signed-in member. Same gate as the staff panel.
+        if (loading || staffLoading) {
+          return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-600 to-purple-700">
+              <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          );
+        }
+        if (!user || !isStaff) {
+          return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-600 to-purple-700 text-white text-center px-6">
+              <p className="text-lg font-semibold mb-2">Not authorized</p>
+              <p className="text-white/80 text-sm mb-6">This page is for Dates.care staff.</p>
+              <button onClick={() => handleNavigate('discovery')} className="bg-white text-rose-600 font-semibold px-6 py-3 rounded-xl">
+                Back to Discovery
+              </button>
+            </div>
+          );
+        }
+        return currentScreen === 'monitoring'
+          ? <MonitoringDashboard />
+          : <PaymentSetup onNavigate={handleNavigate} />;
+      }
       
       case 'help':
         return <Help onNavigate={handleNavigate} />;
@@ -580,9 +605,6 @@ const App: React.FC = () => {
 
       case 'quizzes':
         return <Quizzes onNavigate={handleNavigate} />;
-
-      case 'monitoring':
-        return <MonitoringDashboard />;
 
         default:
           return <Discovery onNavigate={handleNavigate} />;

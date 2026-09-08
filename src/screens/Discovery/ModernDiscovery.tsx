@@ -298,29 +298,67 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
 
   const currentProfile = profiles[currentProfileIndex];
 
-  const handleLike = async (profileId: string) => {
-    console.log('💖 Like action triggered for profile:', profileId);
+  /**
+   * Shows a short toast. Kept local so these handlers do not depend on the
+   * global toast system's mount state.
+   */
+  const flash = (label: string, colour: string) => {
+    const el = document.createElement('div');
+    el.className = `fixed top-4 right-4 ${colour} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    el.textContent = label;
+    document.body.appendChild(el);
+    setTimeout(() => { if (document.body.contains(el)) document.body.removeChild(el); }, 3000);
+  };
 
-    if (!user) return;
-
-    const accessResult = await checkAccess('like');
-
-    if (!accessResult.allowed) {
-      setUpgradePromptData(accessResult);
-      setShowUpgradePrompt(true);
-      await recordUpgradePrompt();
-      return;
+  /**
+   * Every like, super like, blink and pass from this screen goes through
+   * record_like(). The server charges (super like only) and writes the row
+   * in one transaction, so a failed write never costs credits and a failed
+   * charge never records a like. The price lives in the function, not here.
+   *
+   * Until now this screen wrote nothing: swiping right sent a notification
+   * and advanced the card, and Super Like deducted credits for a row that
+   * was never inserted. No match could ever form from Discovery.
+   */
+  const recordLike = async (
+    profileId: string,
+    likeType: 'like' | 'super_like' | 'blink' | 'pass'
+  ): Promise<{ ok: boolean; isMatch: boolean; charged: number; error?: string; total?: number }> => {
+    const { data, error } = await supabaseClient.rpc('record_like', {
+      p_target_user_id: profileId,
+      p_like_type: likeType,
+    });
+    if (error) {
+      console.error('record_like failed:', error);
+      return { ok: false, isMatch: false, charged: 0, error: 'request_failed' };
     }
+    const r = (data ?? {}) as Record<string, unknown>;
+    if (!r.success) {
+      return {
+        ok: false,
+        isMatch: false,
+        charged: 0,
+        error: String(r.error ?? 'unknown'),
+        total: typeof r.total_credits === 'number' ? r.total_credits : undefined,
+      };
+    }
+    return {
+      ok: true,
+      isMatch: r.is_match === true,
+      charged: typeof r.charged === 'number' ? r.charged : 0,
+      total: typeof r.total_credits === 'number' ? r.total_credits : undefined,
+    };
+  };
 
-    const profile = profiles.find(p => p.id === profileId);
-    if (profile && user) {
-      const { data: currentUserProfile } = await supabaseClient
+  /** Tell the other person, but never let a notification failure look like a failed like. */
+  const notifyLiked = async (profileId: string) => {
+    if (!user) return;
+    try {
+      const { data: me } = await supabaseClient
         .from('user_profiles')
         .select('first_name, full_name')
         .eq('user_id', user.id)
         .maybeSingle();
-
-      // Avatar comes from user_photos - user_profiles has no photo column.
       const { data: myPrimary } = await supabaseClient
         .from('user_photos')
         .select('photo_url')
@@ -328,62 +366,89 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         .order('is_primary', { ascending: false })
         .limit(1)
         .maybeSingle();
-
       const userImage = myPrimary?.photo_url || '';
-      const userName = currentUserProfile?.first_name || currentUserProfile?.full_name || 'Someone';
-
       if (userImage) {
         sendLikeNotification(profileId, {
-          name: userName,
+          name: me?.first_name || me?.full_name || 'Someone',
           image: userImage,
-          id: user.id
+          id: user.id,
         });
       }
+    } catch (err) {
+      console.warn('Like notification failed:', err);
+    }
+  };
 
-      await trackUsage('like');
+  const handleLike = async (profileId: string) => {
+    if (!user) {
+      onNavigate('signin');
+      return;
     }
 
+    const accessResult = await checkAccess('like');
+    if (!accessResult.allowed) {
+      setUpgradePromptData(accessResult);
+      setShowUpgradePrompt(true);
+      await recordUpgradePrompt();
+      return;
+    }
+
+    const result = await recordLike(profileId, 'like');
+    if (!result.ok) {
+      flash('Could not save your like. Please try again.', 'bg-red-500');
+      return;
+    }
+
+    const name = profiles.find(p => p.id === profileId)?.name;
+    if (result.isMatch) {
+      flash(`💞 It's a match with ${name ?? 'them'}!`, 'bg-pink-600');
+    }
+    void notifyLiked(profileId);
+    await trackUsage('like');
     nextProfile();
   };
 
   const handlePass = async (profileId: string) => {
-    console.log('👎 Pass action triggered for profile:', profileId);
+    if (user) {
+      // Recorded so a passed profile stops coming back. Free, and a failure
+      // here should never stop the card advancing.
+      void recordLike(profileId, 'pass');
+    }
     nextProfile();
   };
 
   const handleSuperLike = async (profileId: string) => {
     if (!user) {
-      alert('Please sign in to send Super Likes');
+      onNavigate('signin');
       return;
     }
 
-    const canAfford = creditManager.canAfford(user.id, 5);
-    if (!canAfford && !creditManager.isStaffMember(user.id)) {
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = 'Need 5 credits for Super Like! Likes and Blinks are FREE.';
-      document.body.appendChild(errorMessage);
-      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+    const result = await recordLike(profileId, 'super_like');
+
+    if (!result.ok) {
+      if (result.error === 'insufficient_credits') {
+        flash('You need 25 credits for a Super Like. Likes and Blinks are free.', 'bg-red-500');
+      } else {
+        flash('Could not send your Super Like. You have not been charged.', 'bg-red-500');
+      }
       return;
     }
 
-    if (!creditManager.isStaffMember(user.id)) {
-     creditManager.deductCredits(user.id, 5);
-      setUserBalance(creditManager.getBalance(user.id));
-      
-      // Show success message
-      const successMessage = document.createElement('div');
-      successMessage.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = `⭐ Super Like sent for 5 credits!`;
-      document.body.appendChild(successMessage);
-      setTimeout(() => {
-        if (document.body.contains(successMessage)) {
-          document.body.removeChild(successMessage);
-        }
-      }, 3000);
+    if (typeof result.total === 'number') {
+      setUserBalance(result.total);
+      void creditManager.refresh(user.id);
     }
-    
-    console.log('⭐ Super like action triggered for profile:', profileId);
+
+    const name = profiles.find(p => p.id === profileId)?.name;
+    if (result.isMatch) {
+      flash(`💞 It's a match with ${name ?? 'them'}!`, 'bg-pink-600');
+    } else if (result.charged > 0) {
+      flash(`⭐ Super Like sent to ${name ?? 'them'} for ${result.charged} credits`, 'bg-blue-500');
+    } else {
+      flash(`⭐ Super Like sent to ${name ?? 'them'}`, 'bg-blue-500');
+    }
+
+    void notifyLiked(profileId);
     nextProfile();
   };
 
@@ -444,15 +509,21 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     }
   };
 
-  const handleBlink = (profileId: string) => {
-    // Blinks are now free
-    
-    console.log('👁️ Blink action triggered for profile:', profileId);
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    successMessage.textContent = `👁️ FREE Blink sent to ${profiles.find(p => p.id === profileId)?.name}!`;
-    document.body.appendChild(successMessage);
-    setTimeout(() => document.body.removeChild(successMessage), 3000);
+  const handleBlink = async (profileId: string) => {
+    if (!user) {
+      onNavigate('signin');
+      return;
+    }
+    // Free. Until now this only showed a toast; nothing was recorded and
+    // the other person never saw it.
+    const result = await recordLike(profileId, 'blink');
+    if (!result.ok) {
+      flash('Could not send your blink. Please try again.', 'bg-red-500');
+      return;
+    }
+    const name = profiles.find(p => p.id === profileId)?.name;
+    flash(`👁️ Blink sent to ${name ?? 'them'}`, 'bg-yellow-500');
+    void notifyLiked(profileId);
   };
 
   const nextProfile = () => {

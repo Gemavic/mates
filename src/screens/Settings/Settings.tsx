@@ -71,7 +71,7 @@ const AlertToggle: React.FC<AlertToggleProps> = ({
 );
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showOnline, setShowOnline] = useState(true);
   const [savingOnlineStatus, setSavingOnlineStatus] = useState(false);
@@ -784,8 +784,18 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
         {/* Logout Button */}
         <div className="mt-8">
+          {/* This navigated to the welcome screen and left the session
+              signed in. On a shared computer the next person was inside
+              the account. The menu's log-out was correct; this one was not. */}
           <Button
-            onClick={() => onNavigate('welcome')}
+            onClick={async () => {
+              try {
+                await signOut();
+              } catch (err) {
+                console.error('Sign-out failed:', err);
+              }
+              onNavigate('welcome');
+            }}
             className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-2xl cursor-pointer touch-manipulation active:scale-95"
             type="button"
           >

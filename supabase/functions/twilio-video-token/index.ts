@@ -9,8 +9,19 @@ const corsHeaders = {
 
 interface TokenRequest {
   roomName: string;
-  userId: string;
+  userId?: string;
 }
+
+/**
+ * Read a secret with surrounding whitespace removed.
+ *
+ * A secret pasted into the dashboard can arrive with a trailing newline. It
+ * is invisible in every UI, but the Account SID goes into the token's `sub`
+ * claim verbatim, and Twilio rejects the whole token with "Invalid Access
+ * Token issuer/subject" - which reads like the credentials are wrong rather
+ * than one character too long.
+ */
+const secret = (name: string) => (Deno.env.get(name) ?? '').trim();
 
 function generateVideoToken(accountSid: string, apiKey: string, apiSecret: string, roomName: string, identity: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
@@ -70,9 +81,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY');
-    const TWILIO_API_SECRET = Deno.env.get('TWILIO_API_SECRET');
+    const TWILIO_ACCOUNT_SID = secret('TWILIO_ACCOUNT_SID');
+    const TWILIO_API_KEY = secret('TWILIO_API_KEY');
+    const TWILIO_API_SECRET = secret('TWILIO_API_SECRET');
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_API_KEY || !TWILIO_API_SECRET) {
       return new Response(
@@ -83,6 +94,24 @@ Deno.serve(async (req: Request) => {
         }),
         {
           status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Fail loudly here rather than minting a token Twilio will refuse. A
+    // malformed SID or key produces an error at the far end of the call that
+    // says nothing about which credential is wrong.
+    if (!/^AC[0-9a-fA-F]{32}$/.test(TWILIO_ACCOUNT_SID) || !/^SK[0-9a-fA-F]{32}$/.test(TWILIO_API_KEY)) {
+      console.error('Twilio credential is malformed; refusing to mint a token.');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Twilio credentials are misconfigured. Video calling is unavailable.',
+          errorCode: 'TWILIO_CREDENTIALS_MALFORMED',
+        }),
+        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -143,9 +172,9 @@ Deno.serve(async (req: Request) => {
 
     const { roomName, userId }: TokenRequest = await req.json();
 
-    if (!roomName || !userId) {
+    if (!roomName) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Room name and user ID are required' }),
+        JSON.stringify({ success: false, error: 'Room name is required' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -153,7 +182,59 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const identity = `user_${userId}`;
+    // The identity used to come from the request body, so a caller could
+    // mint a token that named somebody else in the room. It is the signed-in
+    // user, full stop. A mismatched body value is rejected rather than ignored.
+    if (userId && userId !== user.id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden', errorCode: 'IDENTITY_MISMATCH' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Who pays is decided here, not by the browser. The caller is charged per
+    // minute; the callee is not. A member is the callee for this room only if
+    // a live invite in call_invites names them as such - that row is written
+    // by the caller and is not something the callee can forge for themselves.
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: invite } = await supabaseClient
+      .from('call_invites')
+      .select('id')
+      .eq('room_name', roomName)
+      .eq('callee_id', user.id)
+      .in('status', ['ringing', 'accepted'])
+      .gte('created_at', tenMinutesAgo)
+      .limit(1)
+      .maybeSingle();
+    const isCallee = !!invite;
+
+    // No token for a caller who cannot pay for one minute. Staff calling
+    // grants and platinum/elite tiers pass, exactly as they do in spend_credits.
+    const { data: gate, error: gateError } = isCallee
+      ? { data: { allowed: true, reason: 'callee' }, error: null }
+      : await supabaseClient.rpc('can_start_call', { p_kind: 'video' });
+    if (gateError || !gate?.allowed) {
+      const reason = gate?.reason ?? 'gate_failed';
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: reason === 'insufficient_credits'
+            ? `You need at least ${gate?.per_minute ?? 50} credits to start a video call.`
+            : 'You cannot start a call right now.',
+          errorCode: reason.toUpperCase(),
+          totalCredits: gate?.total_credits ?? null,
+        }),
+        {
+          status: reason === 'insufficient_credits' ? 402 : 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const identity = `user_${user.id}`;
 
     const videoToken = await generateVideoToken(
       TWILIO_ACCOUNT_SID,

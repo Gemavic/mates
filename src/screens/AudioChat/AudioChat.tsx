@@ -63,7 +63,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         const newDuration = prev + 1;
         if (charge && newDuration % 60 === 0) {
           void (async () => {
-            const success = await creditManager.deductCredits(payerId, AUDIO_CALL_PER_MINUTE);
+            const success = await creditManager.deductCredits(payerId, AUDIO_CALL_PER_MINUTE, 'audio_call');
             if (success) {
               const remaining = creditManager.getTotalCredits(payerId);
               setUserBalance(remaining);

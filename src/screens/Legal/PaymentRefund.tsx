@@ -157,8 +157,7 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
                 <ul className="list-disc list-inside space-y-2 ml-4 text-sm">
                   <li>Choose a subscription package and pay for it</li>
                   <li>After payment is processed, receive the specified number of Credits</li>
-                  <li>Credits acquired under subscription will NOT expire at the end of the period</li>
-                  <li>Unused Credits do not carry over; each period grants a new amount</li>
+                  <li>Credits acquired under a subscription do not expire and stay in your balance after the period ends</li>
                   <li>Subscription period normally equals 30 calendar days</li>
                   <li>Can purchase additional Credits through regular process</li>
                 </ul>
@@ -169,35 +168,26 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
                   <AlertCircle className="w-5 h-5 inline mr-2" />
                   Auto-Renewal
                 </h4>
+                {/* This promised automatic renewal with reminders 3 days and 24 hours
+                    before each charge. Crypto invoices cannot recur, no scheduler
+                    exists, and the receipt we actually send says the opposite.
+                    Claiming a recurring charge we never make is what consumer
+                    regulators look for. It now matches the receipt. */}
                 <p className="text-yellow-800 text-sm">
-                  Your subscription will automatically renew after each period, and your payment method will be
-                  charged until canceled. We will send reminders 3 days and 24 hours before upcoming charges.
+                  Subscriptions do <strong>not</strong> renew automatically. Each period is a one-time payment.
+                  When it ends, nothing is charged; if you want another period, you buy it again. You will never
+                  be billed without choosing to pay.
                 </p>
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">3A.4 Canceling Subscription</h4>
-                <p className="text-sm mb-2">
-                  Subscriptions may be canceled at any time prior to the start of the next billing period.
-                  To cancel:
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
-                  <li>Use the Subscription Page in your account, or</li>
-                  <li>Contact customer support at admin@dates.care</li>
-                </ul>
-                <p className="text-sm mt-2">
-                  After cancellation, you can use remaining Credits and won't be charged for the next period.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">3A.8 Daily Credits Subscription</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">3A.4 Ending a Subscription</h4>
                 <p className="text-sm">
-                  Datescare may offer auto-renewing Daily Credits subscription. With daily credit subscription,
-                  each day you log in to Datescare, 20 credits are added to your account. If you do not log in,
-                  20 credits will not be accrued that day.
+                  Because nothing renews automatically, there is nothing to cancel. A subscription simply
+                  ends when its period does. Credits already in your balance stay there.
                 </p>
               </div>
+
             </div>
           </section>
 

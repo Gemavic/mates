@@ -37,6 +37,31 @@ const VERIFICATION_FIELDS = [
   'updated_at',
 ].join(', ');
 
+/**
+ * Shape of the row VERIFICATION_FIELDS selects. supabase-js cannot infer
+ * column types from a string assembled at runtime, so it falls back to an
+ * error type and every property access fails to typecheck. Naming the shape
+ * keeps the compiler honest about the columns we actually read.
+ */
+interface VerificationRow {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  phone_number: string | null;
+  phone_verified: boolean | null;
+  selfie_url: string | null;
+  government_id_url: string | null;
+  address_proof_url: string | null;
+  address_info: unknown;
+  verification_status: string | null;
+  rejection_reason: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  submitted_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 interface VerificationStep {
   id: string;
   title: string;
@@ -130,7 +155,7 @@ export const Verification: React.FC<VerificationProps> = ({ onNavigate }) => {
         .from('verification_requests')
         .select(VERIFICATION_FIELDS)
         .eq('user_id', user.id)
-        .maybeSingle();
+        .maybeSingle<VerificationRow>();
 
       if (error && error.code !== 'PGRST116') throw error;
       setVerificationRequest(data);

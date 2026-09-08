@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Crown, Star, Zap, Target } from 'lucide-react';
+import { supabaseClient } from '@/lib/supabase';
 import { creditManager } from '@/lib/creditSystem';
 import { useAuth } from '@/hooks/useAuth';
 import { initialsAvatar } from '@/lib/avatar';
@@ -194,33 +195,34 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                   <Button
                     className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm hover:scale-105 transition-all duration-300"
                     onClick={async () => {
-                      // This used to take a credit, show a star and record
-                      // nothing - the person was never super liked and never
-                      // found out. Save the like first, and only charge if it
-                      // actually saved.
+                      // Charged and recorded together by record_like(), at the
+                      // one price that lives on the server. This screen used to
+                      // charge 1 credit while Discovery charged 5 and the homepage
+                      // said 25.
                       if (!user) {
                         alert('Please sign in to send Super Likes');
                         return;
                       }
-                      if (!creditManager.canAfford(user.id, 1)) {
-                        alert('Need 1 credit to send a Super Like!');
+                      const { data, error } = await supabaseClient.rpc('record_like', {
+                        p_target_user_id: match.id,
+                        p_like_type: 'super_like',
+                      });
+                      const r = (data ?? {}) as Record<string, unknown>;
+                      if (error || !r.success) {
+                        if (r.error === 'insufficient_credits') {
+                          alert('You need 25 credits to send a Super Like.');
+                        } else {
+                          alert('That could not be sent. You have not been charged.');
+                        }
                         return;
                       }
-                      try {
-                        const { MatchManager } = await import('@/lib/database');
-                        await MatchManager.likeUser(user.id, match.id, 'super_like');
-                      } catch (err) {
-                        console.error('Super like failed:', err);
-                        alert('That could not be sent. You have not been charged.');
-                        return;
-                      }
-                      await creditManager.spendCredits(user.id, 1, `Super liked ${match.name}`);
-                      alert(`⭐ Super liked ${match.name}!`);
+                      void creditManager.refresh(user.id);
+                      alert(r.is_match ? `💞 It's a match with ${match.name}!` : `⭐ Super liked ${match.name}!`);
                     }}
-                    disabled={!user || !creditManager.canAfford(user.id, 1)}
+                    disabled={!user}
                     type="button"
                   >
-                    {user && creditManager.canAfford(user.id, 1) ? 'Super Like (1 Credit)' : 'Need Credits'}
+                    Super Like (25 Credits)
                   </Button>
                   <Button
                     className="flex-1 bg-white/20 text-white text-sm hover:bg-white/30"
