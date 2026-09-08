@@ -8,8 +8,15 @@ const corsHeaders = {
 };
 
 interface TokenRequest {
-  userId: string;
+  userId?: string;
 }
+
+/**
+ * Read a secret with surrounding whitespace removed. A trailing newline on the
+ * Account SID lands in the token's `sub` claim and Twilio refuses the whole
+ * token with "Invalid Access Token issuer/subject".
+ */
+const secret = (name: string) => (Deno.env.get(name) ?? '').trim();
 
 function generateVoiceToken(accountSid: string, apiKey: string, apiSecret: string, identity: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
@@ -33,7 +40,7 @@ function generateVoiceToken(accountSid: string, apiKey: string, apiSecret: strin
           allow: true
         },
         outgoing: {
-          application_sid: Deno.env.get('TWILIO_TWIML_APP_SID') || ''
+          application_sid: secret('TWILIO_TWIML_APP_SID')
         }
       }
     }
@@ -74,9 +81,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY');
-    const TWILIO_API_SECRET = Deno.env.get('TWILIO_API_SECRET');
+    const TWILIO_ACCOUNT_SID = secret('TWILIO_ACCOUNT_SID');
+    const TWILIO_API_KEY = secret('TWILIO_API_KEY');
+    const TWILIO_API_SECRET = secret('TWILIO_API_SECRET');
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_API_KEY || !TWILIO_API_SECRET) {
       return new Response(
@@ -87,6 +94,21 @@ Deno.serve(async (req: Request) => {
         }),
         {
           status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!/^AC[0-9a-fA-F]{32}$/.test(TWILIO_ACCOUNT_SID) || !/^SK[0-9a-fA-F]{32}$/.test(TWILIO_API_KEY)) {
+      console.error('Twilio credential is malformed; refusing to mint a token.');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Twilio credentials are misconfigured. Calling is unavailable.',
+          errorCode: 'TWILIO_CREDENTIALS_MALFORMED',
+        }),
+        {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -145,19 +167,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { userId }: TokenRequest = await req.json();
-
-    if (!userId) {
+    // The identity is the SIGNED-IN member, never a value from the body.
+    // twilio-voice-twiml reads the caller from this identity (Twilio sends
+    // it as From) to decide whose credits pay for the call, and Twilio
+    // delivers incoming calls to whoever is registered under it. A token
+    // minted for a body-supplied id would let one member place calls billed
+    // to another and answer that member's calls. If a client still sends a
+    // userId, it has to be its own.
+    const body: TokenRequest = await req.json().catch(() => ({}));
+    if (body?.userId && body.userId !== user.id) {
       return new Response(
-        JSON.stringify({ success: false, error: 'User ID is required' }),
+        JSON.stringify({ success: false, error: 'You can only request a token for yourself.' }),
         {
-          status: 400,
+          status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const identity = `user_${userId}`;
+    const identity = `user_${user.id}`;
 
     const voiceToken = await generateVoiceToken(
       TWILIO_ACCOUNT_SID,
