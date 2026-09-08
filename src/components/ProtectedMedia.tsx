@@ -49,7 +49,7 @@ export const ProtectedMedia: React.FC<ProtectedMediaProps> = ({
     }
     setBusy(true);
     setError(null);
-    const ok = await creditManager.deductCredits(user.id, cost, 'media_reveal');
+    const ok = await creditManager.chargeAction(user.id, 'media_reveal');
     setBusy(false);
     if (ok) {
       setRevealed(true);

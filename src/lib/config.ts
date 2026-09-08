@@ -23,6 +23,16 @@ export const APP_CONFIG = {
   privacyEmail: 'admin@dates.care',
   disputeEmail: 'admin@dates.care',
   phone: '+1-209-348-6842',
+  // Social profiles. Empty until a real account exists: an icon that links
+  // to "#" is a button that does nothing, and the menu and footer rendered
+  // four of them on every screen. Only the ones filled in are shown.
+  social: {
+    facebook: '',
+    x: '',
+    instagram: '',
+    tiktok: '',
+    linkedin: '',
+  },
   // WhatsApp is the primary support channel: free for members wherever they
   // are, written rather than spoken so a scam or payment report arrives with
   // screenshots, and asynchronous so nobody is lost to voicemail.

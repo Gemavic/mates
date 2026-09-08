@@ -961,7 +961,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                 About Us
               </button>
               <button
-                onClick={() => onNavigate('blog')}
+                onClick={() => onNavigate('care-blog')}
                 className="bg-white/10 hover:bg-white/20 active:bg-white/30 text-white py-3 px-4 rounded-xl transition-all duration-200 text-sm font-medium border border-white/20"
                 type="button"
               >

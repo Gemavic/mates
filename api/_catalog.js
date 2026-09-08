@@ -39,11 +39,13 @@ export const CATALOG = {
       label: 'Premium — 580 credits + 70 bonus',
     },
   },
+  // Silver and Gold are switched off in subscription_tiers (is_active=false)
+  // because nothing in the code gives those members anything a free member
+  // lacks. They are removed here too so a crafted request cannot buy one.
+  // One period, one payment, no renewal - the webhook grants 31 days.
   sub: {
-    silver: { usd: 19.99, label: 'Silver monthly subscription' },
-    gold: { usd: 39.99, label: 'Gold monthly subscription' },
-    platinum: { usd: 79.99, label: 'Platinum monthly subscription' },
-    elite: { usd: 149.99, label: 'Elite monthly subscription' },
+    platinum: { usd: 79.99, label: 'Platinum - 31 days' },
+    elite: { usd: 149.99, label: 'Elite - 31 days' },
   },
 };
 

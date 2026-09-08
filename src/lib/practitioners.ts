@@ -13,7 +13,7 @@ import { supabaseClient } from '@/lib/supabase';
  * they do not have has been confirmed.
  */
 
-export type PractitionerService = 'relationship' | 'couple_therapy' | 'counselling';
+export type PractitionerService = 'relationship' | 'couple_therapy' | 'counselling' | 'education';
 
 export interface Practitioner {
   id: string;

@@ -159,6 +159,46 @@ Deno.serve(async (req: Request) => {
     return twiml('<Say>That number cannot be dialled from this app.</Say><Hangup/>');
   }
 
+  // The caller must be able to pay for one minute before the callee's phone
+  // rings. The video token function gates at token time; voice cannot, because
+  // a voice token is also how a member receives calls. So the gate is here,
+  // where the dial happens and Twilio's signature has just vouched for who is
+  // dialling. From arrives as "client:user_<uuid>".
+  const from = (params.From ?? '').replace(/^client:/, '');
+  const callerId = CLIENT_IDENTITY.test(from) ? from.slice('user_'.length) : null;
+  if (!callerId) {
+    console.error('Rejected voice webhook: From is not a browser client identity', { from: params.From });
+    return twiml('<Say>This call cannot be placed.</Say><Hangup/>');
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (supabaseUrl && serviceKey) {
+    try {
+      const gateResp = await fetch(`${supabaseUrl}/rest/v1/rpc/can_start_call_for`, {
+        method: 'POST',
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_user_id: callerId, p_kind: 'audio' }),
+      });
+      const gate = await gateResp.json().catch(() => null);
+      if (!gateResp.ok || !gate?.allowed) {
+        console.log('Voice call refused by credit gate', { callerId, reason: gate?.reason });
+        return twiml(
+          gate?.reason === 'insufficient_credits'
+            ? '<Say>You need at least forty credits to start a voice call. Please top up and try again.</Say><Hangup/>'
+            : '<Say>This call cannot be placed right now.</Say><Hangup/>'
+        );
+      }
+    } catch (err) {
+      // Fail closed: a call we cannot verify is a call we do not connect.
+      console.error('Voice credit gate errored; refusing the call', err);
+      return twiml('<Say>Calling is temporarily unavailable. Please try again shortly.</Say><Hangup/>');
+    }
+  } else {
+    console.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing; refusing to bridge an ungated call.');
+    return twiml('<Say>Calling is not fully configured. Please contact support.</Say><Hangup/>');
+  }
+
   console.log('Bridging call', { from: params.From, to, callSid: params.CallSid });
 
   // answerOnBridge keeps the caller hearing ringing until the callee actually

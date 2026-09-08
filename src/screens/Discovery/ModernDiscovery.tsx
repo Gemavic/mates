@@ -630,10 +630,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
         <ModernHeader
           title="Dates"
           showMenu={false}
-          showSearch={true}
+          showSearch={false}
           showNotifications={true}
-          onSearch={() => console.log('Search clicked')}
-          onNotifications={() => console.log('Notifications clicked')}
+          onNotifications={() => onNavigate('likes')}
         />
       </div>
 
@@ -643,10 +642,9 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           title="Discovery"
           showBack={false}
           showMenu={false}
-          showSearch={true}
+          showSearch={false}
           showNotifications={true}
-          onSearch={() => console.log('Search clicked')}
-          onNotifications={() => console.log('Notifications clicked')}
+          onNotifications={() => onNavigate('likes')}
         />
       </div>
 

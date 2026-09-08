@@ -31,7 +31,6 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
   useHideBottomNav(isInCall);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [showAudioSettings, setShowAudioSettings] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [currentMatchName, setCurrentMatchName] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -63,7 +62,8 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         const newDuration = prev + 1;
         if (charge && newDuration % 60 === 0) {
           void (async () => {
-            const success = await creditManager.deductCredits(payerId, AUDIO_CALL_PER_MINUTE, 'audio_call');
+            // Price is the server's; the browser only names the action.
+            const success = await creditManager.chargeAction(payerId, 'audio_call');
             if (success) {
               const remaining = creditManager.getTotalCredits(payerId);
               setUserBalance(remaining);
@@ -424,41 +424,12 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
               <PhoneOff className="w-5 h-5 text-white" />
             </button>
 
-            {/* Audio Settings */}
-            <button
-              onClick={() => setShowAudioSettings(!showAudioSettings)}
-              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 bg-white/10 hover:bg-white/20"
-              title="Audio Settings"
-            >
-              <Settings className="w-5 h-5 text-white" />
-            </button>
+            {/* An "Audio Settings" button used to sit here, opening a panel with
+                an Audio Quality select that had no onChange and a Noise
+                Cancellation toggle wired to () => {}. Neither did anything.
+                Mute is real and stays. */}
           </div>
 
-          {/* Audio Settings Panel */}
-          {showAudioSettings && (
-            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm rounded-2xl p-4 text-white">
-              <h3 className="font-semibold mb-3">Audio Settings</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Audio Quality</span>
-                  <select className="bg-white/20 rounded px-2 py-1 text-sm">
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Noise Cancellation</span>
-                  <button 
-                    onClick={() => {}}
-                    className="w-8 h-4 bg-green-500 rounded-full relative"
-                  >
-                    <div className="w-3 h-3 bg-white rounded-full absolute top-0.5 right-0.5"></div>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </Layout>
     );

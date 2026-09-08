@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard, Loader2, MessageSquare, Mail, Volume2, XCircle, Receipt } from 'lucide-react';
+import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard, Loader2, MessageSquare, Mail, Volume2, XCircle, Receipt, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -79,6 +79,11 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [pushSaving, setPushSaving] = useState(false);
   const [pushSupported, setPushSupported] = useState(true);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
 
   const [showChatSettings, setShowChatSettings] = useState(false);
@@ -285,6 +290,71 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     if (!error) setShowPreferences(false);
   };
 
+  /**
+   * Hands the member everything we hold about them as one JSON file.
+   * Promised in the privacy policy since launch; built now.
+   */
+  const exportMyData = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabaseClient.rpc('export_my_data');
+      if (error || !data?.success) throw error ?? new Error(data?.error ?? 'export_failed');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dates-care-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('We could not prepare your export. Please try again, or email admin@dates.care.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  /**
+   * Deletes the account. The server requires the literal word DELETE, scrubs
+   * the rows the auth cascade would miss, removes every file under the
+   * member's storage prefix, then deletes the auth user - which cascades the
+   * rest. There is no undo, and the screen says so.
+   */
+  const deleteMyAccount = async () => {
+    if (deleting || deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const { data: session } = await supabaseClient.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error('not_signed_in');
+      const resp = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ confirm: 'DELETE' }),
+      });
+      const json = await resp.json().catch(() => null);
+      if (!resp.ok || !json?.deleted) {
+        setDeleteError(
+          json?.error === 'staff_account'
+            ? 'Staff accounts are removed by an administrator, not from here.'
+            : 'Your account could not be deleted. Nothing has been changed. Please try again or email admin@dates.care.'
+        );
+        return;
+      }
+      try { await signOut(); } catch { /* the session is already gone server-side */ }
+      onNavigate('welcome');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setDeleteError('Your account could not be deleted. Nothing has been changed. Please try again or email admin@dates.care.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const settingsGroups = [
     {
       title: 'Account',
@@ -307,6 +377,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           label: 'Two-Factor Authentication',
           comingSoon: true,
         },
+      ]
+    },
+    {
+      title: 'Your data',
+      items: [
+        { icon: Download, label: exporting ? 'Preparing your export…' : 'Download a copy of my data', action: exportMyData },
+        { icon: Trash2, label: 'Delete my account', action: () => { setDeleteConfirmText(''); setDeleteError(null); setShowDeleteAccount(true); } },
       ]
     },
     {
@@ -652,6 +729,56 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               </Button>
             </div>
           )}
+        </div>
+      </Layout>
+    );
+  }
+
+  if (showDeleteAccount) {
+    return (
+      <Layout
+        title="Delete account"
+        onBack={() => setShowDeleteAccount(false)}
+        showClose={false}
+      >
+        <div className="px-4 py-6 space-y-5">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center text-red-700 mb-2">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              <strong>This cannot be undone</strong>
+            </div>
+            <p className="text-red-700 text-sm">
+              Your profile, photos, matches, messages, mail, and remaining credits are removed
+              permanently. Credits are not refunded. If you have a support ticket or dispute open,
+              an anonymised record of it is kept so it can still be answered.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+            <p className="text-gray-800 text-sm">
+              Want a copy first? <button type="button" onClick={exportMyData} className="text-pink-600 underline font-medium">Download your data</button> before you go.
+            </p>
+            <label className="block text-sm text-gray-700">
+              Type <span className="font-mono font-semibold">DELETE</span> to confirm
+              <input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                autoComplete="off"
+                autoCapitalize="characters"
+                className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-gray-900"
+                placeholder="DELETE"
+              />
+            </label>
+            {deleteError && <p className="text-sm text-red-700">{deleteError}</p>}
+            <Button
+              onClick={deleteMyAccount}
+              disabled={deleting || deleteConfirmText !== 'DELETE'}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-2xl disabled:opacity-50"
+              type="button"
+            >
+              {deleting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting…</>) : (<><Trash2 className="w-4 h-4 mr-2" />Delete my account permanently</>)}
+            </Button>
+          </div>
         </div>
       </Layout>
     );

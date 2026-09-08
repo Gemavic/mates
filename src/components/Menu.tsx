@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Menu as MenuIcon, X, User, LogIn, LogOut, UserPlus, CreditCard, Video, Phone, Gift, Heart, Users, Chrome as Home, Settings, CircleHelp as HelpCircle, Star, Crown, Newspaper, Mail, Shield, BookOpen, Sparkles, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
-import { whatsappSupportLink, FEATURES } from '@/lib/config';
+import { APP_CONFIG, whatsappSupportLink, FEATURES } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +35,14 @@ export const Menu: React.FC<MenuProps> = ({
   };
 
   const [showMore, setShowMore] = useState(false);
+
+  // Only real profiles are rendered. See APP_CONFIG.social.
+  const socialLinks = [
+    { Icon: Facebook, label: 'Facebook', url: APP_CONFIG.social.facebook },
+    { Icon: Twitter, label: 'X', url: APP_CONFIG.social.x },
+    { Icon: Instagram, label: 'Instagram', url: APP_CONFIG.social.instagram },
+    { Icon: Linkedin, label: 'LinkedIn', url: APP_CONFIG.social.linkedin },
+  ].filter((l) => l.url);
 
   // Core-first navigation: Discover → Match → Message is the product.
   // Everything else lives behind "More" so the core loop stays obvious.
@@ -262,18 +270,22 @@ export const Menu: React.FC<MenuProps> = ({
 
           {/* Menu Footer */}
           <div className="mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t border-white/20">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  aria-label="Social link"
-                  className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="flex items-center justify-center gap-3 mb-4">
+                {socialLinks.map(({ Icon, label, url }) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
+                  >
+                    <Icon className="w-4 h-4" />
+                  </a>
+                ))}
+              </div>
+            )}
             <div className="text-center mb-4">
               <a
                 href={whatsappSupportLink()}

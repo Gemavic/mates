@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronUp, Search, User, Mail, MessageCircle, Facebook, Twitter, Instagram, Linkedin, Heart, X } from 'lucide-react';
-import { whatsappSupportLink } from '@/lib/config';
+import { APP_CONFIG, whatsappSupportLink } from '@/lib/config';
 import { WhatsAppIcon } from '@/components/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 import {
@@ -32,12 +32,13 @@ export const Footer: React.FC<FooterProps> = ({
     { id: 'profile', icon: User, label: 'Profile', onClick: () => onNavigate('profile') },
   ];
 
+  // Only real profiles are rendered. See APP_CONFIG.social.
   const socialLinks = [
-    { icon: Facebook, label: 'Facebook', url: '#' },
-    { icon: Twitter, label: 'Twitter', url: '#' },
-    { icon: Instagram, label: 'Instagram', url: '#' },
-    { icon: Linkedin, label: 'LinkedIn', url: '#' },
-  ];
+    { icon: Facebook, label: 'Facebook', url: APP_CONFIG.social.facebook },
+    { icon: Twitter, label: 'X', url: APP_CONFIG.social.x },
+    { icon: Instagram, label: 'Instagram', url: APP_CONFIG.social.instagram },
+    { icon: Linkedin, label: 'LinkedIn', url: APP_CONFIG.social.linkedin },
+  ].filter((s) => s.url);
 
   const linkColumns = [
     {
@@ -131,6 +132,7 @@ export const Footer: React.FC<FooterProps> = ({
               ))}
             </div>
 
+            {socialLinks.length > 0 && (
             <div className="flex items-center justify-center gap-3 pt-3 border-t border-gray-100">
               {socialLinks.map((social) => {
                 const Icon = social.icon;
@@ -138,6 +140,8 @@ export const Footer: React.FC<FooterProps> = ({
                   <a
                     key={social.label}
                     href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={social.label}
                     className="w-9 h-9 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-110"
                   >
@@ -146,6 +150,7 @@ export const Footer: React.FC<FooterProps> = ({
                 );
               })}
             </div>
+            )}
 
             <div className="text-center pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-500 mb-2">Need help? Contact support</p>

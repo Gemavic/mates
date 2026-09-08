@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Send, TrendingUp, CheckCircle, Clock, ThumbsUp, Search } from 'lucide-react';
-import { submitFeedback, getFeedbackCategories, getUserFeedbackHistory, getFeedbackStats, getTrendingFeedback } from '@/lib/feedbackSystem';
+import { MessageSquare, Send, CheckCircle, Clock, Search } from 'lucide-react';
+import { getFeedbackCategories } from '@/lib/feedbackSystem';
+import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -25,9 +26,32 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
   const { user, getFullName } = useAuth();
   const { theme } = useTheme();
   const categories = getFeedbackCategories();
-  const userFeedback = getUserFeedbackHistory(user?.id || 'demo-user');
-  const stats = getFeedbackStats();
-  const trending = getTrendingFeedback();
+
+  /**
+   * Feedback used to live in a JavaScript Map inside feedbackSystem.ts. It
+   * showed a success toast with an ID, then vanished on refresh, and the
+   * "history" tab was always empty. It is a table now, and always was - the
+   * screen just never wrote to it.
+   */
+  interface FeedbackRow {
+    id: string; category: string; title: string; description: string;
+    rating: number; status: string; created_at: string;
+  }
+  const [userFeedback, setUserFeedback] = useState<FeedbackRow[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const loadHistory = async () => {
+    if (!user) return;
+    setLoadingHistory(true);
+    const { data } = await supabaseClient
+      .from('feedback_submissions')
+      .select('id, category, title, description, rating, status, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setUserFeedback((data ?? []) as FeedbackRow[]);
+    setLoadingHistory(false);
+  };
+  useEffect(() => { void loadHistory(); }, [user?.id]);
 
   const handleSubmit = async () => {
     if (!selectedCategory || !formData.title || !formData.description || rating === 0) {
@@ -45,16 +69,25 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
     try {
       const tags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
 
-      const feedbackId = submitFeedback(
-        user.id,
-        user.email || 'user@example.com',
-        getFullName(),
-        selectedCategory as any,
-        formData.title,
-        formData.description,
-        rating,
-        tags
-      );
+      const { data: row, error } = await supabaseClient
+        .from('feedback_submissions')
+        .insert({
+          user_id: user.id,
+          user_email: user.email ?? null,
+          user_name: getFullName(),
+          category: selectedCategory,
+          title: formData.title.trim().slice(0, 150),
+          description: formData.description.trim().slice(0, 4000),
+          rating,
+          tags,
+          status: 'submitted',
+          source: 'app',
+        })
+        .select('id')
+        .single();
+      if (error || !row) throw error ?? new Error('insert_failed');
+      const feedbackId = row.id.slice(0, 8).toUpperCase();
+      void loadHistory();
 
       // Reset form
       setFormData({ title: '', description: '', tags: '' });
@@ -64,7 +97,7 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
       // Show success message
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = `✅ Feedback submitted successfully! ID: ${feedbackId}`;
+      successMessage.textContent = `Thank you. Your feedback is saved (ref ${feedbackId}).`;
       document.body.appendChild(successMessage);
       setTimeout(() => document.body.removeChild(successMessage), 5000);
 
@@ -193,7 +226,9 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
     <div className="space-y-4">
       <h3 className="text-white font-semibold text-lg">Your Feedback History</h3>
       
-      {userFeedback.length > 0 ? (
+      {loadingHistory ? (
+        <p className="text-white/70 text-center py-8">Loading…</p>
+      ) : userFeedback.length > 0 ? (
         <div className="space-y-3">
           {userFeedback.map((feedback) => {
             const StatusIcon = getStatusIcon(feedback.status);
@@ -219,10 +254,10 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
                         </span>
                       ))}
                     </div>
-                    <span className="text-white/60 text-xs">ID: {feedback.id}</span>
+                    <span className="text-white/60 text-xs">ref {feedback.id.slice(0, 8).toUpperCase()}</span>
                   </div>
                   <span className="text-white/60 text-xs">
-                    {feedback.submittedAt.toLocaleDateString()}
+                    {new Date(feedback.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -233,47 +268,6 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
         <div className="text-center py-8">
           <MessageSquare className="w-16 h-16 text-white/30 mx-auto mb-4" />
           <p className="text-white/70">No feedback submitted yet</p>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderTrending = () => (
-    <div className="space-y-4">
-      <h3 className="text-white font-semibold text-lg">Trending Feedback</h3>
-      
-      {trending.length > 0 ? (
-        <div className="space-y-3">
-          {trending.map((feedback) => (
-            <div key={feedback.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="text-white font-medium">{feedback.title}</h4>
-                  <p className="text-white/70 text-sm">{feedback.category.replace('_', ' ')}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <ThumbsUp className="w-4 h-4 text-white/70" />
-                  <span className="text-white/70 text-sm">{feedback.votes}</span>
-                </div>
-              </div>
-              <p className="text-white/80 text-sm mb-2">{feedback.description}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className={`text-sm ${i < feedback.rating ? 'text-yellow-400' : 'text-white/30'}`}>
-                      ⭐
-                    </span>
-                  ))}
-                </div>
-                <span className="text-white/60 text-xs">by {feedback.userName}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <TrendingUp className="w-16 h-16 text-white/30 mx-auto mb-4" />
-          <p className="text-white/70">No trending feedback yet</p>
         </div>
       )}
     </div>
@@ -306,28 +300,14 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
           <p className="text-white/80">Your feedback shapes the future of Dates.care</p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-white">{stats.totalSubmissions}</p>
-            <p className="text-white/70 text-xs">Total Feedback</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-white">{stats.averageRating.toFixed(1)}</p>
-            <p className="text-white/70 text-xs">Avg Rating</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-white">{Math.round(stats.implementationRate)}%</p>
-            <p className="text-white/70 text-xs">Implemented</p>
-          </div>
-        </div>
-
+        {/* A row of stat tiles used to sit here: Total Feedback, Avg Rating,
+            Implemented %. All three were computed from an in-memory Map and
+            therefore always read 0 / 0.0 / 0%. */}
         {/* Tab Navigation */}
         <div className="flex bg-white/10 backdrop-blur-sm rounded-2xl p-1 mb-6">
           {[
             { id: 'submit', label: 'Submit', icon: Send },
-            { id: 'history', label: 'History', icon: Clock },
-            { id: 'trending', label: 'Trending', icon: TrendingUp }
+            { id: 'history', label: 'History', icon: Clock }
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -351,7 +331,7 @@ export const Feedback: React.FC<FeedbackProps> = ({ onNavigate }) => {
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
           {activeTab === 'submit' && renderSubmitForm()}
           {activeTab === 'history' && renderHistory()}
-          {activeTab === 'trending' && renderTrending()}
+
         </div>
 
         {/* Contact Info */}

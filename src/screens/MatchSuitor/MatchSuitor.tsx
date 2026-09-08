@@ -13,30 +13,39 @@ interface MatchSuitorProps {
 
 export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
   const { user } = useAuth();
+  /**
+   * This list sold "AI-powered compatibility analysis", "Priority Placement -
+   * your profile appears first in discovery", "Unlimited Likes" and "5 super
+   * likes per day". None of them is implemented: Discovery is an unranked
+   * query, likes are already unlimited and free, and super likes cost 25
+   * credits each for everyone. The one benefit a plan actually confers is
+   * enforced in spend_credits: Platinum and Elite members are not charged
+   * for calls. That is what is listed.
+   */
   const premiumFeatures = [
     {
-      icon: Target,
-      title: 'Advanced Matching',
-      description: 'AI-powered compatibility analysis for better matches',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      icon: Crown,
-      title: 'Priority Placement',
-      description: 'Your profile appears first in discovery',
-      color: 'from-yellow-400 to-orange-500'
-    },
-    {
       icon: Zap,
-      title: 'Unlimited Likes',
-      description: 'Like as many profiles as you want',
+      title: 'Voice calls included',
+      description: 'No per-minute charge on Platinum and Elite',
       color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Star,
-      title: 'Super Likes',
-      description: '5 super likes per day to stand out',
+      title: 'Video calls included',
+      description: 'No per-minute charge on Platinum and Elite',
       color: 'from-green-500 to-teal-500'
+    },
+    {
+      icon: Crown,
+      title: 'One payment, one period',
+      description: '31 days. Nothing renews automatically',
+      color: 'from-yellow-400 to-orange-500'
+    },
+    {
+      icon: Target,
+      title: 'Everything else as usual',
+      description: 'Credits still buy mail attachments, gifts and super likes',
+      color: 'from-blue-500 to-cyan-500'
     }
   ];
 
@@ -72,15 +81,15 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                 .maybeSingle();
 
               const interests = Array.isArray(profile.interests) ? profile.interests : [];
-              const reasons = interests.length > 0
-                ? interests.slice(0, 3).map((i: string) => `Shared interest: ${i}`)
-                : ['Compatible personality', 'Similar values'];
+              // Only their real interests. The fallback used to be
+              // "Compatible personality" / "Similar values" - invented.
+              const reasons = interests.slice(0, 3).map((i: string) => `Interested in ${i}`);
 
               return {
                 id: profile.user_id,
                 name: profile.first_name || profile.full_name || 'User',
                 age: profile.age || 25,
-                compatibility: Math.floor(Math.random() * 15) + 80,
+
                 image: photo?.photo_url || initialsAvatar(profile.first_name || profile.full_name, profile.user_id),
                 reasons
               };
@@ -145,11 +154,10 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
         {/* AI Match Suggestions */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold text-lg">AI Match Suggestions</h3>
-            <div className="flex items-center space-x-1">
-              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-              <span className="text-white/80 text-sm">Premium</span>
-            </div>
+            {/* Was "AI Match Suggestions" with a colour-coded "87% Compatibility
+                Match" under each name. The number was Math.random() between 80
+                and 94, regenerated on every render. */}
+            <h3 className="text-white font-semibold text-lg">People you might like</h3>
           </div>
           
           <div className="space-y-4">
@@ -165,22 +173,14 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                     className="w-16 h-16 rounded-full object-cover"
                   />
                   <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-white font-medium">{match.name}, {match.age}</h4>
-                      <div className="flex items-center space-x-1">
-                        <div className={`w-3 h-3 rounded-full ${
-                          match.compatibility >= 90 ? 'bg-green-500' : 
-                          match.compatibility >= 80 ? 'bg-yellow-500' : 'bg-orange-500'
-                        }`}></div>
-                        <span className="text-white font-bold text-sm">{match.compatibility}%</span>
-                      </div>
-                    </div>
-                    <p className="text-white/70 text-sm">Compatibility Match</p>
+                    <h4 className="text-white font-medium mb-1">{match.name}, {match.age}</h4>
+                    <p className="text-white/70 text-sm">Recently active</p>
                   </div>
                 </div>
                 
+                {match.reasons.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-white/80 text-sm mb-2">Why you're compatible:</p>
+                  <p className="text-white/80 text-sm mb-2">From their profile:</p>
                   <div className="space-y-1">
                     {match.reasons.map((reason: string, index: number) => (
                       <div key={index} className="flex items-center text-white/70 text-xs">
@@ -190,6 +190,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                     ))}
                   </div>
                 </div>
+                )}
                 
                 <div className="flex space-x-2">
                   <Button
@@ -240,15 +241,16 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
         {/* Upgrade CTA */}
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-center">
           <Crown className="w-12 h-12 text-white mx-auto mb-4" />
-          <h3 className="text-white font-bold text-xl mb-2">Upgrade to Premium</h3>
+          <h3 className="text-white font-bold text-xl mb-2">Membership plans</h3>
           <p className="text-white/90 text-sm mb-4">
-            Get access to advanced matching and premium features
+            Platinum and Elite include voice and video calls for the period.
           </p>
+          {/* Said "Upgrade Now - $9.99/month". No $9.99 plan has ever existed. */}
           <Button
             onClick={() => onNavigate('credits')}
             className="bg-white text-purple-600 font-semibold px-8 py-3 hover:scale-105 transition-all duration-300"
           >
-            Upgrade Now - $9.99/month
+            See plans and prices
           </Button>
         </div>
       </div>

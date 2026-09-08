@@ -9,6 +9,8 @@ interface ModernHeaderProps {
   showMenu?: boolean;
   showSearch?: boolean;
   showNotifications?: boolean;
+  /** Show the red dot on the bell. Off unless there is something new. */
+  notificationBadge?: boolean;
   showSettings?: boolean;
   onBack?: () => void;
   onMenu?: () => void;
@@ -25,6 +27,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   showMenu = true,
   showSearch = false,
   showNotifications = true,
+  notificationBadge = false,
   showSettings = false,
   onBack,
   onMenu,
@@ -133,7 +136,11 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-700 flex-shrink-0" />
-              <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 md:top-1.5 md:right-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full animate-pulse"></div>
+              {/* This dot used to be unconditional and pulsing: a permanent
+                  "you have something new" on a button that opened nothing. */}
+              {notificationBadge && (
+                <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 md:top-1.5 md:right-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full"></div>
+              )}
             </button>
           )}
 

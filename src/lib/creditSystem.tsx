@@ -261,6 +261,61 @@ export class CreditManager {
   }
 
   /**
+   * Charge for a named action at the price the SERVER holds for it. The
+   * browser never sends an amount. Use this for anything in
+   * app_action_prices: 'video_call', 'audio_call', 'media_reveal', ...
+   * `units` is for per-minute actions.
+   */
+  async chargeAction(userId: string, action: string, units = 1, threadId?: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabaseClient.rpc('charge_action', {
+        p_action: action,
+        p_units: units,
+        p_thread_id: threadId ?? null,
+      });
+      if (error || !data?.success) {
+        if (data?.error === 'insufficient_credits') this.updateCacheTotal(userId, data.total_credits ?? 0);
+        return false;
+      }
+      this.updateCacheTotal(userId, data.total_credits);
+      return true;
+    } catch (err) {
+      console.error('charge_action failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Charge for a mail. The total is computed on the server from the counts;
+   * the returned price is what was actually taken.
+   */
+  async chargeMail(
+    userId: string,
+    opts: { exclusive: boolean; photos?: number; audios?: number; videos?: number; files?: number; threadId?: string }
+  ): Promise<{ ok: boolean; price: number; total?: number; error?: string }> {
+    try {
+      const { data, error } = await supabaseClient.rpc('charge_mail', {
+        p_exclusive: opts.exclusive,
+        p_photos: opts.photos ?? 0,
+        p_audios: opts.audios ?? 0,
+        p_videos: opts.videos ?? 0,
+        p_files: opts.files ?? 0,
+        p_thread_id: opts.threadId ?? null,
+      });
+      const price = typeof data?.price === 'number' ? data.price : 0;
+      if (error || !data?.success) {
+        if (data?.error === 'insufficient_credits') this.updateCacheTotal(userId, data.total_credits ?? 0);
+        return { ok: false, price, total: data?.total_credits, error: data?.error ?? 'request_failed' };
+      }
+      this.updateCacheTotal(userId, data.total_credits);
+      return { ok: true, price, total: data.total_credits };
+    } catch (err) {
+      console.error('charge_mail failed:', err);
+      return { ok: false, price: 0, error: 'request_failed' };
+    }
+  }
+
+  /**
    * Send-message charge: first message in a thread is free, then 10 credits.
    * Enforced server-side in spend_message().
    */
@@ -400,13 +455,9 @@ export class CreditManager {
         description: 'Stand out with a super like',
         category: 'discovery',
       },
-      {
-        id: 'boost',
-        name: 'Profile Boost',
-        cost: CREDIT_COSTS.BOOST,
-        description: 'Boost your profile visibility for 30 minutes',
-        category: 'visibility',
-      },
+      // Profile Boost was listed here at 50 credits. There is no boost: no
+      // purchase path, no effect on Discovery ordering, no expiry. Removed
+      // from the catalogue until one exists.
       {
         id: 'video_call',
         name: 'Video Call',

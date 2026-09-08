@@ -64,7 +64,6 @@ const SPEND = [
   { what: 'Exclusive', cost: `${EXCLUSIVE_SEND_COST} credits each way` },
   { what: 'Virtual gift', cost: 'from 5 credits' },
   { what: 'Super like', cost: `${CREDIT_COSTS.SUPER_LIKE} credits` },
-  { what: 'Profile boost (30 min)', cost: `${CREDIT_COSTS.BOOST} credits` },
   { what: 'Audio call', cost: `${AUDIO_CALL_PER_MINUTE} credits/min (caller pays)` },
   { what: 'Video call', cost: `${VIDEO_CALL_PER_MINUTE} credits/min (caller pays)` },
 ];
@@ -76,7 +75,7 @@ const FAQ = [
   },
   {
     q: 'What are credits for?',
-    a: 'Credits pay for the optional extras — sending a photo or a gift, mail, boosting your profile, and audio or video calls. Chatting itself is free. You buy credits in packs and they do not expire.',
+    a: 'Credits pay for the optional extras — sending a photo or a gift, mail, super likes, and audio or video calls. Chatting itself is free. You buy credits in packs and they do not expire.',
   },
   {
     q: 'How do you keep fake profiles out?',
@@ -373,8 +372,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
                 ))}
               </ul>
               <p className="text-slate-500 text-xs mt-4">
-                Prices in US dollars. Tax is calculated at checkout for your
-                country.
+                Prices in US dollars. No tax is added at checkout.
               </p>
             </div>
           </div>

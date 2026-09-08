@@ -30,7 +30,6 @@ interface ModernCreditsProps {
 export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
   const [paymentModel, setPaymentModel] = useState<'subscription' | 'credits'>('subscription');
   const [activeTab, setActiveTab] = useState<'credits' | 'kobos' | 'combo'>('credits');
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [subscriptionTiers, setSubscriptionTiers] = useState<any[]>([]);
   const [dbCredits, setDbCredits] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -156,7 +155,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
           title="Upgrade"
           showBack={true}
           onBack={() => onNavigate('discovery')}
-          showNotifications={true}
+          showNotifications={false}
         />
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-24">
@@ -240,39 +239,22 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
           {/* Subscription Tiers */}
           {paymentModel === 'subscription' && (
             <>
-              {/* Billing Period Toggle */}
-              <div className="flex bg-white/10 backdrop-blur-sm rounded-2xl p-1 max-w-md mx-auto">
-                <button
-                  onClick={() => setBillingPeriod('monthly')}
-                  className={`flex-1 py-2 px-4 rounded-xl transition-all duration-300 ${
-                    billingPeriod === 'monthly'
-                      ? 'bg-white text-gray-900 shadow-lg'
-                      : 'text-white hover:bg-white/10'
-                  }`}
-                  type="button"
-                >
-                  <span className="font-medium">Monthly</span>
-                </button>
-                <button
-                  onClick={() => setBillingPeriod('annual')}
-                  className={`flex-1 py-2 px-4 rounded-xl transition-all duration-300 ${
-                    billingPeriod === 'annual'
-                      ? 'bg-white text-gray-900 shadow-lg'
-                      : 'text-white hover:bg-white/10'
-                  }`}
-                  type="button"
-                >
-                  <span className="font-medium">Annual</span>
-                  <span className="ml-2 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">Save 25%</span>
-                </button>
-              </div>
+              {/* A Monthly / Annual toggle badged "Save 25%" used to be here.
+                  There is no annual product: checkout sends only the tier
+                  name, the server catalogue holds one monthly price, and the
+                  webhook grants 31 days. A member who chose Annual saw an
+                  annual price and was invoiced the monthly one. Plans are
+                  one payment for one period and do not renew. */}
+              <p className="text-white/80 text-sm text-center max-w-md mx-auto">
+                One payment covers 31 days. Nothing renews automatically - if you want another period, you buy it again.
+              </p>
 
               {/* Subscription Tier Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                 {subscriptionTiers.map((tier) => {
                   const Icon = getTierIcon(tier.tier_name);
                   const gradient = getTierGradient(tier.tier_name);
-                  const price = billingPeriod === 'monthly' ? parseFloat(tier.monthly_price_usd) : parseFloat(tier.annual_price_usd);
+                  const price = parseFloat(tier.monthly_price_usd);
                   const isCurrentTier = userSubscription?.tier_name === tier.tier_name;
                   const isFeatured = tier.is_featured || tier.tier_name === 'platinum';
 
@@ -307,13 +289,8 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                         <p className="text-gray-600 text-sm mb-3 line-clamp-2">{tier.description}</p>
                         <div className="flex items-center justify-center space-x-1">
                           <span className="text-3xl font-bold text-gray-900">{formatPrice(price)}</span>
-                          <span className="text-sm text-gray-600">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
+                          <span className="text-sm text-gray-600">/31 days</span>
                         </div>
-                        {billingPeriod === 'annual' && (
-                          <p className="text-sm text-green-600 font-medium mt-1">
-                            Save {formatPrice(parseFloat(tier.monthly_price_usd) * 12 - price)}/year
-                          </p>
-                        )}
                       </div>
 
                       <div className="space-y-2 mb-6">
@@ -329,7 +306,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
                         onClick={() => handlePurchase({
                           ...tier,
                           price_usd: price,
-                          billing_period: billingPeriod,
+                          billing_period: 'monthly',
                           type: 'subscription'
                         })}
                         className={`w-full bg-gradient-to-r ${gradient} text-white font-semibold hover:scale-105 transition-all duration-300 cursor-pointer touch-manipulation active:scale-95 ${
@@ -585,7 +562,7 @@ export const ModernCredits: React.FC<ModernCreditsProps> = ({ onNavigate }) => {
         {/* Payment Gateway Modal */}
         {showPaymentGateway && selectedPackage && (
           <PaymentGateway
-            amount={selectedPackage.price_usd || parseFloat(selectedPackage.monthly_price_usd || selectedPackage.annual_price_usd)}
+            amount={selectedPackage.price_usd || parseFloat(selectedPackage.monthly_price_usd)}
             packageName={
               selectedPackage.package_name || selectedPackage.display_name || 'Purchase'
             }

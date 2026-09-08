@@ -26,8 +26,10 @@ const ViewUserProfile = React.lazy(() => import('@/screens/Profile/ViewUserProfi
 const Newsfeed = React.lazy(() => import('@/screens/Newsfeed/Newsfeed').then(m => ({ default: m.Newsfeed })));
 const Feedback = React.lazy(() => import('@/screens/Feedback/Feedback').then(m => ({ default: m.Feedback })));
 const Settings = React.lazy(() => import('@/screens/Settings/Settings').then(m => ({ default: m.Settings })));
-const Terms = React.lazy(() => import('@/screens/Legal/Terms').then(m => ({ default: m.Terms })));
-const Privacy = React.lazy(() => import('@/screens/Legal/Privacy').then(m => ({ default: m.Privacy })));
+// Terms and Privacy used to be separate React copies of the static pages at
+// /terms and /privacy, with different dates and different content. The static
+// HTML is now the only source; this screen renders it inside the app chrome.
+const LegalDocument = React.lazy(() => import('@/screens/Legal/LegalDocument').then(m => ({ default: m.LegalDocument })));
 const Dispute = React.lazy(() => import('@/screens/Legal/Dispute').then(m => ({ default: m.Dispute })));
 const Disclaimer = React.lazy(() => import('@/screens/Legal/Disclaimer').then(m => ({ default: m.Disclaimer })));
 const PaymentRefund = React.lazy(() => import('@/screens/Legal/PaymentRefund').then(m => ({ default: m.PaymentRefund })));
@@ -477,10 +479,10 @@ const App: React.FC = () => {
         return <Settings onNavigate={handleNavigate} />;
       
       case 'terms':
-        return <Terms onNavigate={handleNavigate} />;
-      
+        return <LegalDocument doc="terms" onNavigate={handleNavigate} />;
+
       case 'privacy':
-        return <Privacy onNavigate={handleNavigate} />;
+        return <LegalDocument doc="privacy" onNavigate={handleNavigate} />;
       
       case 'dispute':
         return <Dispute onNavigate={handleNavigate} />;

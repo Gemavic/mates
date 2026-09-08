@@ -492,11 +492,17 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         return;
       }
 
-      const deducted = await creditManager.deductCredits(
-        user.id,
-        totalCost,
-        isExclusive ? 'Exclusive mail' : 'Private mail'
-      );
+      // The server computes the price from the counts; totalCost above is
+      // only the number shown to the member before they confirm. If they
+      // ever disagree, the server's figure is the one that was charged.
+      const charge = await creditManager.chargeMail(user.id, {
+        exclusive: isExclusive,
+        photos: uploadedPaths.length,
+      });
+      const deducted = charge.ok;
+      if (deducted && charge.price !== totalCost) {
+        console.warn('Mail price differed from the client estimate', { client: totalCost, server: charge.price });
+      }
       if (!deducted) {
         alert('Credit deduction failed. Please try again.');
         return;
@@ -545,7 +551,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         .insert({
           thread_id: selectedThread, sender_id: user.id,
           subject, message_text: savedText || 'Sent attachments',
-          credits_spent: totalCost,
+          credits_spent: charge.price,
           has_photos: uploadedPaths.length > 0,
           photo_urls: uploadedPaths,
           is_exclusive: isExclusive,

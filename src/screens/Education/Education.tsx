@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DollarSign, TrendingUp, PieChart, Target, Calendar, Star, BookOpen, Briefcase, Calculator, Wallet, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { BookingCalendar } from '@/components/BookingCalendar';
+import { loadPractitioners, requestBooking, formatFee, type Practitioner } from '@/lib/practitioners';
+import { initialsAvatar } from '@/lib/avatar';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EducationProps {
   onNavigate: (screen: string) => void;
@@ -28,32 +31,26 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
 
   const [expandedTip, setExpandedTip] = useState<number | null>(null);
 
-  const educators = [
-    {
-      id: '1',
-      name: 'Dr. Matthew Dare',
-      specialization: 'Couples Financial Education & Money Communication',
-      experience: '18 years',
-      rating: 4.9,
-      image: 'https://images.pexels.com/photos/3778966/pexels-photo-3778966.jpeg?auto=compress&cs=tinysrgb&w=400',
-      price: '$150/session',
-      availability: 'Available today',
-      expertise: ['Financial Literacy', 'Joint Budget Planning', 'Debt Education for Couples', 'Money Conversations'],
-      credentials: 'PhD, Certified Financial Educator'
-    },
-    {
-      id: '2',
-      name: 'Mina Armis',
-      specialization: 'Relationship Finance Education & Budget Planning',
-      experience: '12 years',
-      rating: 4.9,
-      image: 'https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg?auto=compress&cs=tinysrgb&w=400',
-      price: '$125/session',
-      availability: 'Available tomorrow',
-      expertise: ['Shared Expenses', 'Financial Trust Building', 'Financial Planning Education', 'Money Communication'],
-      credentials: 'MBA, Certified Financial Educator'
-    }
-  ];
+  /**
+   * Two invented educators used to be hard-coded here - "Dr. Matthew Dare,
+   * PhD" and "Mina Armis, MBA", each with a stock photograph of a stranger, a
+   * 4.9 rating nobody gave, a session price nobody was charged, and
+   * "Available today". Booking one showed "Education Session Booked!" and
+   * saved nothing. The other three therapy screens were fixed the same way
+   * earlier; this one was missed.
+   */
+  const { user } = useAuth();
+  const [educators, setEducators] = useState<Practitioner[]>([]);
+  const [loadingEducators, setLoadingEducators] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    loadPractitioners('education').then((rows) => {
+      if (cancelled) return;
+      setEducators(rows);
+      setLoadingEducators(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const services = [
     {
@@ -293,38 +290,41 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
   const savingsResults = calculateSavings();
   const budgetResults = calculateBudget();
 
-  const handleBookingConfirm = (educatorId: string, date: string, time: string) => {
+  const flash = (title: string, detail: string, colour: string) => {
+    const wrap = document.createElement('div');
+    wrap.className = `fixed top-4 right-4 ${colour} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    const t = document.createElement('div'); t.className = 'font-bold'; t.textContent = title;
+    const d = document.createElement('div'); d.className = 'text-sm'; d.textContent = detail;
+    wrap.appendChild(t); wrap.appendChild(d);
+    document.body.appendChild(wrap);
+    setTimeout(() => { if (document.body.contains(wrap)) document.body.removeChild(wrap); }, 8000);
+  };
+
+  const handleBookingConfirm = async (educatorId: string, date: string, time: string) => {
     const educator = educators.find(a => a.id === educatorId);
-    const formattedDate = new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+    if (!user) {
+      flash('Please sign in', 'Sign in to request a session.', 'bg-red-500');
+      return;
+    }
+    if (!educator) return;
+    const result = await requestBooking({
+      userId: user.id,
+      service: 'education',
+      practitionerId: educator.id,
+      practitionerName: educator.full_name,
+      date,
+      time,
     });
-
-    // ⚠️ SECURITY FIX: Replaced innerHTML with textContent to prevent XSS
-    const successMessage = document.createElement('div');
-    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-
-    const textDiv = document.createElement('div');
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'font-bold';
-    titleDiv.textContent = 'Education Session Booked!';
-
-    const detailsDiv = document.createElement('div');
-    detailsDiv.className = 'text-sm';
-    detailsDiv.textContent = (educator?.name || 'Educator') + ' • ' + formattedDate + ' at ' + time;
-
-    textDiv.appendChild(titleDiv);
-    textDiv.appendChild(detailsDiv);
-    successMessage.appendChild(textDiv);
-
-    document.body.appendChild(successMessage);
-    setTimeout(() => {
-      if (document.body.contains(successMessage)) {
-        document.body.removeChild(successMessage);
-      }
-    }, 7000);
+    if (!result.ok) {
+      flash('Not sent', result.error ?? 'Your request could not be saved. Please try again.', 'bg-red-500');
+      return;
+    }
+    const formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    flash(
+      'Request received',
+      `${educator.full_name}, ${formattedDate} at ${time}. This is a request, not a confirmed session - we will email you once it is confirmed.`,
+      'bg-green-500'
+    );
   };
 
   return (
@@ -721,7 +721,17 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
             </div>
 
             <div>
-              <h3 className="text-white font-semibold text-lg mb-3">Our Financial Educators</h3>
+              <h3 className="text-white font-semibold text-lg mb-3">Financial Educators</h3>
+              {loadingEducators ? (
+                <p className="text-white/70 text-sm">Loading educators…</p>
+              ) : educators.length === 0 ? (
+                <div className="bg-white/10 rounded-2xl p-5">
+                  <p className="text-white font-medium mb-1">No educators listed yet</p>
+                  <p className="text-white/70 text-sm">
+                    Nobody is bookable until a verified educator is added. The calculators and tips below work now.
+                  </p>
+                </div>
+              ) : (
               <div className="space-y-4">
                 {educators.map((educator) => (
                   <div
@@ -730,30 +740,19 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
                   >
                     <div className="flex items-start space-x-3">
                       <img
-                        src={educator.image}
-                        alt={educator.name}
+                        src={educator.photo_url || initialsAvatar(educator.full_name, educator.id)}
+                        alt=""
                         className="w-14 h-14 rounded-full object-cover"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-white font-semibold text-sm">{educator.name}</h4>
-                          <div className="flex items-center space-x-1">
-                            <Star className="w-3 h-3 text-yellow-400" fill="currentColor" />
-                            <span className="text-white text-xs">{educator.rating}</span>
-                          </div>
-                        </div>
-                        <p className="text-white/80 text-xs mb-1">{educator.specialization}</p>
-                        <p className="text-white/70 text-xs mb-2">{educator.experience} • {educator.credentials}</p>
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {educator.expertise.slice(0, 3).map((exp, idx) => (
-                            <span key={idx} className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
-                              {exp}
-                            </span>
-                          ))}
-                        </div>
+                        <h4 className="text-white font-semibold text-sm mb-1">{educator.full_name}</h4>
+                        {educator.specialization && <p className="text-white/80 text-xs mb-1">{educator.specialization}</p>}
+                        <p className="text-white/70 text-xs mb-2">
+                          {[educator.experience_years ? `${educator.experience_years} years` : null, educator.title].filter(Boolean).join(' • ')}
+                        </p>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-white font-medium text-xs">{educator.price}</span>
-                          <span className="text-green-400 text-xs">{educator.availability}</span>
+                          <span className="text-white font-medium text-xs">{formatFee(educator) ?? 'Fee on request'}</span>
+                          {educator.availability_note && <span className="text-green-300 text-xs">{educator.availability_note}</span>}
                         </div>
                         <Button
                           onClick={(e) => {
@@ -766,13 +765,14 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
                           type="button"
                         >
                           <Calendar className="w-3 h-3 mr-1" />
-                          Book Session
+                          Request a session
                         </Button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+              )}
             </div>
 
             <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-4">
@@ -782,22 +782,15 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
                 <p className="text-white/90 text-xs mb-3">
                   Educational materials and guides
                 </p>
+                {/* "Access Resources" used to show "Access granted! Check your
+                    email for resources." No email, no resources. The materials
+                    that exist are the tips on this page. */}
                 <Button
                   className="bg-white text-blue-500 font-semibold text-xs px-4 py-2 hover:scale-105 transition-all duration-300"
-                  onClick={() => {
-                    const successMessage = document.createElement('div');
-                    successMessage.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                    successMessage.textContent = 'Access granted! Check your email for resources.';
-                    document.body.appendChild(successMessage);
-                    setTimeout(() => {
-                      if (document.body.contains(successMessage)) {
-                        document.body.removeChild(successMessage);
-                      }
-                    }, 5000);
-                  }}
+                  onClick={() => setActiveTab('tips')}
                   type="button"
                 >
-                  Access Resources
+                  Read the tips
                 </Button>
               </div>
             </div>
@@ -807,7 +800,16 @@ export const Education: React.FC<EducationProps> = ({ onNavigate }) => {
 
       {showBookingCalendar && (
         <BookingCalendar
-          therapists={educators}
+          therapists={educators.map((p) => ({
+            id: p.id,
+            name: p.title ? `${p.title} ${p.full_name}` : p.full_name,
+            specialization: p.specialization ?? '',
+            experience: p.experience_years ? `${p.experience_years} years` : '',
+            rating: 0,
+            image: p.photo_url ?? initialsAvatar(p.full_name, p.id),
+            price: formatFee(p) ?? 'Fee on request',
+            availability: p.availability_note ?? 'By arrangement',
+          }))}
           onBookingConfirm={handleBookingConfirm}
           onClose={() => setShowBookingCalendar(false)}
           selectedTherapist={selectedEducator}
