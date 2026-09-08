@@ -170,42 +170,48 @@ export const AcceptableUsePolicy: React.FC = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">5. Content Moderation & Enforcement</h2>
 
-              {/* This block used to promise "AI Pre-Screening" of every uploaded image,
-                  and the section below named Hive Moderation as the provider. Neither was
-                  true: the image scanner in contentModeration.ts is a stub that reports
-                  scanner: 'not_configured' and marks every image safe. Text screening is
-                  real. Describing a safety control we do not run is worse than describing
-                  a smaller one we do, so this now says what actually happens. If automated
-                  image classification is connected later, restore the claim then. */}
+              {/* This block used to promise "AI Pre-Screening" of every uploaded image
+                  and named Hive Moderation as the provider - untrue.
+
+                  A first correction here claimed automatic TEXT screening instead. Also
+                  untrue: contentModeration.scanText() is never called from anywhere, and
+                  validateBioText() - its only caller - is itself never called. Nothing
+                  screens message or profile text.
+
+                  What genuinely runs: uploadScreenedImage() in lib/screenedUpload.ts sends
+                  every chat, mail and profile image to the moderate-image edge function,
+                  which calls Google Vision SafeSearch - but ONLY when GOOGLE_VISION_API_KEY
+                  is set in the edge function secrets. Without that key the function logs
+                  "image moderation is INERT" and allows every image.
+
+                  So this section now claims nothing automatic at all. If the Vision key is
+                  set, the image sentence below can be upgraded to describe it. Do not
+                  restore any claim without checking the code path first. */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
                 <p className="font-semibold text-blue-900 mb-2">How content is checked:</p>
                 <ol className="list-decimal pl-6 space-y-2 text-gray-700">
-                  <li><strong>Automated text screening:</strong> Messages and profile text are checked against a prohibited-content list covering solicitation, escorting and paid-content promotion</li>
                   <li><strong>User reports:</strong> Any member can report a profile, message or image, which sends it to our moderation queue</li>
-                  <li><strong>Manual review:</strong> Reported and flagged content is reviewed by hand, and we can remove content, suspend accounts or delete them outright</li>
+                  <li><strong>Manual review:</strong> Reported content is reviewed by hand, and we can remove content, suspend accounts or delete them outright</li>
+                  <li><strong>Contact masking:</strong> Phone numbers and email addresses are hidden in messages</li>
                   <li><strong>ID verification:</strong> Optional identity verification reduces fake accounts and bad actors</li>
                 </ol>
               </div>
 
-              <h3 className="font-bold text-gray-900 mb-2">5.1 What we screen automatically</h3>
-              <p className="text-gray-700 mb-3">
-                Text you send or publish is screened automatically against a prohibited-content list. It looks for:
-              </p>
-              <ul className="list-disc pl-6 space-y-1 text-gray-700 mb-4">
-                <li>Solicitation, escorting and prostitution</li>
-                <li>Promotion of paid adult content</li>
-                <li>Requests for money, gift cards or verification codes</li>
-                <li>Contact details shared to move members off the platform</li>
-              </ul>
+              <h3 className="font-bold text-gray-900 mb-2">5.1 How content is checked</h3>
               <p className="text-gray-700 mb-4">
-                Text flagged this way is sent to our moderation queue for review.
+                <strong>Content on Dates.care is reviewed by people, not by automated systems.</strong> We do not
+                currently run automatic screening of the photographs you upload or the messages you send. We are
+                building it, and we will update this policy when it is in place rather than before.
               </p>
               <p className="text-gray-700 mb-4">
-                <strong>Images are reviewed by hand, not by machine.</strong> We do not currently run automated
-                image classification. Photos are checked when a member reports them, and during identity
-                verification. We are working on automated image screening and will update this policy when it
-                is in place. In the meantime, please report anything you see that breaks these rules - reporting
-                is how images get looked at.
+                What that means in practice: content is looked at when somebody reports it, and during identity
+                verification. <strong>Reporting is how something gets seen.</strong> If you come across a profile,
+                a message or an image that breaks these rules, please report it - it is the most effective thing
+                you can do, and we would rather receive a report that turns out to be nothing than miss one.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Phone numbers and email addresses are masked in messages to make it harder to move a conversation
+                off the platform, where we cannot help you.
               </p>
 
               <h3 className="font-bold text-gray-900 mb-2">5.2 Report & Review Process</h3>
