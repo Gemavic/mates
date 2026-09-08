@@ -154,6 +154,26 @@ export function watchInvite(
   };
 }
 
+/**
+ * Is somebody ringing this person right now? Used when the app opens or
+ * returns to the foreground, because a call that started while the page was
+ * closed never reached the realtime listener. A ring older than the ring
+ * timeout is over by definition; the caller's side has already marked it.
+ */
+export async function fetchRingingInviteFor(userId: string): Promise<CallInvite | null> {
+  const since = new Date(Date.now() - RING_TIMEOUT_MS).toISOString();
+  const { data } = await supabaseClient
+    .from('call_invites')
+    .select('*')
+    .eq('callee_id', userId)
+    .eq('status', 'ringing')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as CallInvite | null) ?? null;
+}
+
 /** Watch for people calling this user, from anywhere in the app. */
 export function subscribeToIncomingCalls(
   userId: string,

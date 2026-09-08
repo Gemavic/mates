@@ -551,7 +551,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                     </div>
                     <div>
                       <h4 className="text-white font-medium">{match.name}</h4>
-                      <p className="text-white/70 text-sm capitalize">{match.status}</p>
+                      <p className="text-white/70 text-sm">{match.status === 'online' ? 'Online' : 'Away · we will ring their phone'}</p>
                     </div>
                   </div>
                   
@@ -566,47 +566,12 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                     className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 hover:scale-105 transition-all duration-300"
                     type="button"
                     title={initError || undefined}
-                    disabled={match.status !== 'online' || !audioEnabled || (!isInitialized && !initError) || isConnecting}
+                    disabled={!audioEnabled || (!isInitialized && !initError) || isConnecting}
                   >
                     <Phone className="w-4 h-4 mr-2" />
                     {initError ? 'Retry' : !isInitialized ? 'Initializing...' : audioEnabled ? 'Call' : 'Audio Disabled'}
                   </Button>
-                  <div className="flex space-x-2 ml-2">
-                    <Button
-                      onClick={() => {
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                        successMessage.textContent = `✅ Accepted call from ${match.name}`;
-                        document.body.appendChild(successMessage);
-                        setTimeout(() => document.body.removeChild(successMessage), 3000);
-                        startAudioCall(match.id, match.name);
-                      }}
-                      className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-colors"
-                      disabled={match.status !== 'online' || !isInitialized || isConnecting}
-                      type="button"
-                      title="Accept call"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        const declineMessage = document.createElement('div');
-                        declineMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                        declineMessage.textContent = `❌ Declined call from ${match.name}`;
-                        document.body.appendChild(declineMessage);
-                        setTimeout(() => document.body.removeChild(declineMessage), 3000);
-                      }}
-                      className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                      title="Decline call"
-                      type="button"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </Button>
-                  </div>
+                  
                 </div>
               </div>
             ))}
