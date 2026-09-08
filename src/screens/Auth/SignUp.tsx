@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toast';
 import { creditManager } from '@/lib/creditSystem';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
+import { InvitedByNote } from '@/components/InvitedByNote';
 
 interface SignUpProps {
   onNavigate?: (screen: string) => void;
@@ -269,6 +270,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Join Dates!</h2>
           <p className="text-white/80">Create your account to find love</p>
+          <InvitedByNote className="mt-3" />
         </div>
 
         {/* Security Features */}

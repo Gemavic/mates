@@ -68,6 +68,8 @@ import { creditManager } from '@/lib/creditSystem';
 import { supabaseConfigError } from '@/lib/supabase';
 import { getRouteConfig } from '@/lib/routeConfig';
 import { getAuthLandingScreen, screenFromHash } from '@/lib/authUrl';
+import { captureReferralFromUrl, attachPendingReferral } from '@/lib/referrals';
+import { Invite } from '@/screens/Invite/Invite';
 import { AlertTriangle } from 'lucide-react';
 
 function ScreenLoadingFallback() {
@@ -112,6 +114,7 @@ const bottomNavTabFor = (screen: string): string => {
     case 'profile':
     case 'settings':
     case 'credit-history':
+    case 'invite':
       return 'profile';
     default:
       return '';
@@ -176,6 +179,17 @@ const App: React.FC = () => {
     });
     return () => data.subscription.unsubscribe();
   }, []);
+
+  // A friend's invitation link (?ref=CODE) is remembered on arrival and
+  // attached to the account once one exists. The server only accepts it for
+  // a brand-new account, so an existing member following a link is simply
+  // welcomed in; nobody is paid for that.
+  useEffect(() => {
+    captureReferralFromUrl();
+  }, []);
+  useEffect(() => {
+    if (user?.id) void attachPendingReferral();
+  }, [user?.id]);
   const handleStaffLogout = () => {
     try {
       setCurrentScreen('discovery');
@@ -477,6 +491,9 @@ const App: React.FC = () => {
       
       case 'settings':
         return <Settings onNavigate={handleNavigate} />;
+
+      case 'invite':
+        return <Invite onNavigate={handleNavigate} />;
       
       case 'terms':
         return <LegalDocument doc="terms" onNavigate={handleNavigate} />;

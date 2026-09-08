@@ -16,6 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { InvitedByNote } from '@/components/InvitedByNote';
 import { CREDIT_COSTS } from '@/lib/creditSystem';
 import {
   MAIL_SEND_COST, MAIL_OPEN_COST, MAIL_PHOTO_COST, MAIL_AUDIO_COST,
@@ -144,6 +145,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-purple-400/20 blur-3xl" />
             </div>
             <div className="relative">
+              <InvitedByNote className="mb-5" />
               <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-5">
                 Dating, done
                 <span className="block">properly.</span>

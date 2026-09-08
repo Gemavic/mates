@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard, Loader2, MessageSquare, Mail, Volume2, XCircle, Receipt, Download, Trash2 } from 'lucide-react';
+import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard, Loader2, MessageSquare, Mail, Volume2, XCircle, Receipt, Download, Trash2, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -363,6 +363,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         { icon: Shield, label: 'ID Verification', action: () => onNavigate('verification') },
         { icon: CreditCard, label: 'Credits & Billing', action: () => onNavigate('credits') },
         { icon: Receipt, label: 'Billing history & receipts', action: () => onNavigate('credit-history') },
+        { icon: Gift, label: 'Invite friends & family', action: () => onNavigate('invite') },
       ]
     },
     {

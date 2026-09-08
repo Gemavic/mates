@@ -73,6 +73,11 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
     allowAnonymous: false,
   },
 
+  invite: {
+    requireAuth: true,
+    allowAnonymous: false,
+  },
+
   verification: {
     requireAuth: true,
     allowAnonymous: false,
