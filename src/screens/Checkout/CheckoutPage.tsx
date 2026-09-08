@@ -60,11 +60,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center space-x-2 text-blue-600 mb-2">
             <Shield className="w-5 h-5" />
-            <span className="font-medium">Multiple Secure Payment Options</span>
+            <span className="font-medium">Secure Checkout</span>
           </div>
           <p className="text-blue-600 text-sm">
-            Choose from cryptocurrency, mobile payments (Apple/Google/Samsung Pay), or credit card options. 
-            All payments are secured with 256-bit encryption.
+            Payment is by cryptocurrency, through a hosted checkout. Card payment is coming soon.
           </p>
         </div>
 
@@ -239,34 +238,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate = () => {
 
         {/* Payment Options */}
         <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+          {/* This advertised Credit Card and Mobile Pay alongside crypto. Neither can
+              take a payment. A member who came here for the card icon reached a form
+              that silently did nothing. Only what works is shown. */}
           <h3 className="text-white font-semibold text-lg mb-3 flex items-center">
             <Shield className="w-5 h-5 mr-2" />
             Available Payment Methods
           </h3>
-          <div className="grid grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 gap-4 text-center">
             <div className="text-white/80">
               <span className="text-2xl mb-1 block">₿</span>
               <span className="text-xs">Cryptocurrency</span>
             </div>
             <div className="text-white/80">
-              <span className="text-2xl mb-1 block">💳</span>
-              <span className="text-xs">Credit Card</span>
-            </div>
-            <div className="text-white/80">
-              <span className="text-2xl mb-1 block">📱</span>
-              <span className="text-xs">Mobile Pay</span>
-            </div>
-            <div className="text-white/80">
               <span className="text-2xl mb-1 block">🔒</span>
-              <span className="text-xs">Secure</span>
+              <span className="text-xs">Secure Checkout</span>
             </div>
           </div>
           <div className="mt-4 text-center">
             <p className="text-xs text-white/70">
-              All payments secured with 256-bit encryption • Multiple payment options available
+              Payment is taken by cryptocurrency through a hosted checkout.
             </p>
             <p className="text-xs text-white/60 mt-1">
-              Choose the payment method that works best for you
+              Card payment is coming soon.
             </p>
           </div>
         </div>

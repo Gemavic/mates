@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { CreditCard, Bitcoin, Smartphone, Shield, Lock, CheckCircle, Loader2, X, Wallet, Copy, QrCode, Clock } from 'lucide-react';
+import { Bitcoin, Shield, Lock, CheckCircle, Loader2, X, Wallet, Copy, QrCode, Clock } from 'lucide-react';
 import { DATES_CRYPTO_WALLETS, calculateCryptoAmount, getCryptoPrice } from '@/lib/cryptoWallets';
 import { startCryptoCheckout, type CheckoutKind } from '@/lib/cryptoCheckout';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,24 +33,10 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   onCancel,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto' | 'mobile'>('crypto');
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTC');
   const [cryptoPayment] = useState<any>(null);
   const [paymentStep, setPaymentStep] = useState<'method' | 'payment' | 'confirmation'>('method');
-  const [cardData, setCardData] = useState({
-    number: '',
-    expiry: '',
-    cvv: '',
-    name: ''
-  });
   const { user } = useAuth();
-
-  const handleCardPayment = async () => {
-    if (!cardData.number || !cardData.expiry || !cardData.cvv || !cardData.name) {
-      alert('Please fill in all card details');
-      return;
-    }
-  };
 
   const handleCryptoPayment = async () => {
     if (!user) {
@@ -255,35 +240,6 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
     );
   }
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || '';
-    const parts = [];
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-    if (parts.length) {
-      return parts.join(' ');
-    } else {
-      return v;
-    }
-  };
-
-  const formatExpiry = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-      return v.substring(0, 2) + '/' + v.substring(2, 4);
-    }
-    return v;
-  };
-
-  const mobileOptions = [
-    { name: 'Apple Pay', icon: '🍎', color: 'bg-gray-900' },
-    { name: 'Google Pay', icon: '🟢', color: 'bg-green-600' },
-    { name: 'Samsung Pay', icon: '📱', color: 'bg-blue-600' }
-  ];
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -307,107 +263,25 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
           <p className="text-2xl font-bold">${amount.toFixed(2)}</p>
         </div>
 
-        {/* Payment Methods */}
-        <div className="mb-6">
-          <h4 className="font-semibold text-gray-900 mb-3">Payment Method</h4>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => setPaymentMethod('card')}
-              className={`p-3 rounded-lg border-2 transition-all duration-300 ${
-                paymentMethod === 'card'
-                  ? 'border-pink-500 bg-pink-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              type="button"
-            >
-              <CreditCard className="w-6 h-6 mx-auto mb-1 text-gray-700" />
-              <span className="text-xs font-medium">Card</span>
-            </button>
-            <button
-              onClick={() => setPaymentMethod('crypto')}
-              className={`p-3 rounded-lg border-2 transition-all duration-300 ${
-                paymentMethod === 'crypto'
-                  ? 'border-pink-500 bg-pink-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              type="button"
-            >
-              <Bitcoin className="w-6 h-6 mx-auto mb-1 text-gray-700" />
-              <span className="text-xs font-medium">Crypto</span>
-            </button>
-            <button
-              onClick={() => setPaymentMethod('mobile')}
-              className={`p-3 rounded-lg border-2 transition-all duration-300 ${
-                paymentMethod === 'mobile'
-                  ? 'border-pink-500 bg-pink-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              type="button"
-            >
-              <Smartphone className="w-6 h-6 mx-auto mb-1 text-gray-700" />
-              <span className="text-xs font-medium">Mobile</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Payment Forms */}
-        {paymentMethod === 'card' && (
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Card Number</label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="1234 5678 9012 3456"
-                  value={cardData.number}
-                  onChange={(e) => setCardData(prev => ({ ...prev, number: formatCardNumber(e.target.value) }))}
-                  maxLength={19}
-                  className="pl-10"
-                />
-                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Expiry</label>
-                <Input
-                  type="text"
-                  placeholder="MM/YY"
-                  value={cardData.expiry}
-                  onChange={(e) => setCardData(prev => ({ ...prev, expiry: formatExpiry(e.target.value) }))}
-                  maxLength={5}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CVV</label>
-                <Input
-                  type="text"
-                  placeholder="123"
-                  value={cardData.cvv}
-                  onChange={(e) => setCardData(prev => ({ ...prev, cvv: e.target.value.replace(/\D/g, '') }))}
-                  maxLength={4}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Cardholder Name</label>
-              <Input
-                type="text"
-                placeholder="John Doe"
-                value={cardData.name}
-                onChange={(e) => setCardData(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-          </div>
-        )}
-
-        {paymentMethod === 'crypto' && (
-          <div className="space-y-4 mb-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h5 className="font-semibold text-blue-900 mb-3 flex items-center">
-                <Bitcoin className="w-5 h-5 mr-2" />
-                Select Cryptocurrency
-              </h5>
+        {/*
+          There used to be a three-way Card / Crypto / Mobile selector here.
+          Card opened a form that collected the number, expiry and CVV and then
+          did nothing at all - no charge, no error, no credits - and the mobile
+          buttons only raised a "coming soon" alert. Offering payment methods
+          that cannot take a payment misleads members, and a card field on our
+          own page with no processor behind it is a PCI problem besides.
+          Crypto is the only checkout that works, so it is the only one shown.
+          Card support returns here when a real processor is connected.
+        */}
+        <div className="space-y-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h5 className="font-semibold text-blue-900 mb-1 flex items-center">
+              <Bitcoin className="w-5 h-5 mr-2" />
+              Pay with Cryptocurrency
+            </h5>
+            <p className="text-xs text-blue-800/80 mb-3">
+              The only payment method available right now. Card payment is coming soon.
+            </p>
               <div className="grid grid-cols-1 gap-2 mb-4">
                 {Object.values(DATES_CRYPTO_WALLETS).slice(0, 6).map((wallet) => (
                   <button
@@ -484,43 +358,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
                 Send payments only to these verified addresses for your security.
               </p>
             </div>
-          </div>
-        )}
-
-        {paymentMethod === 'mobile' && (
-          <div className="space-y-4 mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h5 className="font-semibold text-green-900 mb-3">Mobile Payment Options</h5>
-              <div className="space-y-2">
-                {mobileOptions.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      alert(`${option.name} is coming soon. Please use crypto checkout for now.`);
-                    }}
-                    className="w-full flex items-center space-x-3 p-3 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                    disabled={isProcessing}
-                    type="button"
-                  >
-                    <span className="text-lg">{option.icon}</span>
-                    <div className="flex-1 text-left">
-                      <span className="font-medium">{option.name}</span>
-                    </div>
-                    {isProcessing && (
-                      <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex items-center text-blue-800 text-sm">
-                <Smartphone className="w-4 h-4 mr-2" />
-                <span>Quick and secure mobile payments (Apple Pay, Google Pay, Samsung Pay)</span>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Security Notice */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6">
@@ -529,7 +367,8 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
             <span className="text-sm font-medium">256-bit SSL Encryption</span>
           </div>
           <p className="text-xs text-gray-600">
-            Your payment information is encrypted and secure. We never store your card details.
+            Payments are sent directly to our wallet address on the blockchain. Dates.care never
+            handles or stores your card details.
           </p>
         </div>
 
@@ -543,10 +382,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
             Cancel
           </Button>
           <Button
-            onClick={
-              paymentMethod === 'crypto' ? handleCryptoPayment : 
-              handleCardPayment
-            }
+            onClick={handleCryptoPayment}
             className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:scale-105 transition-all duration-300"
             disabled={isProcessing}
           >
@@ -557,8 +393,7 @@ export const PaymentGateway: React.FC<PaymentGatewayProps> = ({
               </>
             ) : (
               <>
-                {paymentMethod === 'crypto' ? `Pay ${cryptoAmount.toFixed(8)} ${selectedCrypto}` : 
-                 `Pay $${amount.toFixed(2)}`}
+                {`Pay ${cryptoAmount.toFixed(8)} ${selectedCrypto}`}
               </>
             )}
           </Button>

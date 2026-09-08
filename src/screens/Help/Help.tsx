@@ -190,9 +190,8 @@ export const Help: React.FC<HelpProps> = ({ onNavigate }) => {
         {
           title: 'Payment Methods',
           items: [
-            'Credit cards (Visa, Mastercard, Amex)',
-            'Cryptocurrency (Bitcoin, Ethereum, etc.)',
-            'Mobile payments (Apple Pay, Google Pay)'
+            'Cryptocurrency (Bitcoin, Ethereum and others)',
+            'Card payment is coming soon'
           ]
         }
       ]

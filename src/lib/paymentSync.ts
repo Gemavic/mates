@@ -40,18 +40,19 @@ class PaymentGatewayManager {
       webhookUrl: `${window.location.origin}/api/webhooks/crypto`
     });
     
-    // Mobile payment providers
+    // Mobile payments are not connected to anything - there is no provider behind
+    // /api/webhooks/mobile - so this no longer reports itself as 'connected'.
     this.providers.set('mobile-payments', {
       name: 'Mobile Payments (Apple/Google/Samsung Pay)',
-      status: 'connected',
+      status: 'disconnected',
       lastSync: new Date(),
       webhookUrl: `${window.location.origin}/api/webhooks/mobile`
     });
     
-    // Bank transfer provider
+    // Direct bank transfer is not accepted and /api/webhooks/bank does not exist.
     this.providers.set('bank-transfer', {
       name: 'Direct Bank Transfer',
-      status: 'connected',
+      status: 'disconnected',
       lastSync: new Date(),
       webhookUrl: `${window.location.origin}/api/webhooks/bank`
     });

@@ -170,29 +170,42 @@ export const AcceptableUsePolicy: React.FC = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">5. Content Moderation & Enforcement</h2>
 
+              {/* This block used to promise "AI Pre-Screening" of every uploaded image,
+                  and the section below named Hive Moderation as the provider. Neither was
+                  true: the image scanner in contentModeration.ts is a stub that reports
+                  scanner: 'not_configured' and marks every image safe. Text screening is
+                  real. Describing a safety control we do not run is worse than describing
+                  a smaller one we do, so this now says what actually happens. If automated
+                  image classification is connected later, restore the claim then. */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                <p className="font-semibold text-blue-900 mb-2">Our Multi-Layer Protection System:</p>
+                <p className="font-semibold text-blue-900 mb-2">How content is checked:</p>
                 <ol className="list-decimal pl-6 space-y-2 text-gray-700">
-                  <li><strong>AI Pre-Screening:</strong> All uploaded images are automatically scanned by AI moderation tools before publication</li>
-                  <li><strong>Manual Review:</strong> Flagged content is reviewed by our Trust & Safety team</li>
-                  <li><strong>User Reports:</strong> Users can report violations, triggering immediate review</li>
-                  <li><strong>ID Verification:</strong> Enhanced verification reduces bad actors and fake accounts</li>
+                  <li><strong>Automated text screening:</strong> Messages and profile text are checked against a prohibited-content list covering solicitation, escorting and paid-content promotion</li>
+                  <li><strong>User reports:</strong> Any member can report a profile, message or image, which sends it to our moderation queue</li>
+                  <li><strong>Manual review:</strong> Reported and flagged content is reviewed by hand, and we can remove content, suspend accounts or delete them outright</li>
+                  <li><strong>ID verification:</strong> Optional identity verification reduces fake accounts and bad actors</li>
                 </ol>
               </div>
 
-              <h3 className="font-bold text-gray-900 mb-2">5.1 Automated Content Scanning</h3>
+              <h3 className="font-bold text-gray-900 mb-2">5.1 What we screen automatically</h3>
               <p className="text-gray-700 mb-3">
-                We use industry-leading AI moderation APIs (including Hive Moderation and similar services)
-                to scan all uploaded media for:
+                Text you send or publish is screened automatically against a prohibited-content list. It looks for:
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700 mb-4">
-                <li>Nudity and sexually explicit content</li>
-                <li>Violence and gore</li>
-                <li>Hate symbols and offensive imagery</li>
-                <li>Other policy violations</li>
+                <li>Solicitation, escorting and prostitution</li>
+                <li>Promotion of paid adult content</li>
+                <li>Requests for money, gift cards or verification codes</li>
+                <li>Contact details shared to move members off the platform</li>
               </ul>
               <p className="text-gray-700 mb-4">
-                Content flagged by our AI is automatically blocked or sent to manual review before it reaches other users.
+                Text flagged this way is sent to our moderation queue for review.
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>Images are reviewed by hand, not by machine.</strong> We do not currently run automated
+                image classification. Photos are checked when a member reports them, and during identity
+                verification. We are working on automated image screening and will update this policy when it
+                is in place. In the meantime, please report anything you see that breaks these rules - reporting
+                is how images get looked at.
               </p>
 
               <h3 className="font-bold text-gray-900 mb-2">5.2 Report & Review Process</h3>

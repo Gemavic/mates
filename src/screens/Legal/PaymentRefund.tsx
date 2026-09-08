@@ -88,10 +88,14 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
 
               <div>
                 <h4 className="font-semibold text-gray-900 mb-2">3.1 Purchasing Credits</h4>
+                {/* This listed cards, Google Pay and PayPal. None of those work: the only
+                    checkout that takes a payment today is cryptocurrency, through a hosted
+                    third-party invoice. Listing payment methods we cannot accept sends members
+                    to a dead end and misstates the business to anyone reviewing this page. */}
                 <p className="text-sm">
-                  You buy Credits for real money. Depending on your location, you may use credit/debit cards,
-                  Google Pay, PayPal, and other payment systems. We do not accept gift cards, prepaid cards,
-                  or scratch cards.
+                  You buy Credits for real money. Payment is currently taken by cryptocurrency through a
+                  hosted third-party checkout. Card payment is coming soon, and this page will be updated
+                  when it is available. We do not accept gift cards, prepaid cards, or scratch cards.
                 </p>
               </div>
 
@@ -313,12 +317,14 @@ export const PaymentRefund: React.FC<PaymentRefundProps> = ({ onNavigate = () =>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-2">4.12 Time Limitations</h4>
                 <div className="bg-gray-100 border border-gray-300 rounded-lg p-3">
+                  {/* The 180-day PayPal window was a promise we could not keep, because we
+                      do not accept PayPal. A refund window we cannot honour undermines every
+                      other commitment on this page. */}
                   <p className="text-sm mb-2">
                     Datescare will consider refund requests submitted within:
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
-                    <li><strong>120 calendar days</strong> following credit/debit card payment</li>
-                    <li><strong>180 calendar days</strong> following PayPal payment</li>
+                    <li><strong>120 calendar days</strong> of the payment</li>
                   </ul>
                 </div>
               </div>
