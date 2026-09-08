@@ -121,10 +121,14 @@ succeeded, the amount, and a reference for the transaction.</p>
 advertising profiles.</p>
 
 <h2>3. Automated processing</h2>
-<p>We do not currently make automated decisions about your account or your content. Photographs and
-messages are not screened by machine. Content is reviewed by a person when it is reported, and no
-account is suspended or removed without a person looking at it first. You can contest any decision by
-writing to <a href="mailto:admin@dates.care">admin@dates.care</a>.</p>
+<p>Photographs you upload &mdash; to your profile, the community feed, a chat or a mail &mdash; are
+screened automatically before they are published. Each image is sent to Google Cloud Vision (SafeSearch)
+for that check. Sexual or violent images are refused; borderline images are published but queued for a
+person to look at; and contact details written inside a picture are covered over before it is delivered.
+That is the only automated decision we make about your content. Messages and profile text are not
+screened by machine, beyond the masking described below. No account is suspended or removed without a
+person looking at it first. You can contest any decision by writing to
+<a href="mailto:admin@dates.care">admin@dates.care</a>.</p>
 <p>Phone numbers and email addresses are masked automatically in messages. That is formatting, not a
 decision about you.</p>
 
@@ -138,7 +142,8 @@ own purposes.</p>
   <tr><td>Vercel</td><td>Website hosting and delivery</td></tr>
   <tr><td>Google, Facebook, Apple</td><td>Sign-in, where you choose to use it</td></tr>
   <tr><td>NOWPayments</td><td>Processing payments</td></tr>
-  <tr><td>Twilio</td><td>Carrying audio and video calls</td></tr>
+  <tr><td>Twilio</td><td>Carrying audio and video calls, and sending verification text messages</td></tr>
+  <tr><td>Google Cloud Vision</td><td>Screening uploaded photographs before they are published</td></tr>
   <tr><td>Email delivery provider</td><td>Sending service and receipt emails</td></tr>
 </table>
 <p>We also disclose information where the law requires it - a court order, a lawful request from

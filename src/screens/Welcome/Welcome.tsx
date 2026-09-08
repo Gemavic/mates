@@ -79,7 +79,7 @@ const FAQ = [
   },
   {
     q: 'How do you keep fake profiles out?',
-    a: 'Every member confirms a phone number by SMS before their profile is verified, and there is one-tap reporting on every profile and conversation. Reports are reviewed by hand.',
+    a: 'Every member confirms a phone number by SMS before their profile is verified. Every photo is screened automatically before it goes up, and there is one-tap reporting on every profile and conversation. Reports are reviewed by hand.',
   },
   {
     q: 'Who can see my personal information?',
@@ -262,7 +262,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
         <div className="grid sm:grid-cols-3 gap-5">
           {[
             { icon: BadgeCheck, t: 'Verified profiles', d: 'Photo and identity verification keeps fake accounts out. Verified members carry a badge.' },
-            { icon: ShieldCheck, t: 'Reported content is read by a person', d: 'One-tap reporting on every profile and conversation, and every report is reviewed by hand.' },
+            { icon: ShieldCheck, t: 'Photos screened, reports read by a person', d: 'Every photo is checked automatically before it goes up. One-tap reporting on every profile and conversation, and every report is reviewed by hand.' },
             { icon: Lock, t: 'Your data stays yours', d: 'We never sell personal data. You control what appears on your profile and can delete your account at any time.' },
           ].map(t => (
             <div key={t.t} className="text-center px-2">

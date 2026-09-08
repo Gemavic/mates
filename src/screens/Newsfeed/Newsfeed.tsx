@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
+import { uploadScreenedImage } from '@/lib/screenedUpload';
+import { compressImage } from '@/lib/photoUpload';
 import { useAuth } from '@/hooks/useAuth';
 
 interface NewsfeedProps {
@@ -324,14 +326,21 @@ export const Newsfeed: React.FC<NewsfeedProps> = ({ onNavigate }) => {
     try {
       const urls: string[] = [];
       for (const file of files) {
-        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${
-          file.name.split('.').pop() || 'jpg'
-        }`;
-        const { error: upErr } = await supabaseClient.storage
-          .from('feed-media')
-          .upload(path, file, { contentType: file.type });
-        if (upErr) throw upErr;
-        const { data: pub } = supabaseClient.storage.from('feed-media').getPublicUrl(path);
+        // Feed photos are the most public pictures on the site, and they were
+        // the one upload that skipped the screening every other picture gets.
+        // Same gate as chat, mail and profile photos: Vision SafeSearch, with
+        // contact details written in the picture painted over.
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const blob = await compressImage(file);
+        const screened = await uploadScreenedImage({
+          bucket: 'feed-media', path, blob, userId: user.id, isPublicBucket: true, contentType: 'feed_media',
+        });
+        if (!screened.ok) {
+          alert(screened.error ?? 'That photo could not be posted.');
+          return;
+        }
+        if (screened.notice) alert(screened.notice);
+        const { data: pub } = supabaseClient.storage.from('feed-media').getPublicUrl(screened.path ?? path);
         urls.push(pub.publicUrl);
       }
       const { error } = await supabaseClient
