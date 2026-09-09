@@ -50,3 +50,8 @@ alter table public.user_preferences
 
 -- One row per member; the filter sheet upserts on user_id.
 create unique index if not exists user_preferences_user_id_key on public.user_preferences (user_id);
+
+-- user_profiles is granted column by column; the new columns need their own
+-- grants or the browser's update is refused outright.
+grant update (seeking, country_code) on public.user_profiles to authenticated;
+grant insert (seeking, country_code, gender) on public.user_profiles to authenticated;

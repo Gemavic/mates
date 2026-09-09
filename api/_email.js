@@ -30,13 +30,17 @@
 
 import crypto from 'node:crypto';
 
+// The registered address, as printed in the Terms and Privacy Policy. It is
+// a legal fact that lives with the code, not a deployment setting: the
+// BUSINESS_ADDRESS environment variable had gone stale and receipts went out
+// with an address the business had left.
+export const REGISTERED_ADDRESS = 'DATES CARE, 22 Metropolitan Road, Suite 1175a, Scarborough, Ontario M1R 2T6, Canada';
+
 const BUSINESS = {
   name: process.env.BUSINESS_NAME || 'Dates.care',
   // CASL requires a mailing address at which the sender can be contacted
-  // for 60 days after the message is sent. Set BUSINESS_ADDRESS in Vercel
-  // to your real one — the fallback is deliberately obvious so an
-  // unconfigured deployment is easy to spot in a test send.
-  address: process.env.BUSINESS_ADDRESS || 'Dates.care, Ontario, Canada',
+  // for 60 days after the message is sent. This is the registered address.
+  address: REGISTERED_ADDRESS,
   supportEmail: process.env.SUPPORT_EMAIL || 'admin@dates.care',
 };
 

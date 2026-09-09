@@ -15,7 +15,7 @@
 // GET renders a confirmation page (link clicked by a person).
 // POST is the one-click form mail clients submit; it answers 200 with no body.
 
-import { verifyUnsubscribeToken } from './_email.js';
+import { verifyUnsubscribeToken, REGISTERED_ADDRESS } from './_email.js';
 
 async function optOut(userId) {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
@@ -56,7 +56,7 @@ function page(title, message, ok) {
 <p>${message}</p>
 <p><a href="/#settings">Manage all notification settings</a></p>
 <div class="addr">${process.env.BUSINESS_NAME || 'Dates.care'}<br>
-${process.env.BUSINESS_ADDRESS || 'Dates.care, Ontario, Canada'}<br>
+${REGISTERED_ADDRESS}<br>
 ${process.env.SUPPORT_EMAIL || 'admin@dates.care'}</div>
 </div></body></html>`;
 }
@@ -86,7 +86,7 @@ function confirmPage(token) {
 </form>
 <a href="/#settings">No — take me to my notification settings</a>
 <div class="addr">${process.env.BUSINESS_NAME || 'Dates.care'}<br>
-${process.env.BUSINESS_ADDRESS || 'Dates.care, Ontario, Canada'}<br>
+${REGISTERED_ADDRESS}<br>
 ${process.env.SUPPORT_EMAIL || 'admin@dates.care'}</div>
 </div></body></html>`;
 }

@@ -794,7 +794,10 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
         .update({ updated_at: new Date().toISOString() })
         .eq('id', selectedThread).then(() => {}, () => {});
 
-      try { sendMessageNotification(thread.participantId, { name: 'You', image: userProfileImage, id: user.id }); } catch {}
+      // The email says "New message from <name>" - the recipient's view, so
+      // it needs the sender's real first name, not the chat's own "You".
+      const myName = profile?.first_name || (profile?.full_name || '').split(/\s+/)[0] || 'A member';
+      try { sendMessageNotification(thread.participantId, { name: myName, image: userProfileImage, id: user.id }); } catch {}
     } catch {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       alert('Failed to send message. Please try again.');

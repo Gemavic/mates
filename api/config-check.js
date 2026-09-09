@@ -17,7 +17,6 @@ export default async function handler(req, res) {
     receipt_emails: [check('RESEND_API_KEY'), check('RECEIPT_FROM_EMAIL')],
     legal_identification: [
       check('BUSINESS_NAME'),
-      check('BUSINESS_ADDRESS'),
       check('SUPPORT_EMAIL'),
     ],
   };
