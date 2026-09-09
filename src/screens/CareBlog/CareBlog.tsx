@@ -129,7 +129,16 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
             )}
           </div>
           {open.cover_image && (
-            <img src={open.cover_image} alt="" className="w-full rounded-2xl mb-5 object-cover max-h-80 bg-black/20" />
+            <figure className="mb-5">
+              <img src={open.cover_image} alt="" className="w-full rounded-2xl object-cover max-h-80 bg-black/20" />
+              {open.cover_credit && (
+                <figcaption className="text-white/50 text-xs mt-1.5 text-right">
+                  {open.cover_credit_url
+                    ? <a href={open.cover_credit_url} target="_blank" rel="noopener noreferrer" className="underline">{open.cover_credit}</a>
+                    : open.cover_credit}
+                </figcaption>
+              )}
+            </figure>
           )}
           {(categoryLabel(open.category) || open.audience === 'diaspora') && (
             <p className="text-[11px] uppercase tracking-wide text-rose-200 mb-1">

@@ -116,6 +116,14 @@ export function tableHtml(rows: number, cols: number): string {
   return `<div class="table-wrap"><table><thead>${head}</thead><tbody>${body}</tbody></table></div><p><br></p>`;
 }
 
+/** A picture whose caption carries markup - used for the photographer
+ *  credit that the Pexels licence asks us to show. The caption is built by
+ *  us, and the sanitiser sees it again before it is saved or rendered. */
+export function imageHtmlWithCaption(src: string, alt: string, captionHtml: string): string {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  return `<figure><img src="${esc(src)}" alt="${esc(alt)}">${captionHtml ? `<figcaption>${captionHtml}</figcaption>` : ''}</figure><p><br></p>`;
+}
+
 export function imageHtml(src: string, caption: string): string {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const cap = caption.trim();

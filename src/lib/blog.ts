@@ -30,6 +30,9 @@ export interface BlogArticle {
   /** Rich body written in the editor; null for the plain-text library pieces. */
   content_html: string | null;
   cover_image: string | null;
+  /** Photographer credit for the cover, when it came from a stock library. */
+  cover_credit: string | null;
+  cover_credit_url: string | null;
   audience: 'diaspora' | 'general' | null;
   category: ArticleCategory | null;
   author_name: string | null;
@@ -40,7 +43,7 @@ export interface BlogArticle {
 }
 
 export const ARTICLE_COLUMNS =
-  'id, title, slug, excerpt, content, content_html, cover_image, audience, category, author_name, featured, trending, published_at, created_at';
+  'id, title, slug, excerpt, content, content_html, cover_image, cover_credit, cover_credit_url, audience, category, author_name, featured, trending, published_at, created_at';
 
 /** The public, shareable address of one article - the one that shows a card in WhatsApp. */
 export function articleShareUrl(slug: string): string {

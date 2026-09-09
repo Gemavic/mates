@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BookOpen, Bold, Check, Copy, Eraser, Eye, EyeOff, Heading2, Heading3, Image as ImageIcon, Italic, Link2, List, ListOrdered,
-  PenLine, Plus, Quote, RefreshCw, Save, Table as TableIcon, Underline, Upload, Youtube, X,
+  PenLine, Plus, Quote, RefreshCw, Save, Search, Sparkles, Table as TableIcon, Underline, Upload, Youtube, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
@@ -9,8 +9,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { compressImage } from '@/lib/photoUpload';
 import { moderateImage } from '@/lib/imageModeration';
 import { CATEGORIES, articleShareUrl, readMinutes, type ArticleCategory } from '@/lib/blog';
-import { htmlToText, imageHtml, sanitizeArticleHtml, tableHtml, textToHtml, youtubeEmbedHtml, youtubeId } from '@/lib/articleHtml';
+import { htmlToText, imageHtml, imageHtmlWithCaption, sanitizeArticleHtml, tableHtml, textToHtml, youtubeEmbedHtml, youtubeId } from '@/lib/articleHtml';
 import { ArticleBody } from '@/components/ArticleBody';
+import {
+  creditCaption, generateArticleDraft, importPexelsPhoto, searchPexels, type PexelsPhoto,
+} from '@/lib/blogDraft';
 
 /**
  * Care Blog editor - the admin's own way to write and publish.
@@ -40,6 +43,9 @@ interface Row {
   category: ArticleCategory | null;
   author_name: string | null;
   cover_image: string | null;
+  cover_credit: string | null;
+  cover_credit_url: string | null;
+  ai_drafted: boolean;
   seo_title: string | null;
   seo_keywords: string | null;
   featured: boolean;
@@ -58,19 +64,25 @@ interface Draft {
   category: '' | ArticleCategory;
   author_name: string;
   cover_image: string;
+  cover_credit: string;
+  cover_credit_url: string;
   seo_title: string;
   seo_keywords: string;
   featured: boolean;
   trending: boolean;
+  /** Internal record: this piece started as a machine-written draft. */
+  ai_drafted: boolean;
+  ai_model: string;
 }
 
 const EMPTY: Draft = {
   id: null, title: '', excerpt: '', audience: '', category: '', author_name: 'Dates Care team',
-  cover_image: '', seo_title: '', seo_keywords: '', featured: false, trending: false,
+  cover_image: '', cover_credit: '', cover_credit_url: '', seo_title: '', seo_keywords: '',
+  featured: false, trending: false, ai_drafted: false, ai_model: '',
 };
 
 const ROW_COLUMNS =
-  'id, title, slug, excerpt, content, content_html, audience, category, author_name, cover_image, seo_title, seo_keywords, featured, trending, published, published_at, updated_at, sort_order';
+  'id, title, slug, excerpt, content, content_html, audience, category, author_name, cover_image, cover_credit, cover_credit_url, ai_drafted, seo_title, seo_keywords, featured, trending, published, published_at, updated_at, sort_order';
 
 type Panel = null | 'link' | 'image' | 'video' | 'table';
 
@@ -94,6 +106,22 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
   const [tableSize, setTableSize] = useState({ rows: 3, cols: 3 });
   const [uploading, setUploading] = useState<'body' | 'cover' | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Auto-draft
+  const [genOpen, setGenOpen] = useState(false);
+  const [genTopic, setGenTopic] = useState('');
+  const [genLength, setGenLength] = useState<'short' | 'medium' | 'long'>('medium');
+  const [genExtra, setGenExtra] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [notes, setNotes] = useState<string[]>([]);
+
+  // Pexels
+  const [pexTarget, setPexTarget] = useState<null | 'cover' | 'body'>(null);
+  const [pexQuery, setPexQuery] = useState('');
+  const [pexPhotos, setPexPhotos] = useState<PexelsPhoto[]>([]);
+  const [pexLoading, setPexLoading] = useState(false);
+  const [pexSearched, setPexSearched] = useState(false);
+  const [importing, setImporting] = useState<number | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
@@ -131,15 +159,19 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
     setDraft(EMPTY);
     setPreview(false);
     setPanel(null);
+    setNotes([]);
     setEditorHtml('');
   };
 
   const edit = (r: Row) => {
     setDraft({
       id: r.id, title: r.title, excerpt: r.excerpt ?? '', audience: r.audience ?? '', category: r.category ?? '',
-      author_name: r.author_name ?? 'Dates Care team', cover_image: r.cover_image ?? '', seo_title: r.seo_title ?? '',
-      seo_keywords: r.seo_keywords ?? '', featured: r.featured, trending: r.trending,
+      author_name: r.author_name ?? 'Dates Care team', cover_image: r.cover_image ?? '',
+      cover_credit: r.cover_credit ?? '', cover_credit_url: r.cover_credit_url ?? '',
+      seo_title: r.seo_title ?? '', seo_keywords: r.seo_keywords ?? '',
+      featured: r.featured, trending: r.trending, ai_drafted: r.ai_drafted, ai_model: '',
     });
+    setNotes([]);
     setPreview(false);
     setPanel(null);
     setEditorHtml(r.content_html && r.content_html.trim() ? r.content_html : textToHtml(r.content));
@@ -261,6 +293,88 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
     if (url) setDraft((d) => ({ ...d, cover_image: url }));
   };
 
+  // ---- auto-draft --------------------------------------------------------
+  // The machine writes a first draft into the form. It never saves and never
+  // publishes: what comes back sits in the editor until a person is happy
+  // with it. `notes` is the model's own list of what it left for the editor -
+  // every fact about Dates Care it was forbidden to guess at.
+  const generate = async () => {
+    const topic = genTopic.trim();
+    if (topic.length < 4) { onError?.('Say what the article should be about.'); return; }
+    setGenerating(true);
+    setNotes([]);
+    try {
+      const { draft: d, model, words: w } = await generateArticleDraft({
+        topic,
+        category: draft.category || 'dating',
+        audience: draft.audience,
+        length: genLength,
+        extra: genExtra.trim(),
+      });
+      setDraft((cur) => ({
+        ...cur,
+        title: d.title || cur.title,
+        excerpt: d.excerpt || cur.excerpt,
+        seo_title: d.seo_title || cur.seo_title,
+        seo_keywords: d.seo_keywords || cur.seo_keywords,
+        ai_drafted: true,
+        ai_model: model,
+      }));
+      setEditorHtml(d.html);
+      setNotes(d.notes);
+      if (d.image_queries.length) setPexQuery(d.image_queries[0]);
+      setPreview(false);
+      onSuccess?.(`Draft written (${w} words). Read it before you publish.`);
+    } catch (e) {
+      onError?.(e instanceof Error ? e.message : 'The draft could not be written.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // ---- Pexels ------------------------------------------------------------
+  const openPexels = (target: 'cover' | 'body') => {
+    if (target === 'body') rememberSelection();
+    setPexTarget(target);
+  };
+
+  const runPexels = async (page = 1) => {
+    const q = pexQuery.trim();
+    if (q.length < 2) return;
+    setPexLoading(true);
+    try {
+      const found = await searchPexels(q, page);
+      setPexPhotos(found);
+      setPexSearched(true);
+    } catch (e) {
+      onError?.(e instanceof Error ? e.message : 'Pexels could not be searched.');
+    } finally {
+      setPexLoading(false);
+    }
+  };
+
+  // The picture is copied into our own bucket rather than hot-linked, so it
+  // keeps working and readers are not made to call a third party to read an
+  // article. It is not put through the Vision screen: an admin has just
+  // looked at this exact thumbnail and chosen it, and it never came from a
+  // member. Photos uploaded from a phone still are.
+  const usePexels = async (photo: PexelsPhoto) => {
+    setImporting(photo.id);
+    try {
+      const im = await importPexelsPhoto(photo);
+      if (pexTarget === 'cover') {
+        setDraft((d) => ({ ...d, cover_image: im.url, cover_credit: im.credit, cover_credit_url: im.credit_url }));
+      } else {
+        insertHtml(imageHtmlWithCaption(im.url, photo.alt, creditCaption(photo.alt, im.credit, im.credit_url)));
+      }
+      setPexTarget(null);
+    } catch (e) {
+      onError?.(e instanceof Error ? e.message : 'That picture could not be saved.');
+    } finally {
+      setImporting(null);
+    }
+  };
+
   // ---- save ------------------------------------------------------------------
   const save = async (publish: boolean | null) => {
     const html = sanitizeArticleHtml(editorRef.current?.innerHTML ?? '');
@@ -279,6 +393,10 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
         category: draft.category,
         author_name: draft.author_name,
         cover_image: draft.cover_image,
+        cover_credit: draft.cover_credit,
+        cover_credit_url: draft.cover_credit_url,
+        ai_drafted: draft.ai_drafted,
+        ai_model: draft.ai_model,
         seo_title: draft.seo_title,
         seo_keywords: draft.seo_keywords,
         featured: draft.featured,
@@ -340,6 +458,58 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
           )}
         </div>
 
+        {/* Auto-draft. Writes into the form; never saves, never publishes. */}
+        <div className="mb-5 rounded-2xl bg-white/10 border border-white/15">
+          <button type="button" onClick={() => setGenOpen(!genOpen)} className="w-full flex items-center justify-between px-4 py-3 text-left">
+            <span className="inline-flex items-center gap-2 font-medium"><Sparkles className="w-4 h-4" /> Write a first draft for me</span>
+            <span className="text-white/60 text-sm">{genOpen ? 'Hide' : 'Open'}</span>
+          </button>
+          {genOpen && (
+            <div className="px-4 pb-4 space-y-3">
+              <input
+                value={genTopic}
+                onChange={(e) => setGenTopic(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !generating) { e.preventDefault(); void generate(); } }}
+                maxLength={300}
+                placeholder="What is it about? e.g. Meeting someone from back home for the first time in a Canadian winter"
+                className={field}
+              />
+              <div className="grid sm:grid-cols-2 gap-3">
+                <select value={genLength} onChange={(e) => setGenLength(e.target.value as 'short' | 'medium' | 'long')} className={field}>
+                  <option value="short">Short (about 450 words)</option>
+                  <option value="medium">Medium (about 800 words)</option>
+                  <option value="long">Long (about 1,200 words)</option>
+                </select>
+                <input
+                  value={genExtra}
+                  onChange={(e) => setGenExtra(e.target.value)}
+                  maxLength={600}
+                  placeholder="Anything else it should cover (optional)"
+                  className={field}
+                />
+              </div>
+              <Button type="button" onClick={generate} disabled={generating || genTopic.trim().length < 4} className="bg-rose-500 hover:bg-rose-600 text-white">
+                <Sparkles className="w-4 h-4 mr-2" /> {generating ? 'Writing…' : 'Generate draft'}
+              </Button>
+              <p className="text-xs text-white/60">
+                It uses the category and reader you choose below. It is told never to describe what Dates Care does, never to invent a
+                statistic or a study, and never to quote anyone. Anything of that sort it leaves out and lists for you. Read every line
+                before you publish - your name is on it, not the machine&apos;s.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {notes.length > 0 && (
+          <div className="mb-5 rounded-2xl bg-amber-400/15 border border-amber-300/30 p-4">
+            <p className="text-sm font-semibold mb-2">Left for you to write</p>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-white/85">
+              {notes.map((n, i) => <li key={i}>{n}</li>)}
+            </ul>
+            <button type="button" onClick={() => setNotes([])} className="text-xs text-white/60 mt-3 underline">Dismiss</button>
+          </div>
+        )}
+
         <label className={label}>Title</label>
         <input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} maxLength={140} placeholder="A clear, honest title" className={`${field} mb-4`} />
 
@@ -375,7 +545,7 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
           {draft.cover_image ? (
             <div className="relative w-full sm:w-48 shrink-0">
               <img src={draft.cover_image} alt="" className="w-full h-32 object-cover rounded-xl bg-black/20" />
-              <button type="button" onClick={() => setDraft({ ...draft, cover_image: '' })} aria-label="Remove thumbnail" className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white">
+              <button type="button" onClick={() => setDraft({ ...draft, cover_image: '', cover_credit: '', cover_credit_url: '' })} aria-label="Remove thumbnail" className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -385,9 +555,17 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
             </button>
           )}
           <input ref={coverFile} type="file" accept="image/*" onChange={onCoverFile} className="hidden" />
-          <div className="flex-1">
-            <input value={draft.cover_image} onChange={(e) => setDraft({ ...draft, cover_image: e.target.value })} placeholder="…or paste a picture address (https://)" className={field} />
-            <p className="text-xs text-white/50 mt-1">Shown on the blog page, the homepage, and in the WhatsApp or Facebook preview when the link is shared. Use pictures you have the right to use.</p>
+          <div className="flex-1 space-y-2">
+            <button
+              type="button"
+              onClick={() => openPexels('cover')}
+              className="w-full sm:w-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-sm font-medium"
+            >
+              <Search className="w-4 h-4" /> Find a free picture on Pexels
+            </button>
+            <input value={draft.cover_image} onChange={(e) => setDraft({ ...draft, cover_image: e.target.value, cover_credit: '', cover_credit_url: '' })} placeholder="…or paste a picture address (https://)" className={field} />
+            {draft.cover_credit && <p className="text-xs text-white/70">Credit: {draft.cover_credit}</p>}
+            <p className="text-xs text-white/50">Shown on the blog page, the homepage, and in the WhatsApp or Facebook preview when the link is shared. Use pictures you have the right to use.</p>
           </div>
         </div>
 
@@ -418,6 +596,7 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
               {tool('Table', () => openPanel('table'), <TableIcon className="w-4 h-4" />, panel === 'table')}
               {tool('Upload a picture', () => { rememberSelection(); bodyFile.current?.click(); }, <Upload className="w-4 h-4" />)}
               {tool('Picture by address', () => openPanel('image'), <ImageIcon className="w-4 h-4" />, panel === 'image')}
+              {tool('Free picture from Pexels', () => openPexels('body'), <Search className="w-4 h-4" />, pexTarget === 'body')}
               {tool('YouTube video', () => openPanel('video'), <Youtube className="w-4 h-4" />, panel === 'video')}
               <span className="w-px h-5 bg-gray-200 mx-1" />
               {tool('Clear formatting', () => exec('removeFormat'), <Eraser className="w-4 h-4" />)}
@@ -587,6 +766,72 @@ export const CareBlogEditor: React.FC<{ onSuccess?: (m: string) => void; onError
           ))}
         </ul>
       </div>
+
+      {/* Pexels picker. The key lives in an Edge Function secret; this screen
+          only ever sees pictures and photographer names. */}
+      {pexTarget && (
+        <div className="fixed inset-0 z-[9000] bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPexTarget(null)}>
+          <div className="bg-white w-full sm:max-w-3xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <span className="font-semibold text-gray-900">
+                Free pictures {pexTarget === 'cover' ? 'for the thumbnail' : 'for the article'}
+              </span>
+              <button type="button" onClick={() => setPexTarget(null)} aria-label="Close" className="p-1 text-gray-500 hover:text-gray-900">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-5 py-3 flex gap-2 border-b border-gray-100">
+              <input
+                value={pexQuery}
+                onChange={(e) => setPexQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void runPexels(1); } }}
+                placeholder="Describe the picture, e.g. woman reading phone winter street"
+                className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 outline-none focus:ring-2 focus:ring-rose-400"
+                autoFocus
+              />
+              <Button type="button" onClick={() => runPexels(1)} disabled={pexLoading || pexQuery.trim().length < 2} className="bg-rose-600 hover:bg-rose-700 text-white">
+                {pexLoading ? 'Searching…' : 'Search'}
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {!pexSearched && !pexLoading && (
+                <p className="text-gray-500 text-sm text-center py-10">
+                  Search for a picture. Everything here is free to use from Pexels; the photographer is credited under the picture.
+                </p>
+              )}
+              {pexSearched && !pexLoading && pexPhotos.length === 0 && (
+                <p className="text-gray-500 text-sm text-center py-10">Nothing found for that. Try plainer words.</p>
+              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {pexPhotos.map((ph) => (
+                  <button
+                    key={ph.id}
+                    type="button"
+                    onClick={() => usePexels(ph)}
+                    disabled={importing !== null}
+                    className="group relative rounded-xl overflow-hidden bg-gray-100 aspect-[4/3] disabled:opacity-50"
+                    style={ph.avg_color ? { backgroundColor: ph.avg_color } : undefined}
+                    title={ph.alt || 'Use this picture'}
+                  >
+                    <img src={ph.thumb} alt={ph.alt} loading="lazy" className="w-full h-full object-cover" />
+                    <span className="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] px-2 py-1 text-left truncate">
+                      {importing === ph.id ? 'Saving…' : ph.photographer}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
+              Pictures come from <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline">Pexels</a> and
+              are copied into your own storage, so they keep working and readers are not sent to another site to load them. The
+              photographer&apos;s name goes under the picture.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
