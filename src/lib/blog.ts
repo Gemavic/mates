@@ -7,20 +7,45 @@ import { supabaseClient } from './supabase';
  * job on the server (see migration 20260909000001). Nothing here writes.
  */
 
+export type ArticleCategory = 'dating' | 'canada' | 'safety' | 'community' | 'news';
+
+export const CATEGORIES: { value: ArticleCategory; label: string }[] = [
+  { value: 'dating', label: 'Dating & Relationships' },
+  { value: 'canada', label: 'Life in Canada' },
+  { value: 'safety', label: 'Safety & Trust' },
+  { value: 'community', label: 'Community' },
+  { value: 'news', label: 'Dates Care News' },
+];
+
+export function categoryLabel(c: string | null | undefined): string | null {
+  return CATEGORIES.find((x) => x.value === c)?.label ?? null;
+}
+
 export interface BlogArticle {
   id: string;
   title: string;
   slug: string | null;
   excerpt: string | null;
   content: string;
+  /** Rich body written in the editor; null for the plain-text library pieces. */
+  content_html: string | null;
   cover_image: string | null;
   audience: 'diaspora' | 'general' | null;
+  category: ArticleCategory | null;
+  author_name: string | null;
+  featured: boolean;
+  trending: boolean;
   published_at: string | null;
   created_at: string;
 }
 
 export const ARTICLE_COLUMNS =
-  'id, title, slug, excerpt, content, cover_image, audience, published_at, created_at';
+  'id, title, slug, excerpt, content, content_html, cover_image, audience, category, author_name, featured, trending, published_at, created_at';
+
+/** The public, shareable address of one article - the one that shows a card in WhatsApp. */
+export function articleShareUrl(slug: string): string {
+  return `https://dates.care/a/${encodeURIComponent(slug)}`;
+}
 
 export async function fetchPublishedArticles(limit?: number): Promise<BlogArticle[]> {
   let q = supabaseClient

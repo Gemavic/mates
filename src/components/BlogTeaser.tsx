@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, Clock, X } from 'lucide-react';
-import { fetchPublishedArticles, openArticle, readMinutes, type BlogArticle } from '@/lib/blog';
+import { categoryLabel, fetchPublishedArticles, openArticle, readMinutes, type BlogArticle } from '@/lib/blog';
 
 /**
  * The Care Blog, surfaced where people already are.
@@ -57,13 +57,16 @@ export const BlogTeaser: React.FC<BlogTeaserProps> = ({ variant, onNavigate }) =
         <button
           type="button"
           onClick={() => openArticle(a.slug!, onNavigate)}
-          className="block text-left w-full pr-6"
+          className="flex gap-3 text-left w-full pr-6"
         >
-          <p className="font-semibold leading-snug">{a.title}</p>
-          {a.excerpt && <p className="text-white/75 text-sm mt-1 line-clamp-2">{a.excerpt}</p>}
-          <p className="text-white/50 text-xs mt-2 inline-flex items-center gap-1">
-            <Clock className="w-3 h-3" /> {readMinutes(a.content)} min read
-          </p>
+          {a.cover_image && <img src={a.cover_image} alt="" className="w-20 h-20 rounded-xl object-cover shrink-0 bg-black/20" />}
+          <div className="min-w-0">
+            <p className="font-semibold leading-snug">{a.title}</p>
+            {a.excerpt && <p className="text-white/75 text-sm mt-1 line-clamp-2">{a.excerpt}</p>}
+            <p className="text-white/50 text-xs mt-2 inline-flex items-center gap-1">
+              <Clock className="w-3 h-3" /> {readMinutes(a.content)} min read
+            </p>
+          </div>
         </button>
       </div>
     );
@@ -92,16 +95,21 @@ export const BlogTeaser: React.FC<BlogTeaserProps> = ({ variant, onNavigate }) =
             key={a.id}
             type="button"
             onClick={() => a.slug && openArticle(a.slug, onNavigate)}
-            className="text-left rounded-2xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow"
+            className="text-left rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow"
           >
-            {a.audience === 'diaspora' && (
-              <span className="inline-block text-[10px] uppercase tracking-wide text-rose-600 bg-rose-50 rounded px-1.5 py-0.5 mb-2">Living abroad</span>
-            )}
-            <h3 className="font-semibold text-gray-900 leading-snug mb-2">{a.title}</h3>
-            {a.excerpt && <p className="text-gray-600 text-sm line-clamp-3">{a.excerpt}</p>}
-            <p className="text-gray-400 text-xs mt-3 inline-flex items-center gap-1">
-              <Clock className="w-3 h-3" /> {readMinutes(a.content)} min read
-            </p>
+            {a.cover_image && <img src={a.cover_image} alt="" className="w-full h-40 object-cover bg-gray-100" loading="lazy" />}
+            <div className="p-5">
+              {(categoryLabel(a.category) || a.audience === 'diaspora') && (
+                <span className="inline-block text-[10px] uppercase tracking-wide text-rose-600 bg-rose-50 rounded px-1.5 py-0.5 mb-2">
+                  {categoryLabel(a.category) ?? 'Living abroad'}
+                </span>
+              )}
+              <h3 className="font-semibold text-gray-900 leading-snug mb-2">{a.title}</h3>
+              {a.excerpt && <p className="text-gray-600 text-sm line-clamp-3">{a.excerpt}</p>}
+              <p className="text-gray-400 text-xs mt-3 inline-flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {readMinutes(a.content)} min read
+              </p>
+            </div>
           </button>
         ))}
       </div>
