@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Input } from '@/components/ui/input';
 import { BookOpen, Clock, Search, ArrowLeft } from 'lucide-react';
-import { supabaseClient } from '@/lib/supabase';
+import { fetchPublishedArticles, readMinutes, takeRequestedArticle, type BlogArticle } from '@/lib/blog';
 
 /**
  * The Care Blog reads from blog_articles - the table that has existed since
@@ -19,41 +19,35 @@ import { supabaseClient } from '@/lib/supabase';
  * Now: real rows or an honest empty state. Writing is not a member feature.
  */
 
-interface Article {
-  id: string;
-  title: string;
-  slug: string | null;
-  excerpt: string | null;
-  content: string;
-  cover_image: string | null;
-  published_at: string | null;
-  created_at: string;
-}
-
 interface CareBlogProps {
   onNavigate: (screen: string) => void;
 }
 
-const readMinutes = (text: string) => Math.max(1, Math.round(text.trim().split(/\s+/).length / 200));
-
 export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [open, setOpen] = useState<Article | null>(null);
+  const [open, setOpen] = useState<BlogArticle | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabaseClient
-        .from('blog_articles')
-        .select('id, title, slug, excerpt, content, cover_image, published_at, created_at')
-        .eq('published', true)
-        .order('published_at', { ascending: false, nullsFirst: false });
-      if (cancelled) return;
-      if (error) { setFailed(true); } else { setArticles((data ?? []) as Article[]); }
-      setLoading(false);
+      try {
+        const list = await fetchPublishedArticles();
+        if (cancelled) return;
+        setArticles(list);
+        // Arrived for one article in particular - from the homepage, the
+        // card in Discovery, or a push notification's link.
+        const wanted = takeRequestedArticle();
+        if (wanted) {
+          const hit = list.find(a => a.slug === wanted);
+          if (hit) setOpen(hit);
+        }
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+      if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -131,6 +125,9 @@ export const CareBlog: React.FC<CareBlogProps> = ({ onNavigate }) => {
               >
                 {a.cover_image && <img src={a.cover_image} alt="" className="w-full h-40 object-cover" />}
                 <div className="p-4">
+                  {a.audience === 'diaspora' && (
+                    <span className="inline-block text-[10px] uppercase tracking-wide text-rose-600 bg-rose-50 rounded px-1.5 py-0.5 mb-1.5">Living abroad</span>
+                  )}
                   <h2 className="font-semibold text-gray-900 mb-1">{a.title}</h2>
                   {a.excerpt && <p className="text-gray-600 text-sm mb-2">{a.excerpt}</p>}
                   <p className="text-gray-500 text-xs inline-flex items-center gap-1">

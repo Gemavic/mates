@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { InvitedByNote } from '@/components/InvitedByNote';
+import { BlogTeaser } from '@/components/BlogTeaser';
 import { CREDIT_COSTS } from '@/lib/creditSystem';
 import {
   MAIL_SEND_COST, MAIL_OPEN_COST, MAIL_PHOTO_COST, MAIL_AUDIO_COST,
@@ -380,6 +381,9 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           </div>
         </div>
       </section>
+
+      {/* -------------------------------------------------------------- care blog */}
+      <BlogTeaser variant="home" onNavigate={onNavigate} />
 
       {/* -------------------------------------------------------------------- faq */}
       <section className="max-w-3xl mx-auto px-5 sm:px-8 py-14 sm:py-20">

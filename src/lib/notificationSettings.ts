@@ -15,6 +15,7 @@ export interface NotificationSettings {
   sound_active_chats: boolean;
   sound_requests: boolean;
   sound_calls: boolean;
+  push_articles: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -26,6 +27,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   sound_active_chats: true,
   sound_requests: true,
   sound_calls: true,
+  push_articles: true,
 };
 
 const COLUMNS = Object.keys(DEFAULT_NOTIFICATION_SETTINGS).join(', ');

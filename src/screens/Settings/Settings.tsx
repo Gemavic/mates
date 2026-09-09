@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard, Loader2, MessageSquare, Mail, Volume2, XCircle, Receipt, Download, Trash2, Gift } from 'lucide-react';
+import { Bell, Shield, Heart, MapPin, Users, Moon, HelpCircle, LogOut, ChevronRight, AlertTriangle, Lock, CreditCard, Loader2, MessageSquare, Mail, Volume2, XCircle, Receipt, Download, Trash2, Gift, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -501,6 +501,21 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                 settingKey="sound_calls"
                 value={notif.sound_calls}
                 saving={savingNotifKey === 'sound_calls'}
+                onChange={updateNotif}
+              />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-white font-semibold text-lg mb-3 px-2">Care Blog</h3>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden divide-y divide-white/10">
+              <AlertToggle
+                icon={BookOpen}
+                label="New articles"
+                hint="A notification when a new piece is published - about twice a week. Only if you have allowed push notifications above."
+                settingKey="push_articles"
+                value={notif.push_articles}
+                saving={savingNotifKey === 'push_articles'}
                 onChange={updateNotif}
               />
             </div>

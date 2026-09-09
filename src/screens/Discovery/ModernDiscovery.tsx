@@ -4,6 +4,7 @@ import { SwipeCard } from '@/components/SwipeCard';
 import { GridProfileCard } from '@/components/GridProfileCard';
 import { IntentPrompt } from '@/components/IntentPrompt';
 import { PhotoPrompt } from '@/components/PhotoPrompt';
+import { BlogTeaser } from '@/components/BlogTeaser';
 import { ModernHeader } from '@/components/ModernHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -624,6 +625,10 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           signal, so they browse an empty grid and never learn that they
           are equally invisible. This tells them. */}
       <PhotoPrompt onNavigate={onNavigate} />
+
+      {/* The newest Care Blog piece, once, dismissible. Nothing while the
+          library is empty. */}
+      <BlogTeaser variant="card" onNavigate={onNavigate} />
 
       {/* Mobile Header */}
       <div className="lg:hidden">
