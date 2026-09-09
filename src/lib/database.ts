@@ -108,7 +108,11 @@ export class ProfileManager {
     return data;
   }
 
-  static async getDiscoveryProfiles(currentUserId?: string, limit = 20) {
+  static async getDiscoveryProfiles(
+    currentUserId?: string,
+    limit = 20,
+    filters?: { gender?: 'man' | 'woman' | null; country_code?: string | null; age_min?: number | null; age_max?: number | null }
+  ) {
     // The blocks lookup and the profiles query are independent, but were
     // awaited one after the other, so the profiles request could not even
     // start until blocks came back. On mobile that is a wasted round trip
@@ -121,8 +125,23 @@ export class ProfileManager {
 
     let profilesQuery = supabaseClient
       .from('user_profiles')
-      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, relationship_status, looking_for, profile_visibility, last_active, created_at')
-      .or('profile_visibility.eq.public,profile_visibility.is.null')
+      .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, relationship_status, looking_for, profile_visibility, last_active, created_at, gender, country_code')
+      .or('profile_visibility.eq.public,profile_visibility.is.null');
+
+    // The member's saved search, applied by the database rather than after
+    // the fact, so a page of twenty is twenty people who fit.
+    if (filters?.gender) profilesQuery = profilesQuery.eq('gender', filters.gender);
+    if (filters?.country_code) profilesQuery = profilesQuery.eq('country_code', filters.country_code);
+    // Age: members who joined before a date of birth was required have no
+    // age on file. They are not outside the range, they are unknown, so
+    // they stay in until they add one. (PostgREST ANDs repeated or= params.)
+    if (filters?.age_min != null && filters?.age_max != null) {
+      const lo = Math.floor(filters.age_min);
+      const hi = Math.floor(filters.age_max);
+      profilesQuery = profilesQuery.or(`age.is.null,and(age.gte.${lo},age.lte.${hi})`);
+    }
+
+    profilesQuery = profilesQuery
       .order('is_online', { ascending: false })
       .order('last_active', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })

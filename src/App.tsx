@@ -199,8 +199,10 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     if (!user?.id) { setDeletionRequest(null); return; }
-    fetchMyDeletionRequest().then((r) => { if (!cancelled) setDeletionRequest(r); });
-    return () => { cancelled = true; };
+    const refresh = () => { fetchMyDeletionRequest().then((r) => { if (!cancelled) setDeletionRequest(r); }); };
+    refresh();
+    window.addEventListener('dc:deletion-requested', refresh);
+    return () => { cancelled = true; window.removeEventListener('dc:deletion-requested', refresh); };
   }, [user?.id]);
   const handleStaffLogout = () => {
     try {

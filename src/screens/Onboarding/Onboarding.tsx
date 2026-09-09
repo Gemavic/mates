@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Camera, Upload } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { ProfileManager } from '@/lib/database';
+import { ProfileBasicsFields } from '@/components/ProfileBasicsFields';
+import { basicsComplete, type ProfileBasics } from '@/lib/profileBasics';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -12,6 +16,7 @@ interface OnboardingProps {
 }
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) => {
+  const { user, loadUserProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -21,14 +26,43 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     interests: [] as string[],
     idealDate: ''
   });
+  // Who you are, who you are looking for, and where: Discovery filters on
+  // these, so they are asked here and required before the next step.
+  const [basics, setBasics] = useState<ProfileBasics>({ gender: null, seeking: null, country_code: null });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const totalSteps = 4;
 
-  const handleNext = () => {
+  // Until now this screen saved nothing: every answer was discarded on
+  // "Complete Profile". It writes the profile now.
+  const handleNext = async () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
-    } else {
+      return;
+    }
+    if (!user?.id) { onComplete(); return; }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await ProfileManager.updateProfile(user.id, {
+        full_name: formData.name.trim(),
+        first_name: formData.name.trim().split(/\s+/)[0] || null,
+        location: formData.location.trim() || null,
+        occupation: formData.occupation.trim() || null,
+        bio: formData.bio.trim() || undefined,
+        interests: formData.interests,
+        gender: basics.gender,
+        seeking: basics.seeking,
+        country_code: basics.country_code,
+      } as any);
+      try { await loadUserProfile?.(); } catch { /* the next screen loads it anyway */ }
       onComplete();
+    } catch (err) {
+      console.error('Could not save your profile:', err);
+      setSaveError('Your profile could not be saved. Please check your connection and try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -87,6 +121,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
                   className="bg-white/90"
                 />
               </div>
+              <ProfileBasicsFields value={basics} onChange={setBasics} tone="light" />
             </div>
           </div>
         );
@@ -217,16 +252,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
         {renderStep()}
         
         <div className="px-6 pb-8">
+          {saveError && <p className="text-sm text-white bg-red-500/70 rounded-lg px-3 py-2 mb-3">{saveError}</p>}
           <Button
             onClick={handleNext}
             className="w-full h-12 bg-white text-pink-600 hover:bg-white/90 font-semibold rounded-xl"
             disabled={
-              (currentStep === 1 && (!formData.name || !formData.location)) ||
+              saving ||
+              (currentStep === 1 && (!formData.name || !formData.location || !basicsComplete(basics))) ||
               (currentStep === 3 && !formData.bio) ||
               (currentStep === 4 && !formData.idealDate)
             }
           >
-            {currentStep === totalSteps ? 'Complete Profile' : 'Continue'}
+            {saving ? 'Saving…' : currentStep === totalSteps ? 'Complete Profile' : 'Continue'}
           </Button>
         </div>
       </div>

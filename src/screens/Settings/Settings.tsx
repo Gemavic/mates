@@ -319,11 +319,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   /**
    * Asks for the account to be deleted. Nothing is removed today: the
-   * request starts a fourteen-day cooling period during which the profile
-   * is hidden and the member can change their mind. If anything is open on
-   * the account - a report, a dispute, a payment still settling - the
-   * request is held for a person to review, and the member is told so.
-   * All of that is decided by request_account_deletion() on the server.
+   * request starts a fourteen-day period during which the profile is hidden
+   * and the member can change their mind. What happens in that period is
+   * decided by request_account_deletion() on the server.
    */
   const deleteMyAccount = async () => {
     if (deleting || deleteConfirmText !== 'DELETE') return;
@@ -340,8 +338,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         );
         return;
       }
-      try { await signOut(); } catch { /* the request is recorded either way */ }
-      onNavigate('welcome');
+      // Stay signed in: the app shows the status screen with the date and a
+      // "Keep my account" button straight away (App listens for this).
+      try { window.dispatchEvent(new CustomEvent('dc:deletion-requested')); } catch { /* ignore */ }
+      onNavigate('discovery');
     } catch (err) {
       console.error('Deletion request failed:', err);
       setDeleteError('Your request could not be recorded. Nothing has been changed. Please try again or email admin@dates.care.');

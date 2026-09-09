@@ -9,6 +9,9 @@ import { supabaseClient } from '@/lib/supabase';
 import { uploadProfilePhoto } from '@/lib/photoUpload';
 import { ProfileManager } from '@/lib/database';
 import { initialsAvatar } from '@/lib/avatar';
+import { ProfileBasicsFields } from '@/components/ProfileBasicsFields';
+import { seekingSentence, type ProfileBasics } from '@/lib/profileBasics';
+import { countryFlag, countryName } from '@/lib/countries';
 
 const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
   if (Array.isArray(value)) return value;
@@ -49,14 +52,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   const [profileData, setProfileData] = useState({
     name: getFullName(),
     age: '',
-    location: 'New York, NY',
-    occupation: 'Professional',
-    education: 'University',
-    bio: 'Hello! I\'m excited to meet new people and see where things go.',
-    interests: ['Travel', 'Music', 'Food', 'Movies'],
+    location: '',
+    occupation: '',
+    education: '',
+    bio: '',
+    interests: [] as string[],
     relationshipStatus: '',
     lookingFor: ''
   });
+  const [basics, setBasics] = useState<ProfileBasics>({ gender: null, seeking: null, country_code: null });
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [settingPrimary, setSettingPrimary] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -75,14 +79,16 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       setProfileData({
         name: profile.full_name || getFullName(),
         age: profile.age?.toString() || '',
-        location: profile.location || 'New York, NY',
-        occupation: profile.occupation || 'Professional',
-        education: profile.education || 'University',
+        location: profile.location || '',
+        occupation: profile.occupation || '',
+        education: profile.education || '',
         bio: profile.bio || '',
-        interests: parseArrayField(profile.interests, ['Travel', 'Music', 'Food', 'Movies']),
+        interests: parseArrayField(profile.interests, []),
         relationshipStatus: profile.relationship_status || '',
         lookingFor: profile.looking_for || ''
       });
+      const p = profile as any;
+      setBasics({ gender: p.gender ?? null, seeking: p.seeking ?? null, country_code: p.country_code ?? null });
     }
   }, [profile]);
 
@@ -203,8 +209,11 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         bio: profileData.bio || null,
         interests: profileData.interests || null,
         relationship_status: profileData.relationshipStatus || null,
-        looking_for: profileData.lookingFor || null
-      };
+        looking_for: profileData.lookingFor || null,
+        gender: basics.gender,
+        seeking: basics.seeking,
+        country_code: basics.country_code,
+      } as any;
 
       console.log('Update data:', updateData);
 
@@ -503,6 +512,10 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                 onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
                 className="bg-white/20 text-white placeholder-white/50 border-white/30 min-h-[100px]"
               />
+            </div>
+
+            <div className="bg-white/10 rounded-2xl p-4">
+              <ProfileBasicsFields value={basics} onChange={setBasics} tone="light" />
             </div>
 
             <div>
@@ -883,14 +896,30 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
               <MapPin className="w-5 h-5 mr-3 text-white/70" />
               <span>{profileData.location}</span>
             </div>
-            <div className="flex items-center text-white">
-              <Briefcase className="w-5 h-5 mr-3 text-white/70" />
-              <span>{profileData.occupation}</span>
-            </div>
-            <div className="flex items-center text-white">
-              <GraduationCap className="w-5 h-5 mr-3 text-white/70" />
-              <span>{profileData.education}</span>
-            </div>
+            {profileData.occupation && (
+              <div className="flex items-center text-white">
+                <Briefcase className="w-5 h-5 mr-3 text-white/70" />
+                <span>{profileData.occupation}</span>
+              </div>
+            )}
+            {profileData.education && (
+              <div className="flex items-center text-white">
+                <GraduationCap className="w-5 h-5 mr-3 text-white/70" />
+                <span>{profileData.education}</span>
+              </div>
+            )}
+            {(basics.gender || basics.seeking) && (
+              <div className="flex items-center text-white">
+                <Heart className="w-5 h-5 mr-3 text-white/70" />
+                <span>{seekingSentence(basics.gender, basics.seeking)}</span>
+              </div>
+            )}
+            {basics.country_code && (
+              <div className="flex items-center text-white">
+                <MapPin className="w-5 h-5 mr-3 text-white/70" />
+                <span>{countryFlag(basics.country_code)} {countryName(basics.country_code)}</span>
+              </div>
+            )}
             {profileData.relationshipStatus && (
               <div className="flex items-center text-white">
                 <Users className="w-5 h-5 mr-3 text-white/70" />
@@ -907,7 +936,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
 
           <div className="mt-4">
             <h4 className="text-white font-medium mb-2">About Me</h4>
-            <p className="text-white/80 text-sm">{profileData.bio}</p>
+            <p className="text-white/80 text-sm">{profileData.bio || 'Nothing here yet. Tap Edit to say a little about yourself.'}</p>
           </div>
 
           <div className="mt-4">

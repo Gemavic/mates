@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { Heart, Users, CreditCard } from 'lucide-react';
+import { Heart, Users, CreditCard, SlidersHorizontal } from 'lucide-react';
 import { SwipeCard } from '@/components/SwipeCard';
 import { GridProfileCard } from '@/components/GridProfileCard';
 import { IntentPrompt } from '@/components/IntentPrompt';
 import { PhotoPrompt } from '@/components/PhotoPrompt';
 import { BlogTeaser } from '@/components/BlogTeaser';
+import { CompleteBasicsPrompt } from '@/components/CompleteBasicsPrompt';
+import { DiscoveryFilterSheet } from '@/components/DiscoveryFilterSheet';
+import { DEFAULT_FILTERS, fetchDiscoveryFilters, filtersAreDefault, saveDiscoveryFilters, type DiscoveryFilters } from '@/lib/discoveryFilters';
+import { fetchMyBasics, genderFilterFor, type ProfileBasics } from '@/lib/profileBasics';
+import { countryName } from '@/lib/countries';
 import { ModernHeader } from '@/components/ModernHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
@@ -109,11 +114,37 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     }
   }, [user?.id]);
 
+  // The member's saved search and their own basics (gender decides the
+  // wording of "I'm looking for"; seeking is the default gender filter).
+  const [filters, setFilters] = useState<DiscoveryFilters>({ ...DEFAULT_FILTERS });
+  const [filtersReady, setFiltersReady] = useState(false);
+  const [myBasics, setMyBasics] = useState<ProfileBasics | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+
   React.useEffect(() => {
-    if (user) {
+    let cancelled = false;
+    if (!user?.id) return;
+    Promise.all([fetchDiscoveryFilters(user.id), fetchMyBasics(user.id)])
+      .then(([f, b]) => { if (!cancelled) { setFilters(f); setMyBasics(b); setFiltersReady(true); } })
+      .catch(() => { if (!cancelled) setFiltersReady(true); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    if (user && filtersReady) {
       loadProfiles();
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, filtersReady, filters.seeking, filters.country_code, filters.age_min, filters.age_max, myBasics?.seeking]);
+
+  const applyFilters = async (next: DiscoveryFilters) => {
+    setFilters(next);
+    setFilterOpen(false);
+    setCurrentProfileIndex(0);
+    if (user?.id) {
+      try { await saveDiscoveryFilters(user.id, next); } catch (err) { console.warn('Could not save filters:', err); }
+    }
+  };
 
   const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
     if (Array.isArray(value)) return value;
@@ -144,8 +175,14 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       // the request stalls the person sits on "Loading profiles..."
       // indefinitely with no error and nothing to retry. Fail visibly
       // instead.
+      const activeFilters = {
+        gender: genderFilterFor(filters.seeking ?? myBasics?.seeking ?? null),
+        country_code: filters.country_code,
+        age_min: filters.age_min,
+        age_max: filters.age_max,
+      };
       const dbProfiles = await Promise.race([
-        ProfileManager.getDiscoveryProfiles(user.id),
+        ProfileManager.getDiscoveryProfiles(user.id, 20, activeFilters),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Discovery request timed out')), 15000)
         ),
@@ -620,6 +657,19 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
           dismissed in the last 7 days. */}
       <IntentPrompt onSaved={() => loadProfiles()} />
 
+      {/* Gender, who they are looking for, and country - asked once of
+          members who joined before Discovery could filter on them. */}
+      <CompleteBasicsPrompt onSaved={() => { if (user?.id) fetchMyBasics(user.id).then(setMyBasics); }} />
+
+      <DiscoveryFilterSheet
+        open={filterOpen}
+        value={filters}
+        myGender={myBasics?.gender ?? null}
+        profileSeeking={myBasics?.seeking ?? null}
+        onApply={applyFilters}
+        onClose={() => setFilterOpen(false)}
+      />
+
       {/* Discovery drops profiles with no photo, by design - a faceless
           card helps nobody. But the person being filtered out gets no
           signal, so they browse an empty grid and never learn that they
@@ -773,6 +823,17 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
               </div>
               
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setFilterOpen(true)}
+                  className={`px-4 py-2 rounded-lg transition-colors cursor-pointer touch-manipulation inline-flex items-center gap-1.5 ${
+                    filtersAreDefault(filters) ? 'bg-white/20 text-white' : 'bg-white text-gray-900'
+                  }`}
+                  type="button"
+                  aria-label="Filters"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {filters.country_code ? countryName(filters.country_code) : 'Filters'}
+                </button>
                 <button
                   onClick={() => setViewMode('swipe')}
                   className={`px-4 py-2 rounded-lg transition-colors cursor-pointer touch-manipulation ${
