@@ -16,7 +16,15 @@ export interface DiscoveryFilters {
 export const AGE_FLOOR = 18;
 export const AGE_CEILING = 99;
 
+<<<<<<< ours
 export const DEFAULT_FILTERS: DiscoveryFilters = { seeking: null, country_code: null, age_min: 20, age_max: 45 };
+=======
+// Defaults show everyone: any country, any adult age, and whoever the
+// member's own profile says they are looking for. People come here for
+// distance relationships and friendship too, so nobody is hidden until a
+// member narrows the search themselves.
+export const DEFAULT_FILTERS: DiscoveryFilters = { seeking: null, country_code: null, age_min: AGE_FLOOR, age_max: AGE_CEILING };
+>>>>>>> theirs
 
 export function clampAges(min: number, max: number): [number, number] {
   const a = Math.min(Math.max(AGE_FLOOR, Math.round(min || AGE_FLOOR)), AGE_CEILING);
