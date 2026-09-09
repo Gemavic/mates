@@ -6,6 +6,7 @@ import { Footer } from '@/components/Footer';
 import { BottomNavProvider, useBottomNav } from '@/contexts/BottomNavContext';
 import { SEO } from '@/components/SEO';
 import { IncomingCallHost } from '@/components/IncomingCallHost';
+import { DeletionPendingGate, fetchMyDeletionRequest, type DeletionRequestState } from '@/components/DeletionPendingGate';
 import { PresenceHeartbeat } from '@/components/PresenceHeartbeat';
 import { EnablePushPrompt } from '@/components/EnablePushPrompt';
 import { Welcome } from '@/screens/Welcome/Welcome';
@@ -189,6 +190,17 @@ const App: React.FC = () => {
   }, []);
   useEffect(() => {
     if (user?.id) void attachPendingReferral();
+  }, [user?.id]);
+
+  // A member who asked to leave sees only the waiting screen while the
+  // request is pending or held. The server refuses their writes regardless;
+  // this is the polite version of the same rule.
+  const [deletionRequest, setDeletionRequest] = useState<DeletionRequestState | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) { setDeletionRequest(null); return; }
+    fetchMyDeletionRequest().then((r) => { if (!cancelled) setDeletionRequest(r); });
+    return () => { cancelled = true; };
   }, [user?.id]);
   const handleStaffLogout = () => {
     try {
@@ -697,7 +709,13 @@ const App: React.FC = () => {
             isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
           )}>
             <React.Suspense fallback={<ScreenLoadingFallback />}>
-              {renderScreen()}
+              {user && deletionRequest ? (
+                <DeletionPendingGate
+                  request={deletionRequest}
+                  onKept={() => { setDeletionRequest(null); setCurrentScreen('discovery'); }}
+                  onSignOut={() => { void supabaseClient.auth.signOut().finally(() => setCurrentScreen('welcome')); }}
+                />
+              ) : renderScreen()}
             </React.Suspense>
           </div>
         </div>

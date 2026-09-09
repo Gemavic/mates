@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TrafficAnalytics } from './TrafficAnalytics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, AlertTriangle, CreditCard, Users, Settings, BarChart3, LogOut, Key, Eye, EyeOff, RefreshCw, CheckCircle, Search, Gift, History, Zap, BookOpen } from 'lucide-react';
+import { Shield, AlertTriangle, CreditCard, Users, Settings, BarChart3, LogOut, Key, Eye, EyeOff, RefreshCw, CheckCircle, Search, Gift, History, Zap, BookOpen, UserX } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { creditManager } from '@/lib/creditSystem';
 import { changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPermission } from '@/lib/staffManager';
@@ -12,6 +12,7 @@ import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
 import { StaffAccessRequests } from '@/components/StaffAccessRequests';
 import { PhotoMigrationTool } from '@/components/PhotoMigrationTool';
 import { CareBlogEditor } from '@/components/CareBlogEditor';
+import { AccountDeletionsPanel } from '@/components/AccountDeletionsPanel';
 
 interface StaffPanelProps {
   onLogout: () => void;
@@ -20,7 +21,7 @@ interface StaffPanelProps {
 }
 
 export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isAdmin = false }) => {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'traffic' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password' | 'access' | 'blog'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'traffic' | 'users' | 'credits' | 'rewards' | 'rules' | 'history' | 'password' | 'access' | 'blog' | 'deletions'>('overview');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
@@ -316,6 +317,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
             { id: 'history', label: 'History', icon: History },
             { id: 'access', label: 'Free Access', icon: Shield },
             ...(isAdmin ? [{ id: 'blog', label: 'Care Blog', icon: BookOpen }] : []),
+            ...(isAdmin ? [{ id: 'deletions', label: 'Deletions', icon: UserX }] : []),
             ...((staffAuth?.permissions?.includes('change_staff_passwords') || staffAuth?.permissions?.includes('all')) ?
               [{ id: 'password', label: 'Passwords', icon: Key }] : [])
           ].map((tab) => {
@@ -725,6 +727,10 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
 
           {selectedTab === 'blog' && isAdmin && (
             <CareBlogEditor onSuccess={showSuccess} onError={showError} />
+          )}
+
+          {selectedTab === 'deletions' && isAdmin && (
+            <AccountDeletionsPanel onSuccess={showSuccess} onError={showError} />
           )}
         </div>
 

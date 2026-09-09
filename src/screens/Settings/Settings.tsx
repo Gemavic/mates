@@ -318,38 +318,33 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   };
 
   /**
-   * Deletes the account. The server requires the literal word DELETE, scrubs
-   * the rows the auth cascade would miss, removes every file under the
-   * member's storage prefix, then deletes the auth user - which cascades the
-   * rest. There is no undo, and the screen says so.
+   * Asks for the account to be deleted. Nothing is removed today: the
+   * request starts a fourteen-day cooling period during which the profile
+   * is hidden and the member can change their mind. If anything is open on
+   * the account - a report, a dispute, a payment still settling - the
+   * request is held for a person to review, and the member is told so.
+   * All of that is decided by request_account_deletion() on the server.
    */
   const deleteMyAccount = async () => {
     if (deleting || deleteConfirmText !== 'DELETE') return;
     setDeleting(true);
     setDeleteError(null);
     try {
-      const { data: session } = await supabaseClient.auth.getSession();
-      const token = session?.session?.access_token;
-      if (!token) throw new Error('not_signed_in');
-      const resp = await fetch('/api/delete-account', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ confirm: 'DELETE' }),
-      });
-      const json = await resp.json().catch(() => null);
-      if (!resp.ok || !json?.deleted) {
+      const { data, error } = await supabaseClient.rpc('request_account_deletion');
+      const res = data as { success?: boolean; error?: string; status?: string; due_at?: string; held?: boolean } | null;
+      if (error || !res?.success) {
         setDeleteError(
-          json?.error === 'staff_account'
+          res?.error === 'staff_account'
             ? 'Staff accounts are removed by an administrator, not from here.'
-            : 'Your account could not be deleted. Nothing has been changed. Please try again or email admin@dates.care.'
+            : 'Your request could not be recorded. Nothing has been changed. Please try again or email admin@dates.care.'
         );
         return;
       }
-      try { await signOut(); } catch { /* the session is already gone server-side */ }
+      try { await signOut(); } catch { /* the request is recorded either way */ }
       onNavigate('welcome');
     } catch (err) {
-      console.error('Delete failed:', err);
-      setDeleteError('Your account could not be deleted. Nothing has been changed. Please try again or email admin@dates.care.');
+      console.error('Deletion request failed:', err);
+      setDeleteError('Your request could not be recorded. Nothing has been changed. Please try again or email admin@dates.care.');
     } finally {
       setDeleting(false);
     }
@@ -764,9 +759,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               <strong>This cannot be undone</strong>
             </div>
             <p className="text-red-700 text-sm">
-              Your profile, photos, matches, messages, mail, and remaining credits are removed
-              permanently. Credits are not refunded. If you have a support ticket or dispute open,
-              an anonymised record of it is kept so it can still be answered.
+              Your profile is hidden immediately and you are signed out. Your account is reviewed and
+              deleted within 14 days: your profile, photos, matches, messages, mail and remaining
+              credits are removed. Credits are not refunded. Records the law requires us to keep are
+              archived as described in our Privacy Policy.
             </p>
           </div>
 
@@ -792,7 +788,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
               className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-2xl disabled:opacity-50"
               type="button"
             >
-              {deleting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting…</>) : (<><Trash2 className="w-4 h-4 mr-2" />Delete my account permanently</>)}
+              {deleting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting…</>) : (<><Trash2 className="w-4 h-4 mr-2" />Delete my account</>)}
             </Button>
           </div>
         </div>
