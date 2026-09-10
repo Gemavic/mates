@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatDay } from '@/lib/when';
 import { Clock, ShieldCheck, ShieldX, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
@@ -148,7 +149,7 @@ export const StaffAccessRequests: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
                   {r.status === 'approved' && r.expires_at && (
                     <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                       <Clock className="w-3 h-3" />
-                      expires {new Date(r.expires_at).toLocaleDateString()}
+                      expires {formatDay(r.expires_at)}
                     </div>
                   )}
                 </div>
@@ -176,7 +177,7 @@ export const StaffAccessRequests: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-sm">{p.requester_name}</span>
                     <span className="text-xs text-gray-400">
-                      {new Date(p.requested_at).toLocaleDateString()}
+                      {formatDay(p.requested_at)}
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 capitalize mb-1">{p.scope}</p>

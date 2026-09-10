@@ -12,6 +12,7 @@ import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
 import { StaffAccessRequests } from '@/components/StaffAccessRequests';
 import { PhotoMigrationTool } from '@/components/PhotoMigrationTool';
 import { CareBlogEditor } from '@/components/CareBlogEditor';
+import { formatWhen, timeAgo } from '@/lib/when';
 import { AccountDeletionsPanel } from '@/components/AccountDeletionsPanel';
 
 interface StaffPanelProps {
@@ -271,9 +272,11 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-white font-semibold">Logged in as:</h3>
-              <p className="text-white/80 text-sm">{staffAuth?.staffId} ({staffAuth?.role})</p>
+              <p className="text-white/80 text-sm break-all">{staffAuth?.email || staffAuth?.staffId} ({staffAuth?.role})</p>
               <p className="text-white/60 text-xs">
-                Login: {new Date(staffAuth?.loginTime).toLocaleString()}
+                {staffAuth?.loginTime
+                  ? `Signed in ${timeAgo(staffAuth.loginTime)} · ${formatWhen(staffAuth.loginTime)}`
+                  : 'Signed in this session'}
               </p>
             </div>
             <Button
@@ -793,7 +796,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
             </div>
             <div className="flex justify-between">
               <span>Login Time:</span>
-              <span>{new Date(staffAuth?.loginTime).toLocaleTimeString()}</span>
+              <span>{staffAuth?.loginTime ? timeAgo(staffAuth.loginTime) : 'this session'}</span>
             </div>
             <div className="flex justify-between">
               <span>Session Status:</span>

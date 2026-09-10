@@ -57,7 +57,11 @@ export function useStaffAccess() {
   const staffAuth = isStaff
     ? {
         staffId: user?.id,
-        role: 'Staff',
+        email: user?.email ?? null,
+        role: isAdmin ? 'Admin' : 'Staff',
+        // When this sign-in happened, from the auth session itself. The
+        // header used to read a loginTime that nothing ever set.
+        loginTime: user?.last_sign_in_at ?? null,
         permissions: ['manage_users', 'award_credits', 'view_analytics', 'moderate_content'],
       }
     : null;

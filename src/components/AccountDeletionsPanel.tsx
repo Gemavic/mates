@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { formatDay, formatWhen } from '@/lib/when';
 import { Clock, FileSearch, Lock, RefreshCw, ShieldAlert, ShieldCheck, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
@@ -34,7 +35,7 @@ interface Row {
 
 interface LogRow { id: number; actor_id: string | null; subject_id: string; reason: string; accessed_at: string }
 
-const fmt = (s: string | null) => (s ? new Date(s).toLocaleDateString() : '');
+const fmt = (s: string | null) => formatDay(s, '');
 
 export const AccountDeletionsPanel: React.FC<{ onSuccess?: (m: string) => void; onError?: (m: string) => void }> = ({ onSuccess, onError }) => {
   const [rows, setRows] = useState<Row[]>([]);
@@ -206,7 +207,7 @@ export const AccountDeletionsPanel: React.FC<{ onSuccess?: (m: string) => void; 
             <ul className="mt-2 text-xs text-white/60 space-y-1">
               {log.map((l) => (
                 <li key={l.id}>
-                  {new Date(l.accessed_at).toLocaleString()} · <span className="font-mono">{l.subject_id.slice(0, 8)}</span> · {l.reason}
+                  {formatWhen(l.accessed_at)} · <span className="font-mono">{l.subject_id.slice(0, 8)}</span> · {l.reason}
                 </li>
               ))}
             </ul>

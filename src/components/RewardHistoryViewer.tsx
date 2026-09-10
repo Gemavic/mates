@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatWhen } from '@/lib/when';
 import { History, Calendar, User, Gift, Coins, Award, Filter } from 'lucide-react';
 
 interface RewardRecord {
@@ -196,7 +197,7 @@ export const RewardHistoryViewer: React.FC<RewardHistoryViewerProps> = ({
                       )}
                       <span className="flex items-center">
                         <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(record.created_at).toLocaleString()}
+                        {formatWhen(record.created_at)}
                       </span>
                       {!selectedUserId && (
                         <span className="flex items-center">

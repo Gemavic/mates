@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDay } from '@/lib/when';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Zap, Plus, Trash2, ToggleLeft, ToggleRight, Calendar, Target } from 'lucide-react';
@@ -326,7 +327,7 @@ export const AutomatedRulesPanel: React.FC<AutomatedRulesPanelProps> = ({
                   {rule.valid_until && (
                     <span className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
-                      Until {new Date(rule.valid_until).toLocaleDateString()}
+                      Until {formatDay(rule.valid_until)}
                     </span>
                   )}
                 </div>
