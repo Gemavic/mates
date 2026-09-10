@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, AlertTriangle, CreditCard, Users, Settings, BarChart3, LogOut, Key, Eye, EyeOff, RefreshCw, CheckCircle, Search, Gift, History, Zap, BookOpen, UserX } from 'lucide-react';
 import { Layout } from '@/components/Layout';
-import { creditManager } from '@/lib/creditSystem';
+import { searchMembers, staffOverview, memberDisplayName, verificationLabel, type MemberRow, type OverviewCounts } from '@/lib/staffMembers';
 import { changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPermission } from '@/lib/staffManager';
 import { RewardPanel } from '@/components/RewardPanel';
 import { AutomatedRulesPanel } from '@/components/AutomatedRulesPanel';
@@ -12,7 +12,7 @@ import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
 import { StaffAccessRequests } from '@/components/StaffAccessRequests';
 import { PhotoMigrationTool } from '@/components/PhotoMigrationTool';
 import { CareBlogEditor } from '@/components/CareBlogEditor';
-import { formatWhen, timeAgo } from '@/lib/when';
+import { formatWhen, formatDay, timeAgo } from '@/lib/when';
 import { AccountDeletionsPanel } from '@/components/AccountDeletionsPanel';
 
 interface StaffPanelProps {
@@ -44,7 +44,44 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
   });
   
   const [allStaff, setAllStaff] = useState<any[]>([]);
-  
+
+  // Members - the real ones, from the database, staff-gated server side.
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState('');
+  const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
+  const [overview, setOverview] = useState<OverviewCounts | null>(null);
+  const [overviewError, setOverviewError] = useState('');
+
+  // Search as the staffer types, a beat after the last keystroke, and
+  // never show results for an older keystroke over a newer one.
+  React.useEffect(() => {
+    if (selectedTab !== 'users') return;
+    let stale = false;
+    setMembersLoading(true);
+    setMembersError('');
+    const timer = setTimeout(async () => {
+      try {
+        const rows = await searchMembers(userSearchTerm, 25);
+        if (!stale) setMembers(rows);
+      } catch (e: any) {
+        if (!stale) { setMembers([]); setMembersError(e?.message || 'Search failed'); }
+      } finally {
+        if (!stale) setMembersLoading(false);
+      }
+    }, userSearchTerm.trim() ? 250 : 0);
+    return () => { stale = true; clearTimeout(timer); };
+  }, [selectedTab, userSearchTerm]);
+
+  React.useEffect(() => {
+    if (selectedTab !== 'overview') return;
+    let stale = false;
+    staffOverview()
+      .then((o) => { if (!stale) { setOverview(o); setOverviewError(''); } })
+      .catch((e: any) => { if (!stale) setOverviewError(e?.message || 'Could not load counts'); });
+    return () => { stale = true; };
+  }, [selectedTab]);
+
   // Load staff members once
   React.useEffect(() => {
     const loadStaff = async () => {
@@ -153,6 +190,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
 
       // Reset form
       setSelectedUserId('');
+      setSelectedMember(null);
       setCreditAmount('');
       setCreditReason('');
     } catch (error: any) {
@@ -236,20 +274,14 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
     }
   };
 
-  const mockUsers = [
-    { id: 'user1', name: 'John Doe', email: 'john@example.com', credits: 120 },
-    { id: 'user2', name: 'Jane Smith', email: 'jane@example.com', credits: 85 },
-    { id: 'user3', name: 'Mike Johnson', email: 'mike@example.com', credits: 200 },
-    { id: 'demo-user', name: 'Demo User', email: 'demo@example.com', credits: creditManager.getTotalCredits('demo-user') }
-  ];
+  const pickMember = (m: MemberRow) => {
+    setSelectedMember(m);
+    setSelectedUserId(m.user_id);
+    setSelectedTab('credits');
+  };
 
-  // Filter users based on search term
-  const filteredUsers = mockUsers.filter(user => 
-    user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-    user.id.toLowerCase().includes(userSearchTerm.toLowerCase())
-  );
-  
+  const money = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   return (
     <Layout
       title="Staff Panel"
@@ -355,16 +387,35 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
             <div className="space-y-6">
               <h3 className="text-white font-semibold text-lg">System Overview</h3>
               
+              {overviewError && (
+                <p className="text-red-300 text-sm">{overviewError}</p>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/10 rounded-xl p-4 text-center">
                   <Users className="w-8 h-8 text-white mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-white">1,234</p>
-                  <p className="text-white/70 text-sm">Total Users</p>
+                  <p className="text-2xl font-bold text-white">{overview ? overview.members.toLocaleString() : '…'}</p>
+                  <p className="text-white/70 text-sm">Members</p>
+                  {overview && (
+                    <p className="text-white/50 text-xs mt-1">{overview.verified.toLocaleString()} verified · {overview.joined_7d.toLocaleString()} joined this week</p>
+                  )}
                 </div>
                 <div className="bg-white/10 rounded-xl p-4 text-center">
                   <CreditCard className="w-8 h-8 text-white mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-white">$12,345</p>
-                  <p className="text-white/70 text-sm">Revenue</p>
+                  <p className="text-2xl font-bold text-white">{overview ? money(overview.paid_usd) : '…'}</p>
+                  <p className="text-white/70 text-sm">Paid, all time</p>
+                  {overview && (
+                    <p className="text-white/50 text-xs mt-1">{overview.paid_count.toLocaleString()} completed payment{overview.paid_count === 1 ? '' : 's'} · {money(overview.paid_30d_usd)} in 30 days</p>
+                  )}
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <Zap className="w-8 h-8 text-white mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-white">{overview ? overview.active_7d.toLocaleString() : '…'}</p>
+                  <p className="text-white/70 text-sm">Active in the last 7 days</p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <UserX className="w-8 h-8 text-white mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-white">{overview ? overview.pending_deletions.toLocaleString() : '…'}</p>
+                  <p className="text-white/70 text-sm">Deletions pending</p>
                 </div>
               </div>
 
@@ -383,56 +434,73 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
 
           {selectedTab === 'users' && (
             <div className="space-y-6">
-              <h3 className="text-white font-semibold text-lg">User Management</h3>
-              
-              {/* Search Bar for Credit Managers */}
+              <h3 className="text-white font-semibold text-lg">Members</h3>
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
                   <Search className="w-5 h-5 mr-2" />
-                  Quick User Search for Credit Managers
+                  Find a member
                 </h4>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
                   <Input
-                    type="text"
-                    placeholder="Search by name, email, or user ID..."
+                    type="search"
+                    autoComplete="off"
+                    placeholder="Name, email, or user ID"
                     value={userSearchTerm}
                     onChange={(e) => setUserSearchTerm(e.target.value)}
                     className="pl-10 w-full bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
                 <p className="text-blue-700 text-sm mt-2">
-                  💡 Tip: Search for any part of the name, email, or user ID for instant results
+                  Any part of the name or email will do. With nothing typed, the most recently active members are listed.
                 </p>
               </div>
-              
-              <div className="space-y-3">
-                {filteredUsers.length === 0 ? (
+
+              {membersError && (
+                <div className="bg-red-500/20 border border-red-500 rounded-xl p-4">
+                  <p className="text-red-200 text-sm">{membersError}</p>
+                </div>
+              )}
+
+              <div className="space-y-3" aria-busy={membersLoading}>
+                {membersLoading && members.length === 0 ? (
+                  <p className="text-white/60 text-sm text-center py-6">Searching…</p>
+                ) : members.length === 0 && !membersError ? (
                   <div className="text-center py-8">
                     <Search className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                    <h4 className="text-white font-medium mb-2">No Users Found</h4>
+                    <h4 className="text-white font-medium mb-2">No member matches</h4>
                     <p className="text-white/70 text-sm">
-                      No users match your search criteria. Try a different search term.
+                      Nobody has that in their name, email, or user ID. Try fewer letters.
                     </p>
                   </div>
                 ) : (
-                  filteredUsers.map((user) => (
-                    <div key={user.id} className="bg-white/10 rounded-xl p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-white font-medium">{user.name}</h4>
-                          <p className="text-white/70 text-sm">{user.email}</p>
-                          <p className="text-white/60 text-xs">{user.credits} credits</p>
-                          <p className="text-white/50 text-xs">ID: {user.id}</p>
+                  members.map((m) => (
+                    <div key={m.user_id} className={`bg-white/10 rounded-xl p-4 ${membersLoading ? 'opacity-60' : ''}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h4 className="text-white font-medium truncate">
+                            {memberDisplayName(m)}
+                            {m.is_admin && <span className="ml-2 text-[10px] uppercase tracking-wide bg-purple-500/40 text-purple-100 px-1.5 py-0.5 rounded">Admin</span>}
+                            {!m.is_admin && m.is_staff && <span className="ml-2 text-[10px] uppercase tracking-wide bg-blue-500/40 text-blue-100 px-1.5 py-0.5 rounded">Staff</span>}
+                            {m.deletion_pending && <span className="ml-2 text-[10px] uppercase tracking-wide bg-red-500/40 text-red-100 px-1.5 py-0.5 rounded">Deletion pending</span>}
+                          </h4>
+                          <p className="text-white/70 text-sm break-all">{m.email || 'No email on profile'}</p>
+                          <p className="text-white/60 text-xs">
+                            {m.credits.toLocaleString()} credits · {verificationLabel(m.verification_status)}
+                          </p>
+                          <p className="text-white/50 text-xs">
+                            Joined {formatDay(m.joined_at)} · Last active {m.last_active ? timeAgo(m.last_active) : 'not recorded'}
+                          </p>
+                          <p className="text-white/40 text-[11px] font-mono break-all">{m.user_id}</p>
                         </div>
                         <Button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setSelectedUserId(user.id);
-                            setSelectedTab('credits');
+                            pickMember(m);
                           }}
-                          className="bg-blue-500 text-white px-3 py-1 text-sm cursor-pointer touch-manipulation active:scale-95"
+                          className="shrink-0 bg-blue-500 text-white px-3 py-1 text-sm cursor-pointer touch-manipulation active:scale-95"
                           type="button"
                         >
                           Manage
@@ -442,29 +510,6 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
                   ))
                 )}
               </div>
-              
-              {/* Quick Actions for Selected User */}
-              {userSearchTerm && filteredUsers.length === 1 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-900 mb-2">Quick Actions</h4>
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedUserId(filteredUsers[0].id);
-                        setSelectedTab('credits');
-                        setUserSearchTerm('');
-                      }}
-                      className="bg-green-500 text-white px-4 py-2 text-sm cursor-pointer touch-manipulation active:scale-95"
-                      type="button"
-                    >
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Manage Credits
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -475,14 +520,23 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
               {/* Selected User Info */}
               {selectedUserId && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">Selected User</h4>
-                  <div className="text-blue-800">
-                    <p><strong>User ID:</strong> {selectedUserId}</p>
-                    <p><strong>Current Credits:</strong> {creditManager.getTotalCredits(selectedUserId)} credits</p>
-                  </div>
+                  <h4 className="font-semibold text-blue-900 mb-2">Selected member</h4>
+                  {selectedMember && selectedMember.user_id === selectedUserId ? (
+                    <div className="text-blue-800 text-sm">
+                      <p><strong>{memberDisplayName(selectedMember)}</strong>{selectedMember.email ? ` · ${selectedMember.email}` : ''}</p>
+                      <p><strong>Credits now:</strong> {selectedMember.credits.toLocaleString()}</p>
+                      <p className="font-mono text-xs break-all">{selectedMember.user_id}</p>
+                    </div>
+                  ) : (
+                    <div className="text-blue-800 text-sm">
+                      <p className="break-all"><strong>Typed by hand:</strong> {selectedUserId}</p>
+                      <p className="text-blue-600 text-xs">Balance is not shown for a hand-typed address; pick the member from the Users tab to see it.</p>
+                    </div>
+                  )}
                   <Button
                     onClick={() => {
                       setSelectedUserId('');
+                      setSelectedMember(null);
                       setSelectedTab('users');
                     }}
                     className="mt-2 bg-blue-500 text-white px-3 py-1 text-sm"
