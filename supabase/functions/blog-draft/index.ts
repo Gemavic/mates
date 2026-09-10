@@ -44,6 +44,11 @@ const env = (name: string) => (Deno.env.get(name) ?? '').trim();
 // Google renames these fairly often, so it is an environment variable with a
 // sensible default rather than a constant buried in the code.
 const MODEL = env('GEMINI_MODEL') || 'gemini-3.8-flash';
+
+// A model name looks like "gemini-2.5-flash". Anything else in that secret is
+// almost certainly a key pasted into the wrong box, and a key must never be
+// echoed back to a browser, even an admin's.
+const MODEL_LOOKS_RIGHT = /^(models\/)?[a-z]+-[a-z0-9.-]{2,50}$/.test(MODEL);
 const DAILY_LIMIT = Number(env('BLOG_DRAFT_DAILY_LIMIT') || '40');
 
 const CATEGORY_BRIEF: Record<string, string> = {
@@ -228,6 +233,12 @@ Deno.serve(async (req: Request) => {
       message: 'GEMINI_API_KEY is not set on this project. Add it under Edge Functions, Secrets.',
     }, 503);
   }
+  if (!MODEL_LOOKS_RIGHT) {
+    return json({
+      error: 'not_configured',
+      message: 'GEMINI_MODEL does not look like a model name (it should read like "gemini-2.5-flash"). It may hold a key by mistake. Delete that secret, or set it to a model name, under Edge Functions, Secrets.',
+    }, 503);
+  }
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await admin
@@ -266,7 +277,7 @@ Deno.serve(async (req: Request) => {
     return json({
       error: 'generation_failed',
       message,
-      hint: `The model asked for was "${MODEL}". If that name is wrong or not on your key, set GEMINI_MODEL in Edge Function secrets to one your key can use.`,
+      hint: `The model asked for was "${MODEL}". If that name is not available on your key, set GEMINI_MODEL in Edge Function secrets to one that is (for example gemini-2.5-flash).`,
     }, 502);
   }
 
