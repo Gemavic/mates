@@ -289,8 +289,8 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           </h2>
           <p className="text-slate-600 text-sm leading-relaxed mb-3">
             You can create your account with an email address and password, or with
-            Google, Facebook or Apple. If you choose one of those, we ask that
-            provider for three things only: your name, your email address and your
+            Google (any other sign-in provider we offer appears on the sign-in
+            screen). If you choose a provider, we ask it for three things only: your name, your email address and your
             profile picture. We use them to create your Dates.care account, to sign
             you in again on your next visit, and to fill in your profile so you are
             not retyping what you have already entered elsewhere.
