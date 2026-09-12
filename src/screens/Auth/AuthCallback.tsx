@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { creditManager } from '@/lib/creditSystem';
+import { fetchMyCompletion } from '@/lib/profileCompletion';
 import { Heart } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -39,63 +40,27 @@ export const AuthCallback: React.FC<AuthCallbackProps> = ({ onNavigate }) => {
           try {
             creditManager.initializeUser(user.id);
 
-            const { data: existingProfile } = await supabaseClient
-              .from('user_profiles')
-              .select('*')
-              .eq('user_id', user.id)
-              .maybeSingle();
+            // The profile row is created by a database trigger the moment
+            // the account exists, so there is nothing to insert here. What
+            // matters is whether it is complete enough to show: photo,
+            // gender, who they seek, country, city. If not, onboarding.
+            const [{ data: profileData }, completion] = await Promise.all([
+              supabaseClient.from('user_profiles').select('full_name, first_name').eq('user_id', user.id).maybeSingle(),
+              fetchMyCompletion(),
+            ]);
 
-            if (!existingProfile) {
-              setStatus('Creating your profile...');
+            const firstName = profileData?.first_name || profileData?.full_name?.split(' ')[0]
+              || user.user_metadata?.full_name?.split(' ')[0] || '';
+            setStatus(`Welcome${firstName ? ', ' + firstName : ''}!`);
+            await new Promise(resolve => setTimeout(resolve, 600));
 
-              const oauthMetadata = user.user_metadata || {};
-              const fullName = oauthMetadata.full_name || oauthMetadata.name || user.email?.split('@')[0] || 'User';
-              const avatarUrl = oauthMetadata.avatar_url || oauthMetadata.picture || null;
-
-              try {
-                await supabaseClient
-                  .from('user_profiles')
-                  .insert({
-                    user_id: user.id,
-                    email: user.email,
-                    full_name: fullName,
-                    profile_photo: avatarUrl,
-                    bio: '',
-                    is_verified: false,
-                    created_at: new Date().toISOString()
-                  });
-
-                console.log('OAuth user profile created successfully');
-              } catch (insertError: any) {
-                if (!insertError.message?.includes('already exists')) {
-                  console.error('Failed to create profile:', insertError);
-                }
-              }
-
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            const { data: profileData } = await supabaseClient
-              .from('user_profiles')
-              .select('is_verified, full_name')
-              .eq('user_id', user.id)
-              .maybeSingle();
-
-            if (profileData) {
-              setStatus(`Welcome${profileData.full_name ? ', ' + profileData.full_name.split(' ')[0] : ''}!`);
-
-              await new Promise(resolve => setTimeout(resolve, 1000));
-
-              if (profileData.is_verified) {
-                navigate('discovery');
-              } else {
-                navigate('verification');
-              }
-            } else {
+            if (completion && !completion.complete) {
               navigate('onboarding');
+            } else {
+              navigate('discovery');
             }
           } catch (profileError) {
-            console.warn('Could not check verification status:', profileError);
+            console.warn('Could not check the profile after sign-in:', profileError);
             setStatus('Almost there...');
             setTimeout(() => navigate('discovery'), 1000);
           }

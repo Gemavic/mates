@@ -103,6 +103,11 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
     allowAnonymous: false,
   },
 
+  'near-you': {
+    requireAuth: true,
+    allowAnonymous: false,
+  },
+
   terms: {
     requireAuth: false,
     allowAnonymous: true,

@@ -23,6 +23,7 @@ import { ModernCredits } from '@/screens/Credits/ModernCredits';
 const GiftShop = React.lazy(() => import('@/screens/GiftShop/GiftShop').then(m => ({ default: m.GiftShop })));
 import { Mail } from '@/screens/Mail/Mail';
 const Profile = React.lazy(() => import('@/screens/Profile/Profile').then(m => ({ default: m.Profile })));
+const NearYou = React.lazy(() => import('@/screens/NearYou/NearYou').then(m => ({ default: m.NearYou })));
 const ViewUserProfile = React.lazy(() => import('@/screens/Profile/ViewUserProfile').then(m => ({ default: m.ViewUserProfile })));
 const Newsfeed = React.lazy(() => import('@/screens/Newsfeed/Newsfeed').then(m => ({ default: m.Newsfeed })));
 const Feedback = React.lazy(() => import('@/screens/Feedback/Feedback').then(m => ({ default: m.Feedback })));
@@ -69,6 +70,7 @@ import { creditManager } from '@/lib/creditSystem';
 import { supabaseConfigError } from '@/lib/supabase';
 import { getRouteConfig } from '@/lib/routeConfig';
 import { getAuthLandingScreen, screenFromHash } from '@/lib/authUrl';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { captureReferralFromUrl, attachPendingReferral } from '@/lib/referrals';
 import { Invite } from '@/screens/Invite/Invite';
 import { AlertTriangle } from 'lucide-react';
@@ -90,6 +92,13 @@ function ScreenLoadingFallback() {
  * than lives in. Everything else gets the bar - which is the point. It used to
  * appear on some screens and not others, by no rule anyone could predict.
  */
+// Screens a member cannot use until their profile is complete. Settings,
+// legal pages, support and the staff panel stay reachable regardless.
+const MEMBER_SCREENS_GATED_BY_ONBOARDING = new Set([
+  'discovery', 'matches', 'likes', 'mail', 'newsfeed', 'gift-shop', 'view-profile',
+  'audio-chat', 'video-chat', 'invite', 'credits',
+]);
+
 const SCREENS_WITHOUT_BOTTOM_NAV = new Set([
   'welcome', 'signin', 'signup', 'auth-callback', 'reset-password',
   'onboarding', 'verification', 'checkout', 'payment-setup', 'success', 'cancel',
@@ -136,7 +145,7 @@ const App: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  const { user, loading } = useAuth();
+  const { user, loading, isAnonymous } = useAuth();
   const { hidden: bottomNavHidden } = useBottomNav();
   const showBottomNav =
     !bottomNavHidden && !SCREENS_WITHOUT_BOTTOM_NAV.has(currentScreen);
@@ -204,6 +213,18 @@ const App: React.FC = () => {
     window.addEventListener('dc:deletion-requested', refresh);
     return () => { cancelled = true; window.removeEventListener('dc:deletion-requested', refresh); };
   }, [user?.id]);
+  // A member whose profile is not complete (photo, gender, who they seek,
+  // country, city) is taken to onboarding instead of any member screen.
+  // Until the answer is known nothing is redirected, so there is no flash
+  // of the wrong screen; anonymous browsers are never sent there.
+  const { needsOnboarding } = useProfileCompletion(user?.id, !!user && !isAnonymous);
+  useEffect(() => {
+    if (!needsOnboarding) return;
+    if (!MEMBER_SCREENS_GATED_BY_ONBOARDING.has(currentScreen)) return;
+    handleNavigate('onboarding');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsOnboarding, currentScreen]);
+
   const handleStaffLogout = () => {
     try {
       setCurrentScreen('discovery');
@@ -467,7 +488,10 @@ const App: React.FC = () => {
         return <AuthCallback onNavigate={handleNavigate} />;
 
       case 'onboarding':
-        return <Onboarding onComplete={() => handleNavigate('discovery')} onBack={() => handleNavigate('signup')} />;
+        return <Onboarding onComplete={() => handleNavigate('near-you')} onBack={() => handleNavigate('welcome')} />;
+
+      case 'near-you':
+        return <NearYou onNavigate={handleNavigate} />;
 
       case 'discovery':
         return <ModernDiscovery onNavigate={handleNavigate} />;

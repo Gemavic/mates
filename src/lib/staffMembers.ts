@@ -31,6 +31,15 @@ export interface OverviewCounts {
   paid_usd: number;
   paid_count: number;
   paid_30d_usd: number;
+  completed_profiles: number;
+  completed_pct: number;
+  women: number;
+  men: number;
+  signups_30d: number;
+  referred_7d: number;
+  referred_30d: number;
+  referred_pct_30d: number;
+  referrals_rewarded: number;
 }
 
 /** Members whose name, email or id contains the words typed; the most
@@ -57,6 +66,15 @@ export async function staffOverview(): Promise<OverviewCounts> {
     paid_usd: Number(o.paid_usd ?? 0),
     paid_count: Number(o.paid_count ?? 0),
     paid_30d_usd: Number(o.paid_30d_usd ?? 0),
+    completed_profiles: Number(o.completed_profiles ?? 0),
+    completed_pct: Number(o.completed_pct ?? 0),
+    women: Number(o.women ?? 0),
+    men: Number(o.men ?? 0),
+    signups_30d: Number(o.signups_30d ?? 0),
+    referred_7d: Number(o.referred_7d ?? 0),
+    referred_30d: Number(o.referred_30d ?? 0),
+    referred_pct_30d: Number(o.referred_pct_30d ?? 0),
+    referrals_rewarded: Number(o.referrals_rewarded ?? 0),
   };
 }
 

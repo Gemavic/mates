@@ -13,6 +13,8 @@ export interface ProfileBasics {
   gender: Gender | null;
   seeking: Seeking | null;
   country_code: string | null;
+  /** Province, territory or state; only meaningful for countries we subdivide. */
+  region_code?: string | null;
 }
 
 export const GENDER_OPTIONS: { value: Gender; label: string }[] = [
@@ -40,7 +42,7 @@ export function basicsComplete(b: Partial<ProfileBasics> | null | undefined): bo
 export async function fetchMyBasics(userId: string): Promise<ProfileBasics | null> {
   const { data, error } = await supabaseClient
     .from('user_profiles')
-    .select('gender, seeking, country_code')
+    .select('gender, seeking, country_code, region_code')
     .eq('user_id', userId)
     .maybeSingle();
   if (error || !data) return null;
@@ -50,7 +52,7 @@ export async function fetchMyBasics(userId: string): Promise<ProfileBasics | nul
 export async function saveMyBasics(userId: string, b: ProfileBasics): Promise<void> {
   const { error } = await supabaseClient
     .from('user_profiles')
-    .update({ gender: b.gender, seeking: b.seeking, country_code: b.country_code, updated_at: new Date().toISOString() })
+    .update({ gender: b.gender, seeking: b.seeking, country_code: b.country_code, region_code: b.region_code ?? null, updated_at: new Date().toISOString() })
     .eq('user_id', userId);
   if (error) throw error;
 }

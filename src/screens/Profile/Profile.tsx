@@ -88,7 +88,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         lookingFor: profile.looking_for || ''
       });
       const p = profile as any;
-      setBasics({ gender: p.gender ?? null, seeking: p.seeking ?? null, country_code: p.country_code ?? null });
+      setBasics({ gender: p.gender ?? null, seeking: p.seeking ?? null, country_code: p.country_code ?? null, region_code: p.region_code ?? null });
     }
   }, [profile]);
 
@@ -213,6 +213,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
         gender: basics.gender,
         seeking: basics.seeking,
         country_code: basics.country_code,
+        region_code: basics.region_code ?? null,
       } as any;
 
       console.log('Update data:', updateData);

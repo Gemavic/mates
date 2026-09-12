@@ -417,6 +417,22 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
                   <p className="text-2xl font-bold text-white">{overview ? overview.pending_deletions.toLocaleString() : '…'}</p>
                   <p className="text-white/70 text-sm">Deletions pending</p>
                 </div>
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <CheckCircle className="w-8 h-8 text-white mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-white">{overview ? `${overview.completed_pct}%` : '…'}</p>
+                  <p className="text-white/70 text-sm">Profiles complete</p>
+                  {overview && (
+                    <p className="text-white/50 text-xs mt-1">{overview.completed_profiles.toLocaleString()} of {overview.members.toLocaleString()} have a photo, gender, who they seek, country and city · {overview.women.toLocaleString()} women, {overview.men.toLocaleString()} men</p>
+                  )}
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <Gift className="w-8 h-8 text-white mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-white">{overview ? overview.referred_7d.toLocaleString() : '…'}</p>
+                  <p className="text-white/70 text-sm">Invited sign-ups this week</p>
+                  {overview && (
+                    <p className="text-white/50 text-xs mt-1">{overview.referred_30d.toLocaleString()} of {overview.signups_30d.toLocaleString()} sign-ups in 30 days came through an invite ({overview.referred_pct_30d}%) · {overview.referrals_rewarded.toLocaleString()} rewarded so far</p>
+                  )}
+                </div>
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">

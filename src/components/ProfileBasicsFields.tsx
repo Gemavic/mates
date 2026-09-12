@@ -1,5 +1,6 @@
 import React from 'react';
 import { COUNTRIES } from '@/lib/countries';
+import { regionsFor, regionLabel } from '@/lib/regions';
 import { GENDER_OPTIONS, SEEKING_OPTIONS, type ProfileBasics } from '@/lib/profileBasics';
 
 /**
@@ -11,9 +12,13 @@ interface Props {
   value: ProfileBasics;
   onChange: (next: ProfileBasics) => void;
   tone?: 'light' | 'dark';
+  /** 'who' = gender and seeking; 'where' = country and region; default both. */
+  part?: 'who' | 'where' | 'all';
 }
 
-export const ProfileBasicsFields: React.FC<Props> = ({ value, onChange, tone = 'dark' }) => {
+export const ProfileBasicsFields: React.FC<Props> = ({ value, onChange, tone = 'dark', part = 'all' }) => {
+  const showWho = part !== 'where';
+  const showWhere = part !== 'who';
   const label = tone === 'light' ? 'block text-white font-medium mb-2' : 'block text-sm font-medium text-gray-700 mb-2';
   const chip = (active: boolean) =>
     tone === 'light'
@@ -25,6 +30,7 @@ export const ProfileBasicsFields: React.FC<Props> = ({ value, onChange, tone = '
 
   return (
     <div className="space-y-5">
+      {showWho && (<>
       <div>
         <span className={label}>You are</span>
         <div className="flex flex-wrap gap-2">
@@ -45,12 +51,14 @@ export const ProfileBasicsFields: React.FC<Props> = ({ value, onChange, tone = '
           ))}
         </div>
       </div>
+      </>)}
+      {showWhere && (<>
       <div>
         <label className={label}>
           Country
           <select
             value={value.country_code ?? ''}
-            onChange={(e) => onChange({ ...value, country_code: e.target.value || null })}
+            onChange={(e) => onChange({ ...value, country_code: e.target.value || null, region_code: null })}
             className={`${select} mt-2`}
           >
             <option value="">Select country</option>
@@ -60,6 +68,24 @@ export const ProfileBasicsFields: React.FC<Props> = ({ value, onChange, tone = '
           </select>
         </label>
       </div>
+      {regionsFor(value.country_code).length > 0 && (
+        <div>
+          <label className={label}>
+            {regionLabel(value.country_code)}
+            <select
+              value={value.region_code ?? ''}
+              onChange={(e) => onChange({ ...value, region_code: e.target.value || null })}
+              className={`${select} mt-2`}
+            >
+              <option value="">Select {regionLabel(value.country_code).toLowerCase()}</option>
+              {regionsFor(value.country_code).map((r) => (
+                <option key={r.code} value={r.code}>{r.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+      </>)}
     </div>
   );
 };
