@@ -9,42 +9,17 @@
 // The body is sanitised again on the way out with the same allow-list the
 // editor uses (headings, lists, links, tables, pictures, one kind of
 // YouTube embed), so nothing reaches a reader that the editor would not
-// have shown an admin.
+// have shown an admin. That pass is in ./_sanitize.js and carries no
+// dependencies: the obvious library, sanitize-html, requires an ESM-only
+// htmlparser2 and threw ERR_REQUIRE_ESM on Vercel's Node, so every article
+// page returned 500 until this replaced it.
 //
 // Reads through article_public(), which returns published pieces only.
 
-import sanitizeHtml from 'sanitize-html';
+import { sanitizeArticleHtml, textToHtml } from './_sanitize.js';
 import { SITE, SITE_NAME, esc, rpc, page, CATEGORY_LABELS, formatDate } from './_page.js';
 
 const SLUG = /^[a-z0-9-]{1,90}$/;
-const YT = /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{6,20}$/;
-
-function clean(html) {
-  return sanitizeHtml(html || '', {
-    allowedTags: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'h2', 'h3', 'ul', 'ol', 'li', 'a', 'blockquote',
-      'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'figure', 'figcaption', 'iframe', 'hr', 'div'],
-    allowedAttributes: {
-      a: ['href', 'title', 'target', 'rel'],
-      img: ['src', 'alt', 'title', 'loading'],
-      iframe: ['src', 'title', 'allowfullscreen', 'loading'],
-      div: ['class'], figure: ['class'], th: ['colspan', 'rowspan'], td: ['colspan', 'rowspan'],
-    },
-    allowedClasses: { div: ['table-wrap'], figure: ['video'] },
-    allowedSchemes: ['https', 'http', 'mailto'],
-    allowedSchemesByTag: { img: ['https'], iframe: ['https'] },
-    allowedIframeHostnames: ['www.youtube-nocookie.com'],
-    transformTags: {
-      a: (tag, attribs) => ({ tagName: 'a', attribs: { ...attribs, target: '_blank', rel: 'noopener noreferrer' } }),
-      img: (tag, attribs) => ({ tagName: 'img', attribs: { ...attribs, loading: 'lazy' } }),
-    },
-    exclusiveFilter: (frame) => frame.tag === 'iframe' && !YT.test(frame.attribs.src || ''),
-  });
-}
-
-function textToHtml(text) {
-  return String(text || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
-    .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
-}
 
 export default async function handler(req, res) {
   const slug = typeof req.query?.slug === 'string' ? req.query.slug.trim() : '';
@@ -63,7 +38,7 @@ export default async function handler(req, res) {
   const canonical = `${SITE}/a/${slug}`;
   const appLink = `${SITE}/#care-blog?a=${encodeURIComponent(slug)}`;
   const description = a.excerpt || String(a.content || '').slice(0, 200);
-  const bodyHtml = a.content_html ? clean(a.content_html) : textToHtml(a.content);
+  const bodyHtml = a.content_html ? sanitizeArticleHtml(a.content_html) : textToHtml(a.content);
   const category = CATEGORY_LABELS[a.category] || null;
   const image = typeof a.cover_image === 'string' && a.cover_image.startsWith('https://') ? a.cover_image : null;
 
