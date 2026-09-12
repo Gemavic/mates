@@ -26,6 +26,18 @@
       "destination": "/api/article-share?slug=:slug"
     },
     {
+      "source": "/in/:country/:region",
+      "destination": "/api/place?country=:country&region=:region"
+    },
+    {
+      "source": "/in/:country",
+      "destination": "/api/place?country=:country"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },
