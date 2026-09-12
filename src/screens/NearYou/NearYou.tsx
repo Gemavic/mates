@@ -106,6 +106,7 @@ export const NearYou: React.FC<NearYouProps> = ({ onNavigate }) => {
           <Button onClick={() => onNavigate('invite')} variant="outline" className="w-full h-12 border-white/60 text-white hover:bg-white/10 font-semibold rounded-xl bg-transparent">
             <UserPlus className="w-4 h-4 mr-2" /> Invite a friend
           </Button>
+          <p className="text-white/70 text-xs text-center">When a friend you invite completes their profile, you both receive 20 complimentary credits.</p>
         </div>
       </div>
     </Layout>

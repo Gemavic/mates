@@ -12,6 +12,7 @@ import { ProfileBasicsFields } from '@/components/ProfileBasicsFields';
 import { type ProfileBasics } from '@/lib/profileBasics';
 import { regionsFor } from '@/lib/regions';
 import { announceProfileUpdated } from '@/lib/profileCompletion';
+import { claimReferralCompletion } from '@/lib/referrals';
 
 /**
  * Three screens, none skippable: a photo, who you are and who you are
@@ -139,6 +140,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     try {
       if (step === 2) { await saveWho(); announceProfileUpdated(); setStep(3); return; }
       await saveWhere();
+      // If a friend's link brought this member here, both are thanked now.
+      await claimReferralCompletion();
       announceProfileUpdated();
       try { await loadUserProfile?.(); } catch { /* the next screen loads it anyway */ }
       onComplete();

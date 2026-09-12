@@ -71,6 +71,7 @@ import { supabaseConfigError } from '@/lib/supabase';
 import { getRouteConfig } from '@/lib/routeConfig';
 import { getAuthLandingScreen, screenFromHash } from '@/lib/authUrl';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
+import { claimReferralCompletion } from '@/lib/referrals';
 import { captureReferralFromUrl, attachPendingReferral } from '@/lib/referrals';
 import { Invite } from '@/screens/Invite/Invite';
 import { AlertTriangle } from 'lucide-react';
@@ -217,7 +218,12 @@ const App: React.FC = () => {
   // country, city) is taken to onboarding instead of any member screen.
   // Until the answer is known nothing is redirected, so there is no flash
   // of the wrong screen; anonymous browsers are never sent there.
-  const { needsOnboarding } = useProfileCompletion(user?.id, !!user && !isAnonymous);
+  const { needsOnboarding, completion } = useProfileCompletion(user?.id, !!user && !isAnonymous);
+  // The moment a profile is complete, the referral that brought this
+  // member in (if any) pays its first thank-you. The server pays once.
+  useEffect(() => {
+    if (completion?.complete) void claimReferralCompletion();
+  }, [completion?.complete]);
   useEffect(() => {
     if (!needsOnboarding) return;
     if (!MEMBER_SCREENS_GATED_BY_ONBOARDING.has(currentScreen)) return;

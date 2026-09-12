@@ -5,6 +5,7 @@ import { GridProfileCard } from '@/components/GridProfileCard';
 import { IntentPrompt } from '@/components/IntentPrompt';
 import { PhotoPrompt } from '@/components/PhotoPrompt';
 import { BlogTeaser } from '@/components/BlogTeaser';
+import { InviteNudge } from '@/components/InviteNudge';
 import { CompleteBasicsPrompt } from '@/components/CompleteBasicsPrompt';
 import { DiscoveryFilterSheet } from '@/components/DiscoveryFilterSheet';
 import { DEFAULT_FILTERS, fetchDiscoveryFilters, filtersAreDefault, saveDiscoveryFilters, type DiscoveryFilters } from '@/lib/discoveryFilters';
@@ -679,6 +680,10 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
       {/* The newest Care Blog piece, once, dismissible. Nothing while the
           library is empty. */}
       <BlogTeaser variant="card" onNavigate={onNavigate} />
+
+      {/* Invite a friend, once, dismissible; gone for good after the first
+          invitation. Word of mouth is engineered, not waited for. */}
+      <InviteNudge onNavigate={onNavigate} />
 
       {/* Mobile Header */}
       <div className="lg:hidden">

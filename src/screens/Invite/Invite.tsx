@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, Check, Share2, Loader2, Users, Clock, ShieldCheck, Gift, XCircle } from 'lucide-react';
+import { Copy, Check, Share2, Loader2, Users, Clock, ShieldCheck, Gift, XCircle, MessageCircle, MessageSquare } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import {
   fetchMyReferralCode,
   fetchMyReferrals,
   referralLink,
+  inviteMessage,
+  whatsappShareUrl,
+  smsShareUrl,
   type ReferralSummary,
   type ReferralInvite,
 } from '@/lib/referrals';
@@ -17,11 +20,12 @@ interface InviteProps {
 /**
  * Invite friends & family.
  *
- * Deliberately quiet. This page exists for members who asked how to bring
- * people they know; it is not pushed at anyone, there is no counter on the
- * home screen, and the copy says plainly what is and is not on offer:
- * complimentary credits, only after the friend has been here thirty days
- * and verified, and never money.
+ * The copy says plainly what is and is not on offer: complimentary credits
+ * to both sides when the friend completes their profile, a second
+ * thank-you to the inviter after thirty days, and never money. The
+ * message is pre-written so sending takes one tap, but it goes out in the
+ * member's own name from their own WhatsApp or Messages; the site sends
+ * nothing and reads no contacts.
  */
 export const Invite: React.FC<InviteProps> = ({ onNavigate }) => {
   const { user } = useAuth();
@@ -52,6 +56,7 @@ export const Invite: React.FC<InviteProps> = ({ onNavigate }) => {
 
   const link = code ? referralLink(code) : '';
   const terms = summary?.terms;
+  const message = link ? inviteMessage(link, terms?.completion_credits ?? 20) : '';
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   const copyLink = async () => {
@@ -73,8 +78,7 @@ export const Invite: React.FC<InviteProps> = ({ onNavigate }) => {
     try {
       await navigator.share({
         title: 'Dates.care',
-        text: 'I am on Dates.care and thought you might like it too.',
-        url: link,
+        text: message,
       });
     } catch {
       // Cancelled by the person - nothing to do.
@@ -97,8 +101,8 @@ export const Invite: React.FC<InviteProps> = ({ onNavigate }) => {
                 <h2 className="font-semibold text-lg">Know someone who would like it here?</h2>
               </div>
               <p className="text-white/80 text-sm leading-relaxed">
-                This is entirely optional. If you would like to, share your personal link with
-                friends or family. It carries your name, so they know it came from you — not from us.
+                Share your personal link with friends or family. It carries your name, so they know it
+                came from you, not from us.{terms ? ` When they finish setting up their profile, you both receive ${terms.completion_credits} complimentary credits.` : ''}
               </p>
             </section>
 
@@ -125,16 +129,35 @@ export const Invite: React.FC<InviteProps> = ({ onNavigate }) => {
                     {copied ? <Check className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5" />}
                   </button>
                 </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <a
+                    href={whatsappShareUrl(message)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white rounded-xl py-2.5 text-sm font-semibold"
+                  >
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                  <a
+                    href={smsShareUrl(message)}
+                    className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white rounded-xl py-2.5 text-sm font-semibold"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Text message
+                  </a>
+                </div>
                 {canShare && (
                   <button
                     type="button"
                     onClick={shareLink}
-                    className="mt-3 w-full flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl py-2.5 text-sm font-semibold"
+                    className="mt-2 w-full flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl py-2.5 text-sm font-semibold"
                   >
                     <Share2 className="w-4 h-4" />
-                    Share from your phone
+                    Share another way
                   </button>
                 )}
+                <p className="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
+                  {message}
+                </p>
                 <p className="mt-3 text-xs text-gray-500">
                   Your code is <span className="font-mono font-semibold text-gray-700">{code}</span>.
                   Please only send it to people you know.
@@ -147,9 +170,11 @@ export const Invite: React.FC<InviteProps> = ({ onNavigate }) => {
                 <h3 className="font-semibold">How it works</h3>
                 <p className="text-white/80 leading-relaxed">
                   Your friend joins through your link and receives the same welcome as every new
-                  member. When they have been a member for {terms.days_required} days, have verified
-                  their profile and are still using the site, you receive{' '}
-                  <strong>{terms.reward_credits} complimentary credits</strong> as a thank-you.
+                  member. The moment they complete their profile (a photo, who they are, where they
+                  are), <strong>you each receive {terms.completion_credits} complimentary credits</strong>.
+                  When they have been a member for {terms.days_required} days, have verified their
+                  profile and are still using the site, you receive a further{' '}
+                  <strong>{terms.reward_credits} credits</strong>.
                 </p>
                 <p className="text-white/80 leading-relaxed">
                   Credits can be used on the site for calls, mail and gifts. They are never paid out
@@ -200,10 +225,12 @@ const InviteRow: React.FC<{ invite: ReferralInvite }> = ({ invite }) => {
   const due = new Date(invite.qualifies_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
   let icon = <Clock className="w-4 h-4 text-amber-500" />;
-  let note = `Joined ${joined} · counts from ${due}${invite.is_verified ? '' : ' once verified'}`;
+  let note = invite.completed_at
+    ? `Profile complete · ${invite.completion_credits ?? 0} credits received · a further thank-you from ${due}${invite.is_verified ? '' : ' once verified'}`
+    : `Joined ${joined} · credits arrive when their profile is complete`;
   if (invite.status === 'rewarded') {
     icon = <Gift className="w-4 h-4 text-green-600" />;
-    note = `Thank-you of ${invite.credits ?? 0} credits received`;
+    note = `Thank-yous of ${(invite.credits ?? 0) + (invite.completion_credits ?? 0)} credits received`;
   } else if (invite.status === 'void') {
     icon = <XCircle className="w-4 h-4 text-gray-400" />;
     note = invite.void_reason === 'not_verified'

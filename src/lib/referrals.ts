@@ -18,6 +18,8 @@ const CODE_RE = /^[A-Z2-9]{8}$/;
 
 export interface ReferralTerms {
   reward_credits: number;
+  /** To each side the moment the invited friend completes their profile. */
+  completion_credits: number;
   days_required: number;
   active_within_days: number;
   monthly_cap: number;
@@ -33,6 +35,8 @@ export interface ReferralInvite {
   rewarded_at: string | null;
   credits: number | null;
   void_reason: string | null;
+  completed_at: string | null;
+  completion_credits: number | null;
   first_name: string;
   is_verified: boolean;
 }
@@ -132,4 +136,30 @@ export async function fetchMyReferrals(): Promise<ReferralSummary | null> {
     return null;
   }
   return data as ReferralSummary;
+}
+
+/**
+ * Asks the server to pay the profile-completion thank-you for the referral
+ * that brought this member in, if there is one and it has not been paid.
+ * Safe to call any number of times; the server pays once.
+ */
+export async function claimReferralCompletion(): Promise<{ paid: boolean; credits?: number; reason?: string }> {
+  const { data, error } = await supabaseClient.rpc('claim_referral_completion');
+  if (error) return { paid: false, reason: error.message };
+  return (data ?? { paid: false }) as { paid: boolean; credits?: number; reason?: string };
+}
+
+/** The pre-written invitation, in the member's own voice, for WhatsApp or SMS. */
+export function inviteMessage(link: string, credits: number): string {
+  return `I'm on Dates.care, a dating site where every photo is checked before it's shown. Join with my link and we both get ${credits} free credits once your profile is set up: ${link}`;
+}
+
+export function whatsappShareUrl(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+export function smsShareUrl(text: string): string {
+  // iOS wants "&body", Android wants "?body"; this form works on both.
+  const ios = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  return `sms:${ios ? '&' : '?'}body=${encodeURIComponent(text)}`;
 }
