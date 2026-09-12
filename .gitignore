@@ -42,3 +42,8 @@ supabase/.temp/
 
 # Patch files
 *.patch
+
+# Android wrapper build outputs (built outside the repo; never commit a keystore)
+android.keystore
+*.aab
+*.apk

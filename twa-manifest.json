@@ -1,0 +1,42 @@
+{
+  "packageId": "care.dates.app",
+  "host": "dates.care",
+  "name": "Dates.care",
+  "launcherName": "Dates.care",
+  "display": "standalone",
+  "themeColor": "#EC4899",
+  "themeColorDark": "#0f172a",
+  "navigationColor": "#EC4899",
+  "navigationColorDark": "#0f172a",
+  "navigationDividerColor": "#EC4899",
+  "navigationDividerColorDark": "#0f172a",
+  "backgroundColor": "#EC4899",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://dates.care/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "datescare"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://dates.care/site.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://dates.care/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "appVersion": "1.0.0"
+}

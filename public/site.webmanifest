@@ -1,6 +1,10 @@
 {
+  "id": "/",
   "name": "Dates.care",
   "short_name": "Dates.care",
+  "lang": "en",
+  "scope": "/",
+  "categories": ["social", "lifestyle"],
   "description": "Verified profiles, thoughtful matching, and real conversations.",
   "start_url": "/",
   "display": "standalone",

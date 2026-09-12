@@ -38,6 +38,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/.well-known/assetlinks.json",
+      "destination": "/api/assetlinks"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },
