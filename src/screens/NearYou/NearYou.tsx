@@ -10,10 +10,13 @@ import { timeAgo } from '@/lib/when';
 
 /**
  * The first thing a member sees when their profile is complete: real people
- * in their province, then their country. The count is the true count, even
- * when it is small - a new member told "12 members in Ontario" can decide
- * to stay and invite a friend; one shown an empty grid with no explanation
- * just leaves.
+ * in their province, then their country.
+ *
+ * It shows the faces and never a headcount. The site is still recruiting, so
+ * any number here would be small today, wrong tomorrow, and a reason for
+ * somebody to leave before they have looked at a single profile. The grid
+ * below is the honest signal: it is exactly who is there. When it is empty
+ * the screen says so plainly, without dressing it up as a statistic.
  */
 interface NearYouProps {
   onNavigate: (screen: string, params?: { userId?: string; userName?: string }) => void;
@@ -50,12 +53,10 @@ export const NearYou: React.FC<NearYouProps> = ({ onNavigate }) => {
             <p className="text-white/80">Looking around…</p>
           ) : count > 0 ? (
             <>
-              <h2 className="text-2xl font-bold text-white">
-                {count.toLocaleString()} {count === 1 ? 'member' : 'members'} in {placeName}
-              </h2>
+              <h2 className="text-2xl font-bold text-white">People in {placeName}</h2>
               <p className="text-white/80 text-sm mt-1">
                 {near?.scope === 'region'
-                  ? `Matching who you're looking for. ${near.country_count.toLocaleString()} across ${countryName(near.country_code) ?? 'the country'} altogether.`
+                  ? 'Matching who you\'re looking for. Browse everyone to see the rest of the country.'
                   : regionLabel
                     ? `Nobody in ${regionLabel} yet who matches who you're looking for, so here is ${countryName(near?.country_code) ?? 'your country'}.`
                     : 'Matching who you\'re looking for.'}
@@ -63,9 +64,9 @@ export const NearYou: React.FC<NearYouProps> = ({ onNavigate }) => {
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-white">You're among the first in {placeName}</h2>
+              <h2 className="text-2xl font-bold text-white">Nobody in {placeName} yet</h2>
               <p className="text-white/80 text-sm mt-1">
-                Nobody here yet matches who you're looking for. Members join every week; the quickest way to change this number is to bring someone.
+                Nobody here yet matches who you're looking for. Members join every week, and bringing someone you know is the quickest way to change that.
               </p>
             </>
           )}

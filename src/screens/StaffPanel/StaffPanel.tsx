@@ -422,7 +422,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
                   <p className="text-2xl font-bold text-white">{overview ? `${overview.completed_pct}%` : '…'}</p>
                   <p className="text-white/70 text-sm">Profiles complete</p>
                   {overview && (
-                    <p className="text-white/50 text-xs mt-1">{overview.completed_profiles.toLocaleString()} of {overview.members.toLocaleString()} have a photo, gender, who they seek, country and city · {overview.women.toLocaleString()} women, {overview.men.toLocaleString()} men</p>
+                    <p className="text-white/50 text-xs mt-1">{overview.completed_profiles.toLocaleString()} of {overview.members.toLocaleString()} have a photo, gender, who they seek, country and city · {overview.with_photo.toLocaleString()} have a photo and are shown in Discovery{overview.no_country > 0 ? `, but ${overview.no_country.toLocaleString()} of those never named a country` : ''} · {overview.women.toLocaleString()} women, {overview.men.toLocaleString()} men</p>
                   )}
                 </div>
                 <div className="bg-white/10 rounded-xl p-4 text-center">

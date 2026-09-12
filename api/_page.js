@@ -123,10 +123,6 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(
   .more ul { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
   .more li a { display:flex; gap:12px; align-items:center; text-decoration:none; color:var(--ink); padding:10px; border:1px solid var(--line); border-radius:12px; background:#fff; }
   .more li img { width:64px; height:48px; object-fit:cover; border-radius:8px; flex:none; }
-  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin:20px 0 26px; }
-  .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; }
-  .stat b { display:block; font-size:1.7rem; line-height:1; font-variant-numeric:tabular-nums; }
-  .stat span { color:var(--muted); font-size:.85rem; }
   .list { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
   .list li { display:flex; justify-content:space-between; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
   .list li a { text-decoration:none; color:var(--ink); font-weight:600; }

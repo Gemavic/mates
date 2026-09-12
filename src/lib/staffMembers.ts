@@ -33,6 +33,8 @@ export interface OverviewCounts {
   paid_30d_usd: number;
   completed_profiles: number;
   completed_pct: number;
+  with_photo: number;
+  no_country: number;
   women: number;
   men: number;
   signups_30d: number;
@@ -68,6 +70,8 @@ export async function staffOverview(): Promise<OverviewCounts> {
     paid_30d_usd: Number(o.paid_30d_usd ?? 0),
     completed_profiles: Number(o.completed_profiles ?? 0),
     completed_pct: Number(o.completed_pct ?? 0),
+    with_photo: Number(o.with_photo ?? 0),
+    no_country: Number(o.no_country ?? 0),
     women: Number(o.women ?? 0),
     men: Number(o.men ?? 0),
     signups_30d: Number(o.signups_30d ?? 0),
