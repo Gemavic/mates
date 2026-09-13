@@ -29,8 +29,20 @@ interface Summary {
   campaigns?: Array<{ campaign: string; medium: string; views: number; signups: number }>;
 }
 
+// The windows offered. All of them are whole calendar days in Toronto, so
+// "Today" is today so far rather than a rolling 24 hours - a sliding window is
+// what made these figures appear to count backwards in the first place.
+const WINDOWS: Array<{ days: number; label: string }> = [
+  { days: 1, label: 'Today' },
+  { days: 3, label: '3d' },
+  { days: 7, label: '7d' },
+  { days: 15, label: '15d' },
+  { days: 30, label: '30d' },
+  { days: 90, label: '90d' },
+];
+
 export const TrafficAnalytics: React.FC = () => {
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState(7);
   const [includeStaff, setIncludeStaff] = useState(false);
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,21 +112,25 @@ export const TrafficAnalytics: React.FC = () => {
   const formatDay = (iso: string) =>
     new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
 
+  // "vs previous 1 days" is not English.
+  const comparedWith = days === 1 ? 'yesterday' : `previous ${days} days`;
+
   return (
     <div className="space-y-6">
-      {/* Window selector */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      {/* Window selector. The title sits on its own line: six windows plus the
+          refresh button do not share a row with a heading on a phone. */}
+      <div className="space-y-3">
         <h3 className="text-lg font-semibold text-gray-900">Traffic & Ad Performance</h3>
-        <div className="flex items-center gap-2">
-          {[7, 30, 90].map((d) => (
+        <div className="flex items-center gap-2 flex-wrap">
+          {WINDOWS.map((w) => (
             <button
-              key={d}
-              onClick={() => setDays(d)}
+              key={w.days}
+              onClick={() => setDays(w.days)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                days === d ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                days === w.days ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {d}d
+              {w.label}
             </button>
           ))}
           <button
@@ -133,10 +149,13 @@ export const TrafficAnalytics: React.FC = () => {
         <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-600 space-y-1">
           <p>
             <span className="font-medium text-gray-800">
-              {formatDay(win.starts)} – {formatDay(win.ends)}
+              {win.days === 1
+                ? formatDay(win.ends)
+                : `${formatDay(win.starts)} – ${formatDay(win.ends)}`}
             </span>{' '}
-            · {win.days} calendar days, Toronto time, today included. Today is still filling up, so
-            compare it with the change shown on each tile rather than with yesterday's reading.
+            · {win.days === 1 ? 'today so far' : `${win.days} calendar days, today included`}, Toronto
+            time. Today is still filling up, so read the change on each tile rather than comparing
+            with what you saw yesterday.
           </p>
           <p className="flex items-center gap-2 flex-wrap">
             <label className="inline-flex items-center gap-1.5 cursor-pointer">
@@ -175,9 +194,9 @@ export const TrafficAnalytics: React.FC = () => {
                   className={`text-[11px] mt-1 font-medium ${
                     delta > 0 ? 'text-green-600' : delta < 0 ? 'text-rose-600' : 'text-gray-400'
                   }`}
-                  title={`Previous ${days} days: ${c.was}`}
+                  title={`${comparedWith[0].toUpperCase()}${comparedWith.slice(1)}: ${c.was}`}
                 >
-                  {delta > 0 ? '+' : ''}{delta}{c.suffix ?? ''} vs previous {days} days
+                  {delta > 0 ? '+' : ''}{delta}{c.suffix ?? ''} vs {comparedWith}
                 </p>
               )}
             </div>
