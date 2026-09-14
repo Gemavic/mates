@@ -31,6 +31,53 @@ export async function rpc(name, args) {
   }
 }
 
+/**
+ * A one-page visit beacon for the server-rendered pages.
+ *
+ * WHY IT EXISTS. These pages are plain HTML so a search engine can read them,
+ * which also meant they ran none of the app's code - including the analytics.
+ * Every visit to /a/<slug> and /in/<place> was therefore invisible to the
+ * Staff panel, which reported zero while Vercel's logs showed hundreds of
+ * requests. Anything linked from social media lands on exactly these pages,
+ * so the one thing worth measuring was the one thing not measured.
+ *
+ * WHY IN THE BROWSER, NOT THE HANDLER. Counting server-side would be simpler
+ * but wrong twice over: these responses are edge-cached for minutes, so the
+ * function does not run for most visitors, and a request is not a reader -
+ * link-preview fetchers and crawlers would all be counted as people. A script
+ * runs on a cached page and, in the main, only for something with a browser.
+ *
+ * It writes through the same function and the same sessionStorage keys the app
+ * uses, so a reader who clicks through to the app is one session, not two.
+ *
+ * ONLY the publishable key is used here. The service-role key that rpc() above
+ * prefers must never reach a browser.
+ */
+export function beacon(path) {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, VITE_SUPABASE_ANON_KEY } = process.env;
+  const key = SUPABASE_ANON_KEY || VITE_SUPABASE_ANON_KEY;
+  if (!SUPABASE_URL || !key || !path) return '';
+  const cfg = JSON.stringify({ u: SUPABASE_URL, k: key, p: String(path).slice(0, 200) })
+    .replace(/</g, '\\u003c');
+  return `<script>(function(){try{var C=${cfg};
+var S='dates_session_id',R='dates_session_source',id=null,src=null;
+try{id=sessionStorage.getItem(S)}catch(e){}
+if(!id){try{id=crypto.randomUUID()}catch(e){id='s-'+Date.now()+'-'+Math.random().toString(36).slice(2,12)}
+try{sessionStorage.setItem(S,id)}catch(e){}}
+if(!id||id.length<8)return;
+try{src=JSON.parse(sessionStorage.getItem(R)||'null')}catch(e){}
+if(!src){var q=new URLSearchParams(location.search),u=q.get('utm_source'),ref=document.referrer||null,rh='';
+try{rh=ref?new URL(ref).hostname:''}catch(e){}
+if(u){src={source:u,medium:q.get('utm_medium'),campaign:q.get('utm_campaign'),referrer:ref}}
+else if(rh&&rh!==location.hostname){var h=rh.replace(/^www\\./,'');
+var m=/google\\./.test(h)?['google','organic']:/bing\\./.test(h)?['bing','organic']:/duckduckgo\\./.test(h)?['duckduckgo','organic']:/facebook\\.|fb\\./.test(h)?['facebook','social']:/instagram\\./.test(h)?['instagram','social']:/threads\\./.test(h)?['threads','social']:/tiktok\\./.test(h)?['tiktok','social']:/twitter\\.|x\\.com/.test(h)?['x','social']:/reddit\\./.test(h)?['reddit','social']:/youtube\\./.test(h)?['youtube','social']:/linkedin\\./.test(h)?['linkedin','social']:[h||'direct','referral'];
+src={source:m[0],medium:m[1],campaign:null,referrer:ref}}
+else{src={source:'direct',medium:'none',campaign:null,referrer:null}}
+try{sessionStorage.setItem(R,JSON.stringify(src))}catch(e){}}
+fetch(C.u+'/rest/v1/rpc/log_traffic_event',{method:'POST',keepalive:true,headers:{apikey:C.k,Authorization:'Bearer '+C.k,'Content-Type':'application/json'},body:JSON.stringify({p_event_type:'page_view',p_session_id:id,p_path:C.p,p_referrer:src.referrer,p_source:src.source,p_medium:src.medium,p_campaign:src.campaign,p_meta:null})}).catch(function(){})
+}catch(e){}})();</script>`;
+}
+
 export const CATEGORY_LABELS = {
   dating: 'Dating & Relationships',
   canada: 'Life in Canada',
@@ -55,7 +102,7 @@ export function formatDate(iso) {
 }
 
 /** The page frame: header, footer, the styles, and the metadata block. */
-export function page({ title, description, canonical, image, robots, jsonLd, body, ogType = 'website', extraHead = '' }) {
+export function page({ title, description, canonical, image, robots, jsonLd, body, ogType = 'website', extraHead = '', trackPath = null }) {
   const img = typeof image === 'string' && image.startsWith('https://') ? image : `${SITE}/brand/logo-1024.png`;
   return `<!doctype html>
 <html lang="en">
@@ -147,6 +194,7 @@ ${body}
   <a href="${SITE}/privacy">Privacy</a>
   <a href="${SITE}/#help">Help</a>
 </div></footer>
+${beacon(trackPath)}
 </body>
 </html>`;
 }

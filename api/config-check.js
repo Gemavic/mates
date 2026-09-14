@@ -10,6 +10,16 @@ export default async function handler(req, res) {
 
   const groups = {
     core: [check('SUPABASE_URL'), check('SUPABASE_SERVICE_ROLE_KEY')],
+    // The server-rendered pages (/a/<slug>, /in/<place>) put a visit beacon
+    // in the browser, and it may only ever carry the PUBLISHABLE key. If
+    // neither of these is visible at runtime the pages still render, but
+    // nothing they get is counted - so this is worth being able to see.
+    public_page_analytics: [
+      {
+        name: 'SUPABASE_ANON_KEY or VITE_SUPABASE_ANON_KEY',
+        set: !!(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY),
+      },
+    ],
     crypto_payments: [
       check('NOWPAYMENTS_API_KEY'),
       check('NOWPAYMENTS_IPN_SECRET'),
@@ -22,6 +32,7 @@ export default async function handler(req, res) {
   };
 
   const allCore = groups.core.every((v) => v.set);
+  const articlePagesCounted = groups.public_page_analytics.every((v) => v.set);
   const allPayments = groups.crypto_payments.every((v) => v.set);
   const allEmails = groups.receipt_emails.every((v) => v.set);
 
@@ -95,6 +106,7 @@ export default async function handler(req, res) {
     ready_for_payments: allCore && allPayments,
     ready_for_receipt_emails: allCore && allEmails,
     ready_for_casl_identification: groups.legal_identification.every((v) => v.set),
+    article_and_place_page_visits_counted: articlePagesCounted,
     groups,
     ...detail,
     diagnosis:

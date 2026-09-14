@@ -84,6 +84,7 @@ ${!region && !regions.length && REGIONS[country] ? `<p class="note" style="margi
 `;
 
   const html = page({
+    trackPath: placePath(country, region),
     title,
     description,
     canonical,

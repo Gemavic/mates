@@ -37,6 +37,23 @@ export function getSessionId(): string {
   }
 }
 
+/**
+ * The referrer's host, or '' if it has none.
+ *
+ * This used to be a substring test - `referrer.includes(location.hostname)` -
+ * to decide whether a visit came from our own site. Our social handle is
+ * "dates.care", so a Threads post at threads.net/@dates.care/post/... contains
+ * the string "dates.care" and was read as internal: a click from one of our
+ * own posts was filed as "direct". Compare hosts, not substrings.
+ */
+function referrerHost(ref: string): string {
+  try {
+    return new URL(ref).hostname;
+  } catch {
+    return '';
+  }
+}
+
 function classifyReferrer(ref: string): { source: string; medium: string } {
   try {
     const host = new URL(ref).hostname.replace(/^www\./, '');
@@ -45,6 +62,7 @@ function classifyReferrer(ref: string): { source: string; medium: string } {
     if (/duckduckgo\./.test(host)) return { source: 'duckduckgo', medium: 'organic' };
     if (/facebook\.|fb\./.test(host)) return { source: 'facebook', medium: 'social' };
     if (/instagram\./.test(host)) return { source: 'instagram', medium: 'social' };
+    if (/threads\./.test(host)) return { source: 'threads', medium: 'social' };
     if (/tiktok\./.test(host)) return { source: 'tiktok', medium: 'social' };
     if (/twitter\.|x\.com/.test(host)) return { source: 'x', medium: 'social' };
     if (/reddit\./.test(host)) return { source: 'reddit', medium: 'social' };
@@ -76,7 +94,7 @@ export function getSessionSource(): SessionSource {
       campaign: params.get('utm_campaign'),
       referrer: document.referrer || null,
     };
-  } else if (document.referrer && !document.referrer.includes(window.location.hostname)) {
+  } else if (document.referrer && referrerHost(document.referrer) && referrerHost(document.referrer) !== window.location.hostname) {
     const c = classifyReferrer(document.referrer);
     result = { source: c.source, medium: c.medium, campaign: null, referrer: document.referrer };
   } else {

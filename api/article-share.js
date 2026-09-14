@@ -77,6 +77,7 @@ ${more.length ? `<section class="more"><h2>More to read</h2><ul>${more.map((m) =
 `;
 
   const html = page({
+    trackPath: `/a/${slug}`,
     title: `${a.seo_title || a.title} - ${SITE_NAME} Care Blog`,
     description,
     canonical,
