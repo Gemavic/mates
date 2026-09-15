@@ -50,8 +50,21 @@ export async function rpc(name, args) {
  * It writes through the same function and the same sessionStorage keys the app
  * uses, so a reader who clicks through to the app is one session, not two.
  *
- * ONLY the publishable key is used here. The service-role key that rpc() above
- * prefers must never reach a browser.
+ * WHO IS READING. log_traffic_event stamps each row with auth.uid(), which is
+ * whoever the request is authenticated as. Sending the publishable key alone
+ * makes that null on every row, so an article read by our own staff looked
+ * exactly like an article read by a stranger, and the Staff panel's "exclude
+ * staff" switch could never catch it. On 15 September that turned one person
+ * on the Care Blog opening seven articles in tabs into seven visitors.
+ *
+ * So: if the reader is signed in, their own access token is already sitting in
+ * localStorage where the app put it, and we send that instead. auth.uid()
+ * then resolves and the row is attributable. A token near expiry is skipped,
+ * and a rejected request is retried with the publishable key, because an
+ * uncounted visit is worse than an unattributed one.
+ *
+ * ONLY the publishable key, or the reader's own token, is used here. The
+ * service-role key that rpc() above prefers must never reach a browser.
  */
 export function beacon(path) {
   const { SUPABASE_URL, SUPABASE_ANON_KEY, VITE_SUPABASE_ANON_KEY } = process.env;
@@ -74,7 +87,14 @@ var m=/google\\./.test(h)?['google','organic']:/bing\\./.test(h)?['bing','organi
 src={source:m[0],medium:m[1],campaign:null,referrer:ref}}
 else{src={source:'direct',medium:'none',campaign:null,referrer:null}}
 try{sessionStorage.setItem(R,JSON.stringify(src))}catch(e){}}
-fetch(C.u+'/rest/v1/rpc/log_traffic_event',{method:'POST',keepalive:true,headers:{apikey:C.k,Authorization:'Bearer '+C.k,'Content-Type':'application/json'},body:JSON.stringify({p_event_type:'page_view',p_session_id:id,p_path:C.p,p_referrer:src.referrer,p_source:src.source,p_medium:src.medium,p_campaign:src.campaign,p_meta:null})}).catch(function(){})
+var tok=null;
+try{var raw=localStorage.getItem('dates-auth-token');
+if(raw){if(raw.slice(0,7)==='base64-'){raw=atob(raw.slice(7).replace(/-/g,'+').replace(/_/g,'/'))}
+var at=/"access_token"\\s*:\\s*"([^"]+)"/.exec(raw),ex=/"expires_at"\\s*:\\s*(\\d+)/.exec(raw);
+if(at&&(!ex||Number(ex[1])*1000>Date.now()+30000))tok=at[1]}}catch(e){}
+var B=JSON.stringify({p_event_type:'page_view',p_session_id:id,p_path:C.p,p_referrer:src.referrer,p_source:src.source,p_medium:src.medium,p_campaign:src.campaign,p_meta:null});
+var P=function(a){return fetch(C.u+'/rest/v1/rpc/log_traffic_event',{method:'POST',keepalive:true,headers:{apikey:C.k,Authorization:'Bearer '+a,'Content-Type':'application/json'},body:B})};
+P(tok||C.k).then(function(r){if(r&&!r.ok&&tok)return P(C.k)}).catch(function(){})
 }catch(e){}})();</script>`;
 }
 

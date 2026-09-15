@@ -19,6 +19,7 @@ interface Summary {
     timezone: string;
     includes_staff: boolean;
     staff_views_excluded: number;
+    staff_sessions_excluded?: number;
   };
   totals?: Totals;
   previous?: Totals;
@@ -103,10 +104,17 @@ export const TrafficAnalytics: React.FC = () => {
     icon: typeof Globe; tint: string; suffix?: string;
   }> = [
     { label: 'Page views', value: t.page_views, now: t.page_views, was: prev?.page_views, icon: Globe, tint: 'bg-blue-50 text-blue-600' },
-    { label: 'Unique sessions', value: t.unique_sessions, now: t.unique_sessions, was: prev?.unique_sessions, icon: Users, tint: 'bg-purple-50 text-purple-600' },
+    // Not "unique visitors", and not "unique sessions" either, both of which
+    // read as a headcount. A session is one browser tab: sessionStorage is
+    // per-tab, so opening four articles in four tabs is four of these and one
+    // reader. Call it what it counts.
+    { label: 'Browser sessions', value: t.unique_sessions, now: t.unique_sessions, was: prev?.unique_sessions, icon: Users, tint: 'bg-purple-50 text-purple-600' },
     { label: 'Signups', value: t.signups, now: t.signups, was: prev?.signups, icon: UserPlus, tint: 'bg-green-50 text-green-600' },
     { label: 'Ad clicks', value: t.ad_clicks, now: t.ad_clicks, was: prev?.ad_clicks, icon: MousePointerClick, tint: 'bg-rose-50 text-rose-600' },
-    { label: 'Visitor → signup', value: `${conversion}%`, now: Number(conversion), was: prevConversion, icon: TrendingUp, tint: 'bg-amber-50 text-amber-600', suffix: 'pp' },
+    // Signups over sessions. Since a session is a tab rather than a person,
+    // this is a rate per session and is named as one - "Visitor → signup"
+    // claimed a denominator we do not have.
+    { label: 'Signups per session', value: `${conversion}%`, now: Number(conversion), was: prevConversion, icon: TrendingUp, tint: 'bg-amber-50 text-amber-600', suffix: 'pp' },
   ];
 
   const formatDay = (iso: string) =>
@@ -170,10 +178,23 @@ export const TrafficAnalytics: React.FC = () => {
             {!includeStaff && win.staff_views_excluded > 0 && (
               <span className="text-gray-500">
                 {win.staff_views_excluded.toLocaleString()} page{' '}
-                {win.staff_views_excluded === 1 ? 'view' : 'views'} from staff accounts left out.
-                Staff browsing before signing in still counts as a visitor.
+                {win.staff_views_excluded === 1 ? 'view' : 'views'} from staff left out
+                {win.staff_sessions_excluded
+                  ? `, across ${win.staff_sessions_excluded.toLocaleString()} ${
+                      win.staff_sessions_excluded === 1 ? 'session' : 'sessions'
+                    }`
+                  : ''}
+                . A staff session is dropped whole, including whatever was browsed before
+                signing in.
               </span>
             )}
+          </p>
+          {/* Said plainly, because the tile says a number and a number looks
+              like people. Four tabs opened at once from the Care Blog read as
+              four sessions; that is one reader. */}
+          <p className="text-gray-500">
+            A session is one browser tab, not one person — somebody opening several articles
+            in tabs shows up as several sessions. Read these as reach, not as a headcount.
           </p>
         </div>
       )}
