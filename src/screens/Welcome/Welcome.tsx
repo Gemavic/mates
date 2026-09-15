@@ -76,6 +76,10 @@ const FAQ = [
     a: 'Yes. Creating an account, building a profile, browsing other members and chatting are all free, with no limit on messages. Credits are only needed for the extras listed above.',
   },
   {
+    q: 'Do I need a credit card to sign up?',
+    a: 'No. You create an account with an email address or with Google, and we never ask for payment details to join. Credits are bought later, only if you want one of the paid extras.',
+  },
+  {
     q: 'What are credits for?',
     a: 'Credits pay for the optional extras — sending a photo or a gift, mail, super likes, and audio or video calls. Chatting itself is free. You buy credits in packs and they do not expire.',
   },
@@ -148,14 +152,15 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
             <div className="relative">
               <InvitedByNote className="mb-5" />
               <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-5">
-                Dating, done
-                <span className="block">properly.</span>
+                Dating, done properly.
+                <span className="block">No subscriptions, ever.</span>
               </h1>
               <p className="text-white/90 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-8">
-                Dates.care is an online dating service for people who are serious
-                about connection. Verified profiles, thoughtful matching, and
-                real conversations — with video and audio calls, private
-                messaging, and relationship support when you want it.
+                Chat with anyone here, as much as you like, for free — there is no
+                monthly fee and no paywall on messages. Every photo is screened
+                before it is shown, and audio and video calls are built in, so you
+                can see who you are talking to before you meet. Credits pay for the
+                extras, only when you want them.
               </p>
 
               {user ? (
@@ -185,9 +190,20 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
                       Sign in
                     </Button>
                   </div>
+                  <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-6 text-white/90 text-sm">
+                    {[
+                      'Unlimited free chat',
+                      'Every photo screened',
+                      'Audio & video calls built in',
+                    ].map((b) => (
+                      <li key={b} className="flex items-center gap-1.5">
+                        <Check className="w-4 h-4 text-emerald-300 flex-none" />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
                   <p className="text-white/70 text-sm mt-4">
-                    Free to join. Browsing and chatting are free, with no limit
-                    on messages.
+                    Free to join. No card needed.
                   </p>
                 </>
               )}
@@ -195,6 +211,51 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
           </div>
         </div>
       </header>
+
+      {/* ----------------------------------------------------------- why switch */}
+      {/* The left column is what people say they are tired of, not a claim about
+          what any named competitor does - we cannot audit Tinder's moderation,
+          and a comparison table that asserts things about other companies is a
+          liability. Every right-hand cell is something this code actually does,
+          and the pricing section below prints the real numbers. */}
+      <section className="max-w-4xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-3">
+          Why people move here
+        </h2>
+        <p className="text-slate-600 text-center max-w-xl mx-auto mb-10">
+          The four complaints we hear most about dating apps, and what happens
+          here instead.
+        </p>
+        <div className="overflow-hidden rounded-2xl border border-slate-200">
+          <div className="grid grid-cols-2 bg-slate-100 text-sm font-semibold text-slate-700">
+            <div className="px-4 sm:px-6 py-3">The usual complaint</div>
+            <div className="px-4 sm:px-6 py-3 border-l border-slate-200 text-rose-700">
+              On Dates.care
+            </div>
+          </div>
+          {[
+            ['Paying a monthly fee before you can say hello',
+             'Unlimited chat, free, with every member'],
+            ['No way to tell whether the person is real',
+             'Every photo is screened before it is shown, and members can verify their identity for a badge'],
+            ['Handing out your phone number just to hear a voice',
+             'Audio and video calls are built into the app'],
+            ['A plan that renews whether you use it or not',
+             'Credits only. Nothing renews, and credits do not expire'],
+          ].map(([bad, good], i) => (
+            <div
+              key={bad}
+              className={`grid grid-cols-2 text-sm ${i % 2 ? 'bg-slate-50' : 'bg-white'}`}
+            >
+              <div className="px-4 sm:px-6 py-4 text-slate-500 leading-relaxed">{bad}</div>
+              <div className="px-4 sm:px-6 py-4 border-l border-slate-200 text-slate-800 leading-relaxed flex gap-2">
+                <Check className="w-4 h-4 text-emerald-600 flex-none mt-0.5" />
+                <span>{good}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ------------------------------------------------------------ how it works */}
       <section className="max-w-5xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
@@ -241,7 +302,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               { icon: Phone, t: 'Audio calls', d: 'A voice call when video feels like too much, too soon.' },
               { icon: Gift, t: 'Virtual gifts', d: 'Over a hundred hand-drawn gifts, from a simple hello to something genuinely memorable.' },
               { icon: Mail, t: 'Mail', d: 'Longer letters for the conversations that deserve more than a chat window.' },
-              { icon: Users, t: 'Relationship support', d: 'Couple therapy and counselling from qualified practitioners, for members who want it.' },
+              { icon: Users, t: 'Relationship support', d: 'Ask for couples counselling or professional guidance and we will connect you with a qualified practitioner near you.' },
             ].map(f => (
               <div key={f.t} className="bg-white rounded-2xl border border-slate-200 p-6">
                 <f.icon className="w-6 h-6 text-rose-600 mb-3" />
@@ -264,7 +325,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
         </p>
         <div className="grid sm:grid-cols-3 gap-5">
           {[
-            { icon: BadgeCheck, t: 'Verified profiles', d: 'Photo and identity verification keeps fake accounts out. Verified members carry a badge.' },
+            { icon: BadgeCheck, t: 'Verified profiles', d: 'Any member can verify their identity and carry a badge. Photo screening applies to everyone, verified or not.' },
             { icon: ShieldCheck, t: 'Photos screened, reports read by a person', d: 'Every photo is checked automatically before it goes up. One-tap reporting on every profile and conversation, and every report is reviewed by hand.' },
             { icon: Lock, t: 'Your data stays yours', d: 'We never sell personal data. You control what appears on your profile and can delete your account at any time.' },
           ].map(t => (
@@ -420,6 +481,29 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
             </Button>
           </div>
         </section>
+      )}
+
+      {/* --------------------------------------------------------- sticky join bar */}
+      {/* Signed-out only, and only once the hero has scrolled away on a phone -
+          a bar that covers the page from the first pixel is an advert, not a
+          call to action. The body padding below keeps it off the footer. */}
+      {!user && (
+        <div className="sticky bottom-0 z-30 border-t border-rose-700/40 bg-gradient-to-r from-rose-600 to-purple-700 shadow-[0_-4px_16px_rgba(0,0,0,.15)]">
+          <div className="max-w-5xl mx-auto px-5 sm:px-8 py-3 flex items-center justify-between gap-4">
+            <p className="text-white text-sm font-medium leading-snug">
+              Free to join, free to message.
+              <span className="hidden sm:inline text-white/80 font-normal">
+                {' '}No subscription, no card needed.
+              </span>
+            </p>
+            <Button
+              onClick={() => onNavigate('signup')}
+              className="bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold rounded-xl px-5 py-2.5 flex-none"
+            >
+              Join free
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* ----------------------------------------------------------------- footer */}

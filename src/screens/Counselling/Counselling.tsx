@@ -190,11 +190,12 @@ export const Counselling: React.FC<CounsellingProps> = ({ onNavigate }) => {
           <div className="space-y-4">
             {!loadingRoster && roster.length === 0 && (
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center">
-                <p className="text-white font-medium mb-1">No practitioners listed yet</p>
+                <p className="text-white font-medium mb-1">Booked by referral for now</p>
                 <p className="text-white/70 text-sm">
-                  We are onboarding qualified professionals and verifying their
-                  credentials before they appear here. Nobody is bookable until
-                  that is done.
+                  No practitioner takes bookings through this screen yet. Tell us
+                  what you are looking for and we will put you in touch with a
+                  qualified professional near you. A roster appears here once
+                  their credentials have been verified.
                 </p>
               </div>
             )}
