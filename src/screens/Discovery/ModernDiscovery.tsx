@@ -134,6 +134,10 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
   React.useEffect(() => {
     if (user && filtersReady) {
       loadProfiles();
+    } else if (!user) {
+      // Signing out while this screen is mounted must not leave the
+      // spinner running: nothing below will ever call loadProfiles again.
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, filtersReady, filters.seeking, filters.country_code, filters.age_min, filters.age_max, myBasics?.seeking]);
@@ -608,6 +612,44 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
     }
     nextProfile();
   };
+
+  // A signed-out visitor reaching this screen used to watch the spinner
+  // forever. `loading` starts true, and BOTH effects above bail out when
+  // there is no user - the filters effect returns early, so filtersReady
+  // never becomes true, so loadProfiles is never called, so nothing ever
+  // sets loading to false. The `if (!user)` guard inside loadProfiles was
+  // written for exactly this case but cannot fire, because its only caller
+  // is already gated on user being present. Answer the question the screen
+  // was silently refusing to answer instead.
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-white text-center max-w-sm">
+          <h2 className="text-2xl font-bold mb-3">Sign in to browse</h2>
+          <p className="text-white/80 text-sm mb-6">
+            Members' profiles are only shown to other members. Joining is free,
+            and so is messaging once you are in.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => onNavigate('signup')}
+              type="button"
+              className="px-6 py-3 bg-white text-rose-600 rounded-xl font-semibold transition-colors touch-manipulation"
+            >
+              Join free
+            </button>
+            <button
+              onClick={() => onNavigate('signin')}
+              type="button"
+              className="px-6 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-colors touch-manipulation"
+            >
+              Sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
