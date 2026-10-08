@@ -59,7 +59,7 @@ export default async function handler(req, res) {
   const more = Array.isArray(a.more) ? a.more : [];
 
   const body = `
-<p class="note"><a href="${SITE}/#care-blog">Care Blog</a>${category ? ` · ${esc(category)}` : ''}</p>
+<p class="note"><a href="${SITE}/blog">Care Blog</a>${category ? ` · ${esc(category)}` : ''}</p>
 <h1>${esc(a.title)}</h1>
 <div class="meta">
   ${a.author_name ? `<span>By ${esc(a.author_name)}</span>` : ''}

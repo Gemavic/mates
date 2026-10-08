@@ -518,6 +518,9 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               {/* Real anchors, not router buttons. Google's OAuth brand check
                   fetches these URLs without running JavaScript, so the policies
                   have to be reachable as ordinary links to static pages. */}
+              <a href="/blog" className="text-slate-300 hover:text-white transition-colors">
+                Care Blog
+              </a>
               <a href="/terms" className="text-slate-300 hover:text-white transition-colors">
                 Terms
               </a>

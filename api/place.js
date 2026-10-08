@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   const body = `
 <p class="note"><a href="${SITE}/">${SITE_NAME}</a>${rName ? ` · <a href="${SITE}${placePath(country)}">${esc(cName)}</a>` : ''}</p>
 <h1>Meet singles in ${esc(short)}</h1>
-<p>${SITE_NAME} is a dating site for people looking for something real, in ${esc(placeName)} and beyond. Every photo is screened by a person before anyone sees it, profiles can be verified, and contact details stay out of profiles until you choose to share them. Joining is free, and new members arrive every week.</p>
+<p>${SITE_NAME} is a dating site for people looking for something real, in ${esc(placeName)} and beyond. Every photo is screened before anyone sees it, reports are read by a person, profiles can be verified, and contact details stay out of profiles until you choose to share them. Joining is free, and new members arrive every week.</p>
 <p>Say who you are and who you are hoping to meet, add one photo, and you will be shown the people near you first.</p>
 ${townNames.length ? `<h2 style="font-size:1.2rem;margin:22px 0 10px">Towns and cities members have named</h2><ul class="list">${townNames.map((t) => `<li><span>${esc(t)}</span></li>`).join('')}</ul>` : ''}
 ${!region && regions.length ? `<h2 style="font-size:1.2rem;margin:22px 0 10px">By ${regionWord}</h2><ul class="list">${regions.map((r) => `<li><a href="${SITE}${placePath(country, r.region_code)}">${esc(regionName(country, r.region_code) || r.region_code)}</a></li>`).join('')}</ul>` : ''}
@@ -79,7 +79,7 @@ ${!region && !regions.length && REGIONS[country] ? `<p class="note" style="margi
 <div class="cta">
   <h2>See who is in ${esc(short)}</h2>
   <p>Free to join. Every photo is screened before it is shown; profiles can be verified; contact details stay out of profiles.</p>
-  <a class="btn" href="${SITE}/#signup">Join free</a><a class="btn alt" href="${SITE}/#care-blog">Read the Care Blog</a>
+  <a class="btn" href="${SITE}/#signup">Join free</a><a class="btn alt" href="${SITE}/blog">Read the Care Blog</a>
 </div>
 `;
 

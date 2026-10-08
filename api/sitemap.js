@@ -20,6 +20,7 @@ export default async function handler(req, res) {
 
   const urls = [
     { loc: `${SITE}/`, changefreq: 'weekly', priority: '1.0' },
+    { loc: `${SITE}/blog`, lastmod: iso(articles[0]?.lastmod), changefreq: 'weekly', priority: '0.8' },
     { loc: `${SITE}/terms`, changefreq: 'monthly', priority: '0.3' },
     { loc: `${SITE}/privacy`, changefreq: 'monthly', priority: '0.3' },
     ...articles.map((a) => ({ loc: `${SITE}/a/${a.slug}`, lastmod: iso(a.lastmod), changefreq: 'monthly', priority: '0.7' })),

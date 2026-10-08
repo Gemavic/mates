@@ -34,6 +34,10 @@
       "destination": "/api/place?country=:country"
     },
     {
+      "source": "/blog",
+      "destination": "/api/blog"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },

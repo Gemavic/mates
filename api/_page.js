@@ -203,13 +203,14 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(
 <body>
 <header class="site"><div class="in">
   <a class="brand" href="${SITE}/"><img src="${SITE}/brand/logo-1024.png" alt="" width="32" height="32"> ${SITE_NAME}</a>
-  <nav><a href="${SITE}/#care-blog">Care Blog</a><a class="join" href="${SITE}/#signup">Join free</a></nav>
+  <nav><a href="${SITE}/blog">Care Blog</a><a class="join" href="${SITE}/#signup">Join free</a></nav>
 </div></header>
 <main>
 ${body}
 </main>
 <footer class="site"><div class="in">
   <span>© ${new Date().getFullYear()} DATES CARE, Scarborough, Ontario</span>
+  <a href="${SITE}/blog">Care Blog</a>
   <a href="${SITE}/terms">Terms</a>
   <a href="${SITE}/privacy">Privacy</a>
   <a href="${SITE}/#help">Help</a>
