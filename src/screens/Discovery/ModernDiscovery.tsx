@@ -879,7 +879,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
                   aria-label="Filters"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
-                  {filters.country_code ? countryName(filters.country_code) : 'Filters'}
+                  {filters.country_code ? countryName(filters.country_code) : 'Worldwide'}
                 </button>
                 <button
                   onClick={() => setViewMode('swipe')}

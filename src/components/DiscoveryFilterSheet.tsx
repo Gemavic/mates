@@ -58,7 +58,7 @@ export const DiscoveryFilterSheet: React.FC<Props> = ({ open, value, myGender, p
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
             <select value={draft.country_code ?? ''} onChange={(e) => setDraft({ ...draft, country_code: e.target.value || null })} className={field}>
-              <option value="">Anywhere</option>
+              <option value="">Worldwide - every country</option>
               {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
             </select>
           </div>
