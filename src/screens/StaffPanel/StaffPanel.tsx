@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Shield, AlertTriangle, CreditCard, Users, Settings, BarChart3, LogOut, Key, Eye, EyeOff, RefreshCw, CheckCircle, Search, Gift, History, Zap, BookOpen, UserX } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { searchMembers, staffOverview, memberDisplayName, verificationLabel, type MemberRow, type OverviewCounts } from '@/lib/staffMembers';
-import { changeStaffPassword, resetStaffPassword, getAllStaffMembers, hasStaffPermission } from '@/lib/staffManager';
+import { changeStaffPassword, resetStaffPassword, getAllStaffMembers } from '@/lib/staffManager';
 import { RewardPanel } from '@/components/RewardPanel';
 import { AutomatedRulesPanel } from '@/components/AutomatedRulesPanel';
 import { RewardHistoryViewer } from '@/components/RewardHistoryViewer';
@@ -129,49 +129,43 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
         return;
       }
 
-      if (!hasStaffPermission(staffAuth?.staffId, 'award_credits')) {
-        alert('You do not have permission to award credits');
+      // Awarding credits is an admin power, and the server decides it
+      // (admin_grant_credits checks is_admin on the caller's own account).
+      // This screen used to ask the retired password-based staff session
+      // instead, which no longer exists - so it refused everyone, the owner
+      // included. Even past that check it called add_credits_atomic, which
+      // the app may not call and which wrote to user_credits, a table no
+      // balance is read from.
+      if (!isAdmin) {
+        alert('Only an admin can award credits.');
+        return;
+      }
+      if (amount > 10000) {
+        alert('At most 10,000 credits per award.');
         return;
       }
 
       const { supabaseClient } = await import('@/lib/supabase');
 
-      // Check if input is an email address or UUID
       let userId = selectedUserId.trim();
       const isEmail = userId.includes('@');
-
       if (isEmail) {
-        // Look up user_id from email
-        const { data: userData, error: lookupError } = await supabaseClient
-          .from('user_profiles')
-          .select('user_id')
-          .eq('email', userId)
-          .maybeSingle();
-
-        if (lookupError || !userData) {
-          // Try auth.users table as fallback
-          const { data: authData, error: authError } = await supabaseClient.rpc('get_user_id_by_email', {
-            p_email: userId
-          });
-
-          if (authError || !authData) {
-            alert(`User not found with email: ${userId}`);
-            return;
-          }
-
-          userId = authData;
-        } else {
-          userId = userData.user_id;
+        // Members' email addresses are not readable from profiles, by
+        // design; staff look them up through this guarded function.
+        const { data: found, error: lookupError } = await supabaseClient.rpc('get_user_id_by_email', {
+          p_email: userId.toLowerCase(),
+        });
+        if (lookupError || !found) {
+          alert(`No member found with email: ${userId}`);
+          return;
         }
+        userId = found as string;
       }
 
-      // Award credits using database function
-      const { data, error } = await supabaseClient.rpc('add_credits_atomic', {
+      const { data, error } = await supabaseClient.rpc('admin_grant_credits', {
         p_user_id: userId,
         p_amount: amount,
-        p_credit_type: 'complimentary',
-        p_description: `Staff Award: ${creditReason}`,
-        p_category: 'staff_award'
+        p_reason: `Staff award: ${creditReason.trim()}`,
       });
 
       if (error) {
@@ -181,12 +175,17 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
       }
 
       const result = data as any;
-      if (!result.success) {
-        alert(`Failed to award credits: ${result.error}`);
+      if (!result?.success) {
+        const why: Record<string, string> = {
+          not_admin: 'Only an admin can award credits.',
+          invalid_amount: 'Enter an amount between 1 and 10,000.',
+          no_account: 'That member has no credit account yet.',
+        };
+        alert(`Failed to award credits: ${why[result?.error] || result?.error || 'unknown error'}`);
         return;
       }
 
-      alert(`✅ Awarded ${amount} credits!\nUser: ${isEmail ? selectedUserId : userId}\nNew balance: ${result.new_balance} credits`);
+      alert(`Awarded ${amount} credits.\nMember: ${isEmail ? selectedUserId : userId}\nNew balance: ${result.total_credits} credits`);
 
       // Reset form
       setSelectedUserId('');
@@ -563,14 +562,14 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ onLogout, staffAuth, isA
                 </div>
               )}
               
-              {!(staffAuth?.permissions?.includes('award_credits') || staffAuth?.permissions?.includes('all')) ? (
+              {!isAdmin ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <div className="flex items-center text-red-600">
                     <AlertTriangle className="w-5 h-5 mr-2" />
                     <span className="font-medium">Insufficient Permissions</span>
                   </div>
                   <p className="text-red-600 text-sm mt-2">
-                    You do not have permission to award credits. Contact an administrator.
+                    Only an admin can award credits.
                   </p>
                 </div>
               ) : (

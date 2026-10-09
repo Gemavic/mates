@@ -222,7 +222,9 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
 
     const canAfford = creditManager.canAfford(user.id, AUDIO_CALL_PER_MINUTE);
     if (!canAfford && !(await creditManager.hasFreeCallingAccess(user.id))) {
-      alert(`Need ${formatCredits(AUDIO_CALL_PER_MINUTE)} per minute for audio calls!`);
+      alert(creditManager.isStaffMember(user.id)
+        ? 'Your free-calling access has expired. Renew it in the Staff panel under Free Access.'
+        : `Need ${formatCredits(AUDIO_CALL_PER_MINUTE)} per minute for audio calls!`);
       return;
     }
 

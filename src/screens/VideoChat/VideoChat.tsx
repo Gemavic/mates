@@ -385,9 +385,13 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
     if (!canAfford && !(await creditManager.hasFreeCallingAccess(user.id))) {
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = `Need ${formatCredits(VIDEO_CALL_PER_MINUTE)} per minute for video calls!`;
+      // Staff call free only while an approved Free Calling grant is active.
+      // Say that, rather than quoting the price at someone who expected it waived.
+      errorMessage.textContent = creditManager.isStaffMember(user.id)
+        ? 'Your free-calling access has expired. Renew it in the Staff panel under Free Access.'
+        : `Need ${formatCredits(VIDEO_CALL_PER_MINUTE)} per minute for video calls!`;
       document.body.appendChild(errorMessage);
-      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+      setTimeout(() => document.body.removeChild(errorMessage), 5000);
       return;
     }
 
