@@ -11,7 +11,7 @@ import { initialsAvatar } from '@/lib/avatar';
 interface Profile {
   id: string;
   name: string;
-  age: number;
+  age: number | null;
   location: string;
   occupation?: string;
   education?: string;
@@ -329,7 +329,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
           }}
         >
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 drop-shadow-lg truncate hover:underline">
-            {profile.name}, {profile.age}
+            {profile.name}{profile.age ? `, ${profile.age}` : ''}
           </h2>
           <div className="flex items-center mb-1">
             <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 drop-shadow-sm" />

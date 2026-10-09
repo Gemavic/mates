@@ -16,7 +16,7 @@ const LOOKING_FOR_BADGES: Record<string, { label: string; icon: string; classNam
 interface GridProfileCardProps {
   id: string;
   name: string;
-  age: number;
+  age: number | null;
   images: string[];
   online: boolean;
   verified?: boolean;
@@ -91,7 +91,7 @@ export const GridProfileCard: React.FC<GridProfileCardProps> = ({
 
       <div className="px-4 pt-3 pb-4">
         <div className="flex items-center gap-1.5 mb-2">
-          <h3 className="text-lg font-bold text-gray-900">{name}, {age}</h3>
+          <h3 className="text-lg font-bold text-gray-900">{name}{age ? `, ${age}` : ''}</h3>
           {verified && (
             <ShieldCheck className="w-4 h-4 text-purple-500 flex-shrink-0" fill="currentColor" fillOpacity={0.15} />
           )}

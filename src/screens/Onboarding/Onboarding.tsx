@@ -13,10 +13,12 @@ import { type ProfileBasics } from '@/lib/profileBasics';
 import { regionsFor } from '@/lib/regions';
 import { announceProfileUpdated } from '@/lib/profileCompletion';
 import { claimReferralCompletion } from '@/lib/referrals';
+import { birthDateRefusal, describeExisting, setSignInPrefill, type ExistingAccount } from '@/lib/accountGuard';
 
 /**
- * Three screens, none skippable: a photo, who you are and who you are
- * looking for, and where you are. That is the whole of what the site needs
+ * Three screens, none skippable: a photo, who you are (with your date of
+ * birth, if it is not on file yet) and who you are looking for, and where
+ * you are. That is the whole of what the site needs
  * to show a person to anyone - and to show them anyone. Everything else
  * (bio, interests, occupation) lives in Edit Profile and can wait.
  *
@@ -26,12 +28,22 @@ import { claimReferralCompletion } from '@/lib/referrals';
 interface OnboardingProps {
   onComplete: () => void;
   onBack: () => void;
+  onNavigate?: (screen: string) => void;
 }
+
+// Built from local date parts: toISOString() would shift to UTC and make the
+// bound a day early for anyone east of UTC whose date has rolled over.
+const latestAdultBirthDate = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 type Step = 1 | 2 | 3;
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) => {
-  const { user, profile, loadUserProfile } = useAuth();
+export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack, onNavigate }) => {
+  const { user, profile, loadUserProfile, signOut } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [ready, setReady] = useState(false);
 
@@ -44,6 +56,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
   // Screen 2
   const [name, setName] = useState('');
   const [basics, setBasics] = useState<ProfileBasics>({ gender: null, seeking: null, country_code: null, region_code: null });
+  // Date of birth. Google sign-ups were never asked for one, and the app
+  // showed them as 25. It is asked here once, and the server works out the
+  // age from it, refuses anyone under 18, and refuses a birth date that
+  // belongs to an account this person already has.
+  const [hasBirthDate, setHasBirthDate] = useState(true);
+  const [birthDate, setBirthDate] = useState('');
+  const [existingAccount, setExistingAccount] = useState<ExistingAccount | null>(null);
 
   // Screen 3
   const [city, setCity] = useState('');
@@ -57,11 +76,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     let alive = true;
     (async () => {
       if (!user?.id) { setReady(true); return; }
-      const [{ data: p }, { data: ph }] = await Promise.all([
+      const [{ data: p }, { data: ph }, priv] = await Promise.all([
         supabaseClient.from('user_profiles').select('full_name, first_name, gender, seeking, country_code, region_code, location').eq('user_id', user.id).maybeSingle(),
         supabaseClient.from('user_photos').select('photo_url, is_primary').eq('user_id', user.id).order('is_primary', { ascending: false }).limit(1),
+        supabaseClient.rpc('my_private_profile'),
       ]);
       if (!alive) return;
+      // If the server cannot say, do not block the member on a question it
+      // may already have the answer to.
+      const dobKnown = priv.error ? true : !!(priv.data as any)?.date_of_birth;
+      setHasBirthDate(dobKnown);
       const first = (ph && ph[0]?.photo_url) || null;
       setPhotoUrl(first);
       const prof = (p ?? {}) as any;
@@ -74,7 +98,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
       });
       setCity(prof.location ?? '');
       if (!first) setStep(1);
-      else if (!prof.gender || !prof.seeking) setStep(2);
+      else if (!prof.gender || !prof.seeking || !dobKnown) setStep(2);
       else setStep(3);
       setReady(true);
     })();
@@ -107,12 +131,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     }
   };
 
-  const whoComplete = name.trim().length >= 1 && !!basics.gender && !!basics.seeking;
+  const whoComplete = name.trim().length >= 1 && !!basics.gender && !!basics.seeking && (hasBirthDate || !!birthDate);
   const needsRegion = regionsFor(basics.country_code).length > 0;
   const whereComplete = !!basics.country_code && (!needsRegion || !!basics.region_code) && city.trim().length >= 2;
 
-  const saveWho = async () => {
+  const saveWho = async (): Promise<boolean> => {
     if (!user?.id) return true;
+    if (!hasBirthDate) {
+      const { data, error } = await supabaseClient.rpc('set_my_birth_date', { p_date: birthDate });
+      if (error) throw error;
+      if (!(data as any)?.success) {
+        const refusal = birthDateRefusal(data);
+        if (refusal.existing) setExistingAccount(refusal.existing);
+        else setSaveError(refusal.text);
+        return false;
+      }
+      setHasBirthDate(true);
+    }
     const first = name.trim().split(/\s+/)[0];
     await ProfileManager.updateProfile(user.id, {
       first_name: first,
@@ -138,7 +173,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     if (step === 1) { if (photoUrl) setStep(2); return; }
     setSaving(true);
     try {
-      if (step === 2) { await saveWho(); announceProfileUpdated(); setStep(3); return; }
+      if (step === 2) {
+        if (!(await saveWho())) return;
+        announceProfileUpdated();
+        setStep(3);
+        return;
+      }
       await saveWhere();
       // If a friend's link brought this member here, both are thanked now.
       await claimReferralCompletion();
@@ -163,7 +203,39 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     <Layout showFooter={false} title="Set up your profile" onBack={back} onClose={onBack}>
       <div className="pt-4">
         <ProgressIndicator currentStep={step} totalSteps={3} className="mb-6" />
-        {!ready ? (
+        {existingAccount ? (
+          <div className="px-6 py-4">
+            <div className="bg-white rounded-2xl p-5 shadow-lg" role="alert">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">You already have an account</h2>
+              <p className="text-gray-700 text-sm mb-4">{describeExisting(existingAccount)}</p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={async () => {
+                    setSignInPrefill({ forgot: false });
+                    try { await signOut(); } catch { /* signing in again is what matters */ }
+                    if (onNavigate) onNavigate('signin'); else onBack();
+                  }}
+                  className="w-full h-11 bg-pink-500 text-white hover:bg-pink-600 font-semibold rounded-xl"
+                >
+                  Sign out and use that account
+                </Button>
+                {existingAccount.method !== 'google' && (
+                  <Button
+                    onClick={async () => {
+                      setSignInPrefill({ forgot: true });
+                      try { await signOut(); } catch { /* as above */ }
+                      if (onNavigate) onNavigate('signin'); else onBack();
+                    }}
+                    className="w-full h-11 bg-gray-100 text-gray-900 hover:bg-gray-200 font-semibold rounded-xl"
+                  >
+                    I lost the password - reset it
+                  </Button>
+                )}
+              </div>
+              <p className="text-gray-500 text-xs mt-3">Each person may have one account. If this is a mistake, write to admin@dates.care.</p>
+            </div>
+          </div>
+        ) : !ready ? (
           <p className="text-white/80 text-center py-10">One moment…</p>
         ) : (
           <div className="px-6 py-4">
@@ -210,6 +282,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
                   <label className="block text-white font-medium mb-2" htmlFor="ob-first-name">First name</label>
                   <Input id="ob-first-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="What should people call you?" className="bg-white/90" autoComplete="given-name" />
                 </div>
+                {!hasBirthDate && (
+                  <div>
+                    <label className="block text-white font-medium mb-2" htmlFor="ob-dob">Date of birth</label>
+                    <Input id="ob-dob" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} max={latestAdultBirthDate()} className="bg-white/90" autoComplete="bday" />
+                    <p className="text-white/60 text-xs mt-1">You must be 18 or older. Your age is worked out from this date and cannot be changed later. Members see your age, never your birth date.</p>
+                  </div>
+                )}
                 <ProfileBasicsFields value={basics} onChange={setBasics} tone="light" part="who" />
               </div>
             )}
@@ -227,7 +306,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
           </div>
         )}
 
-        <div className="px-6 pb-8">
+        {!existingAccount && <div className="px-6 pb-8">
           {saveError && <p className="text-sm text-white bg-red-500/70 rounded-lg px-3 py-2 mb-3">{saveError}</p>}
           <Button
             onClick={next}
@@ -236,7 +315,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
           >
             {saving ? 'Saving…' : step === 3 ? (<span className="inline-flex items-center gap-2"><Check className="w-4 h-4" /> See who's near you</span>) : 'Continue'}
           </Button>
-        </div>
+        </div>}
       </div>
     </Layout>
   );

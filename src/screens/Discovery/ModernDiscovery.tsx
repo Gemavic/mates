@@ -28,7 +28,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 interface Profile {
   id: string;
   name: string;
-  age: number;
+  age: number | null;
   location: string;
   occupation: string;
   education: string;
@@ -257,7 +257,7 @@ export const ModernDiscovery: React.FC<ModernDiscoveryProps> = ({ onNavigate = (
             return {
               id: profile.user_id,
               name: displayName,
-              age: profile.age || 25,
+              age: profile.age ?? null,
               location: profile.location || 'Location not set',
               occupation: profile.occupation || 'Occupation not set',
               education: profile.education || '',

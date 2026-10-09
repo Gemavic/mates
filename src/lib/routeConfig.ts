@@ -30,7 +30,8 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
 
   discovery: {
     requireAuth: true,
-    allowAnonymous: true,
+    // Members only: a guest session must not see other members.
+    allowAnonymous: false,
   },
 
   matches: {
@@ -50,7 +51,8 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
 
   'gift-shop': {
     requireAuth: true,
-    allowAnonymous: true,
+    // Members only: a guest session must not see other members.
+    allowAnonymous: false,
   },
 
   mail: {
@@ -65,7 +67,8 @@ export const routeConfig: Record<string, Partial<RouteConfig>> = {
 
   'view-profile': {
     requireAuth: true,
-    allowAnonymous: true,
+    // Members only: a guest session must not see other members.
+    allowAnonymous: false,
   },
 
   settings: {

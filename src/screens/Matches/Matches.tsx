@@ -151,7 +151,7 @@ interface ChatThread {
   participantId: string;
   participantName: string;
   participantImage: string;
-  participantAge: number;
+  participantAge: number | null;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
@@ -334,7 +334,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
           participantId: otherUserId,
           participantName: p?.first_name || p?.full_name || 'User',
           participantImage: photo || p?.photo_url || DEFAULT_AVATAR,
-          participantAge: p?.age || 25,
+          participantAge: p?.age ?? null,
           lastMessage: (() => {
             const text = threadMsgs?.latest?.message_text;
             if (!text) return 'Start a conversation...';
@@ -839,7 +839,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-gray-900 dark:text-slate-100 text-base truncate">{thread.participantName}</h2>
               <p className="text-xs text-gray-500 dark:text-slate-400">
-                {otherUserTyping ? <span className="text-pink-500 font-medium">typing...</span> : thread.isOnline ? 'Online' : `Age ${thread.participantAge}`}
+                {otherUserTyping ? <span className="text-pink-500 font-medium">typing...</span> : thread.isOnline ? 'Online' : (thread.participantAge ? `Age ${thread.participantAge}` : '')}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -1302,7 +1302,7 @@ export const Matches: React.FC<MatchesProps> = ({ onNavigate, initialRecipientId
                         <div className="flex items-center justify-between mb-0.5">
                           <div className="flex items-center gap-1.5">
                             <h4 className={cn("font-medium text-sm truncate", thread.unreadCount > 0 ? 'text-gray-900 dark:text-slate-100' : 'text-gray-700 dark:text-slate-300')}>
-                              {thread.participantName}, {thread.participantAge}
+                              {thread.participantName}{thread.participantAge ? `, ${thread.participantAge}` : ''}
                             </h4>
                             {thread.isVerified && (
                               <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

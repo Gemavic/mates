@@ -24,6 +24,7 @@ import { ReportAbuseModal } from '@/components/ReportAbuseModal';
 import { sendWinkNotification } from '@/lib/emailNotifications';
 import { supabaseClient } from '@/lib/supabase';
 import { initialsAvatar } from '@/lib/avatar';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 
 const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
   if (Array.isArray(value)) return value;
@@ -46,7 +47,7 @@ interface ViewUserProfileProps {
 interface UserProfile {
   user_id: string;
   full_name: string;
-  age: number;
+  age: number | null;
   bio: string;
   location: string;
   occupation: string;
@@ -122,7 +123,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
 
       const { data: profileData, error: profileError } = await supabaseClient
         .from('user_profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -134,7 +135,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
       }
 
       setProfile({
-        ...profileData,
+        ...(profileData as any),
         interests: parseArrayField(profileData.interests, [])
       });
 
@@ -458,7 +459,7 @@ export const ViewUserProfile: React.FC<ViewUserProfileProps> = ({ onNavigate, us
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-1">
                   <h1 className="text-2xl font-bold text-white">
-                    {profile.full_name}, {profile.age}
+                    {profile.full_name}{profile.age ? `, ${profile.age}` : ''}
                   </h1>
                   {profile.is_verified && (
                     <Shield className="w-5 h-5 text-blue-400 fill-blue-400" />

@@ -37,7 +37,7 @@ interface MailThread {
   id: string;
   participantId: string;
   participantName: string;
-  participantAge: number;
+  participantAge: number | null;
   participantImage: string;
   lastMessage: string;
   timestamp: string;
@@ -249,7 +249,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
         return {
           id: thread.id, participantId: otherUserId,
           participantName: p?.first_name || p?.full_name || 'User',
-          participantAge: p?.age || 25,
+          participantAge: p?.age ?? null,
           participantImage: photo || p?.photo_url || DEFAULT_AVATAR,
           lastMessage: !msgs?.latest
             ? 'No messages yet'
@@ -627,7 +627,7 @@ export const Mail: React.FC<MailProps> = ({ onNavigate, initialRecipientId }) =>
                   </svg>
                 )}
               </div>
-              <p className="text-xs text-gray-500">{activeThreadData.isOnline ? 'Online' : `Age ${activeThreadData.participantAge}`}</p>
+              <p className="text-xs text-gray-500">{activeThreadData.isOnline ? 'Online' : (activeThreadData.participantAge ? `Age ${activeThreadData.participantAge}` : '')}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="text-right">

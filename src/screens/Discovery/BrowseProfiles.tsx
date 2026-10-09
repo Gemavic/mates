@@ -2,6 +2,7 @@ import { Heart, Camera, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 
 const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
   if (Array.isArray(value)) return value;
@@ -19,7 +20,7 @@ const parseArrayField = (value: unknown, defaultValue: string[]): string[] => {
 interface Profile {
   id: string;
   name: string;
-  age: number;
+  age: number | null;
   photoCount: number;
   imageUrl: string;
   isOnline: boolean;
@@ -67,7 +68,7 @@ function ProfileCard({ profile, onLike, onNavigate }: { profile: Profile; onLike
 
         <div className="absolute bottom-2 left-2 right-2">
           <div className="flex items-center gap-1.5 mb-1">
-            <h3 className="text-white font-bold text-sm tracking-tight">{profile.name}, {profile.age}</h3>
+            <h3 className="text-white font-bold text-sm tracking-tight">{profile.name}{profile.age ? `, ${profile.age}` : ''}</h3>
             {profile.isOnline && (
               <div className="w-2 h-2 bg-green-400 rounded-full ring-2 ring-white/40" />
             )}
@@ -152,7 +153,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
       // Show all profiles that are either public OR don't have visibility set (default to public)
       const { data: dbProfiles, error } = await supabaseClient
         .from('user_profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .neq('user_id', user.id)
         .or('profile_visibility.eq.public,profile_visibility.is.null')
         .order('is_online', { ascending: false })
@@ -225,7 +226,7 @@ function BrowseProfiles({ onNavigate }: BrowseProfilesProps) {
           return {
             id: profile.user_id,
             name: displayName,
-            age: profile.age || 25,
+            age: profile.age ?? null,
             photoCount: photoCounts[index],
             imageUrl: photoUrl,
             isOnline: profile.is_online || false,

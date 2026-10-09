@@ -8,6 +8,7 @@ import { supabaseClient } from '@/lib/supabase';
  */
 export interface ProfileCompletion {
   photo: boolean;
+  birth_date: boolean;
   gender: boolean;
   seeking: boolean;
   country: boolean;
@@ -30,7 +31,10 @@ export async function fetchMyCompletion(): Promise<ProfileCompletion | null> {
   if (!data) return null;
   const d = data as Partial<ProfileCompletion>;
   return {
-    photo: !!d.photo, gender: !!d.gender, seeking: !!d.seeking,
+    photo: !!d.photo,
+    // Older servers did not report it; treat "not reported" as on file.
+    birth_date: d.birth_date === undefined ? true : !!d.birth_date,
+    gender: !!d.gender, seeking: !!d.seeking,
     country: !!d.country, city: !!d.city, complete: !!d.complete,
   };
 }

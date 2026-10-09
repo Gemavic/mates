@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { uploadProfilePhoto } from '@/lib/photoUpload';
 import { ProfileManager } from '@/lib/database';
+import { birthDateRefusal } from '@/lib/accountGuard';
 import { initialsAvatar } from '@/lib/avatar';
 import { ProfileBasicsFields } from '@/components/ProfileBasicsFields';
 import { seekingSentence, type ProfileBasics } from '@/lib/profileBasics';
@@ -158,7 +159,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       return false;
     }
     if (!data?.success) {
-      setBirthDateError(data?.message || 'Please enter a valid date of birth.');
+      setBirthDateError(birthDateRefusal(data).text);
       return false;
     }
     return true;

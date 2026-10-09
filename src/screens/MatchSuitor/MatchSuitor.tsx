@@ -88,7 +88,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
               return {
                 id: profile.user_id,
                 name: profile.first_name || profile.full_name || 'User',
-                age: profile.age || 25,
+                age: profile.age ?? null,
 
                 image: photo?.photo_url || initialsAvatar(profile.first_name || profile.full_name, profile.user_id),
                 reasons
@@ -173,7 +173,7 @@ export const MatchSuitor: React.FC<MatchSuitorProps> = ({ onNavigate }) => {
                     className="w-16 h-16 rounded-full object-cover"
                   />
                   <div className="flex-1">
-                    <h4 className="text-white font-medium mb-1">{match.name}, {match.age}</h4>
+                    <h4 className="text-white font-medium mb-1">{match.name}{match.age ? `, ${match.age}` : ''}</h4>
                     <p className="text-white/70 text-sm">Recently active</p>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Captcha, isCaptchaEnabled } from '@/components/Captcha';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
+import { takeSignInPrefill } from '@/lib/accountGuard';
 
 interface SignInProps {
   onNavigate: (screen: string) => void;
@@ -26,6 +27,18 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
 
   const { signIn } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  // Sent here from sign-up because this person already has an account:
+  // the email is filled in, and the reset form is open if they asked for it.
+  useEffect(() => {
+    const p = takeSignInPrefill();
+    if (!p) return;
+    if (p.email) {
+      setFormData((prev) => ({ ...prev, email: p.email as string }));
+      setResetEmail(p.email);
+    }
+    if (p.forgot) setShowForgotPassword(true);
+  }, []);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();

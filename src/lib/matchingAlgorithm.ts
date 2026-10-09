@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { PROFILE_COLUMNS } from '@/lib/profileColumns';
 
 export interface PersonalityProfile {
   userId: string;
@@ -357,7 +358,7 @@ class ProprietaryMatchingAlgorithm {
         .eq('user_id', userId)
         .maybeSingle(),
       supabase.from('matching_preferences').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('user_profiles').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('user_profiles').select(PROFILE_COLUMNS).eq('user_id', userId).maybeSingle(),
     ]);
 
     if (!personality.data || !behavioral.data) return null;

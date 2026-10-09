@@ -10,7 +10,7 @@ import { initialsAvatar } from '@/lib/avatar';
 interface LikedProfile {
   id: string;
   name: string;
-  age: number;
+  age: number | null;
   image: string;
   type: string;
 }
@@ -67,7 +67,7 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
               return {
                 id: like.target_user_id,
                 name: profile?.first_name || profile?.full_name || 'User',
-                age: profile?.age || 25,
+                age: profile?.age ?? null,
                 image: photo?.photo_url || initialsAvatar(profile?.first_name || profile?.full_name, like.target_user_id),
                 type: like.like_type === 'super_like' ? 'super-like' : 'like'
               };
@@ -186,7 +186,7 @@ export const Likes: React.FC<LikesProps> = ({ onNavigate }) => {
 
                   <div className="flex-1">
                     <h3 className="text-white font-medium">
-                      {profile.name}, {profile.age}
+                      {profile.name}{profile.age ? `, ${profile.age}` : ''}
                     </h3>
                     <p className="text-white/70 text-sm">
                       {profile.type === 'super-like' ? 'Super liked' : 'Liked'} • Waiting for response

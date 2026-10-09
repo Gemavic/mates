@@ -12,7 +12,7 @@ interface ProfileCardProps {
   profile: {
     id: string;
     name: string;
-    age: number;
+    age: number | null;
     location: string;
     occupation?: string;
     education?: string;
@@ -178,7 +178,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         {/* Profile Info Overlay */}
         <div className="absolute bottom-4 left-4 right-4 text-white">
           <h2 className="text-2xl font-bold mb-1">
-            {profile.name}, {profile.age}
+            {profile.name}{profile.age ? `, ${profile.age}` : ''}
           </h2>
           <div className="flex items-center mb-2">
             <MapPin className="w-4 h-4 mr-1 drop-shadow-sm" />

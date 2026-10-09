@@ -75,6 +75,8 @@ import { claimReferralCompletion } from '@/lib/referrals';
 import { captureReferralFromUrl, attachPendingReferral } from '@/lib/referrals';
 import { Invite } from '@/screens/Invite/Invite';
 import { AlertTriangle } from 'lucide-react';
+import { isReturningAfterAbsence, markSeen } from '@/lib/lastSeen';
+import { rememberAccountOnDevice } from '@/lib/accountGuard';
 
 function ScreenLoadingFallback() {
   const { theme } = useTheme();
@@ -146,7 +148,7 @@ const App: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  const { user, loading, isAnonymous } = useAuth();
+  const { user, loading, isAnonymous, getFirstName } = useAuth();
   const { hidden: bottomNavHidden } = useBottomNav();
   const showBottomNav =
     !bottomNavHidden && !SCREENS_WITHOUT_BOTTOM_NAV.has(currentScreen);
@@ -214,6 +216,34 @@ const App: React.FC = () => {
     window.addEventListener('dc:deletion-requested', refresh);
     return () => { cancelled = true; window.removeEventListener('dc:deletion-requested', refresh); };
   }, [user?.id]);
+  // Signed-in members are not shown the public front page. Coming back after
+  // more than 72 hours away (or on a new device), they get one short line -
+  // "Welcome back, Ada" - over whatever screen they land on, and nothing
+  // more. A brand-new account gets onboarding instead, not a welcome back.
+  const [welcomeBack, setWelcomeBack] = useState(false);
+  useEffect(() => {
+    if (loading || !user?.id || isAnonymous) return;
+    const createdMs = user.created_at ? Date.parse(user.created_at) : NaN;
+    const isNewAccount = Number.isFinite(createdMs) && Date.now() - createdMs < 60 * 60 * 1000;
+    if (!isNewAccount && isReturningAfterAbsence(user.id)) setWelcomeBack(true);
+    markSeen(user.id);
+    rememberAccountOnDevice(user.email, (user.app_metadata as any)?.provider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user?.id, isAnonymous]);
+  // Kept current while the app is in use, so "away" means away.
+  useEffect(() => {
+    if (loading || !user?.id || isAnonymous) return;
+    markSeen(user.id);
+    const onVisible = () => { if (document.visibilityState === 'visible') markSeen(user.id); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loading, user?.id, isAnonymous, currentScreen]);
+  useEffect(() => {
+    if (!welcomeBack) return;
+    const t = setTimeout(() => setWelcomeBack(false), 4000);
+    return () => clearTimeout(t);
+  }, [welcomeBack]);
+
   // A member whose profile is not complete (photo, gender, who they seek,
   // country, city) is taken to onboarding instead of any member screen.
   // Until the answer is known nothing is redirected, so there is no flash
@@ -494,7 +524,7 @@ const App: React.FC = () => {
         return <AuthCallback onNavigate={handleNavigate} />;
 
       case 'onboarding':
-        return <Onboarding onComplete={() => handleNavigate('near-you')} onBack={() => handleNavigate('welcome')} />;
+        return <Onboarding onComplete={() => handleNavigate('near-you')} onBack={() => handleNavigate('welcome')} onNavigate={handleNavigate} />;
 
       case 'near-you':
         return <NearYou onNavigate={handleNavigate} />;
@@ -765,6 +795,21 @@ const App: React.FC = () => {
                 onClick={() => setAuthError(null)}
                 aria-label="Dismiss"
                 className="text-white/90 hover:text-white text-lg leading-none flex-shrink-0"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+        {welcomeBack && user && !isAnonymous && (
+          <div className="fixed inset-x-0 top-0 z-[9999] flex justify-center px-4 pt-4 pointer-events-none">
+            <div className="pointer-events-auto bg-white text-gray-900 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 max-w-sm w-full" role="status">
+              <p className="flex-1 text-sm font-semibold">Welcome back{getFirstName() ? `, ${getFirstName()}` : ''}.</p>
+              <button
+                type="button"
+                onClick={() => setWelcomeBack(false)}
+                aria-label="Dismiss"
+                className="text-gray-500 hover:text-gray-800 text-lg leading-none"
               >
                 ×
               </button>

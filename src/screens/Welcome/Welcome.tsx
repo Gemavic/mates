@@ -98,7 +98,17 @@ const FAQ = [
 ];
 
 export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
-  const { user, getFirstName } = useAuth();
+  const { user, isAnonymous } = useAuth();
+  const signedIn = !!user && !isAnonymous;
+
+  // This page is for people deciding whether to join. A signed-in member is
+  // taken straight into the app; the only greeting they get is the one-line
+  // "Welcome back" the app shows after 72 hours away.
+  React.useEffect(() => {
+    if (signedIn) onNavigate('discovery');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn]);
+  if (signedIn) return null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -117,14 +127,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
               <span className="text-white font-bold text-lg tracking-tight">Dates.care</span>
             </div>
             <div className="flex items-center gap-2">
-              {user ? (
-                <Button
-                  onClick={() => onNavigate('discovery')}
-                  className="bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold text-sm rounded-lg px-4 py-2"
-                >
-                  Open the app
-                </Button>
-              ) : (
+              {(
                 <>
                   <Button
                     onClick={() => onNavigate('signin')}
@@ -163,17 +166,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate = () => {} }) => {
                 extras, only when you want them.
               </p>
 
-              {user ? (
-                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                  <Button
-                    onClick={() => onNavigate('discovery')}
-                    className="flex-1 py-3.5 bg-none bg-white text-rose-600 hover:bg-white/90 font-semibold rounded-xl shadow-lg"
-                  >
-                    Welcome back, {getFirstName()} — start browsing
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              ) : (
+              {(
                 <>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                     <Button

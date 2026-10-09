@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { trackSignup } from '@/lib/analytics';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,10 @@ import { useToast } from '@/components/ui/toast';
 import { creditManager } from '@/lib/creditSystem';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { InvitedByNote } from '@/components/InvitedByNote';
+import {
+  checkRegistration, describeExisting, lastAccountOnDevice, setSignInPrefill,
+  type ExistingAccount,
+} from '@/lib/accountGuard';
 
 interface SignUpProps {
   onNavigate?: (screen: string) => void;
@@ -20,6 +24,15 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [socialError, setSocialError] = useState<string>('');
+  // Set when this person already has an account. The form is replaced by
+  // the way back in: sign in, or reset the password. Never a second account.
+  const [existing, setExisting] = useState<ExistingAccount | null>(null);
+  const [deviceAccount] = useState(() => lastAccountOnDevice());
+  // The answer appears at the top of the form; the button that asked is at
+  // the bottom. Bring the answer into view.
+  useEffect(() => {
+    if (existing) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [existing]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -130,8 +143,32 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         return;
       }
 
+      // Does this person already have an account - this email, or the same
+      // name and birth date under another email? Asked before anything is
+      // created, so a second account is never made in the first place.
+      const check = await checkRegistration(formData.email, formData.name, formData.dateOfBirth);
+      if (check.status === 'under_18') {
+        toast({ title: 'You must be 18 or older', description: 'Dates.care is strictly for adults aged 18 and over.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+      if (check.status === 'implausible_birth_date') {
+        toast({ title: 'Invalid date of birth', description: 'Please enter your real date of birth.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+      if (check.status === 'email_exists') {
+        setExisting({ kind: 'email', email: formData.email.trim(), method: check.method ?? null });
+        setIsLoading(false);
+        return;
+      }
+      if (check.status === 'possible_duplicate') {
+        setExisting({ kind: 'duplicate', hint: check.hint ?? null, method: check.method ?? null });
+        setIsLoading(false);
+        return;
+      }
+
       // Attempt sign up
-      console.log('Attempting signup with:', { email: formData.email, name: formData.name });
 
       let signUpResult;
       try {
@@ -159,15 +196,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         let errorMessage = error.message || 'Failed to create account. Please try again.';
 
         if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
-          errorMessage = 'This email is already registered. Please sign in instead.';
-          toast({
-            title: 'Account Exists',
-            description: errorMessage,
-            variant: 'destructive'
-          });
-          setTimeout(() => {
-            onNavigate('signin');
-          }, 2000);
+          setExisting({ kind: 'email', email: formData.email.trim() });
           setIsLoading(false);
           return;
         }
@@ -198,7 +227,16 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         return;
       }
 
-      console.log('Signup successful, user data:', data);
+      // With email confirmation on, Supabase answers a sign-up for an address
+      // that is already registered with a look-alike success: a user with no
+      // identities and no session, and no email is sent. It used to say
+      // "check your email" - for an email that would never come.
+      if (data?.user && !data.session && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        setExisting({ kind: 'email', email: formData.email.trim() });
+        setIsLoading(false);
+        return;
+      }
+
       trackSignup();
 
       // When email confirmation is enabled, signUp() succeeds but returns
@@ -287,6 +325,47 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           </ul>
         </div>
 
+        {existing && (
+          <div className="mb-6 p-4 bg-white rounded-xl shadow-lg" role="alert">
+            <h3 className="text-gray-900 font-bold text-lg mb-1">You already have an account</h3>
+            <p className="text-gray-700 text-sm mb-4">{describeExisting(existing)}</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                onClick={() => { setSignInPrefill({ email: existing.email ?? null }); onNavigate('signin'); }}
+                className="w-full h-11 bg-pink-500 text-white font-semibold rounded-xl hover:bg-pink-600"
+              >
+                {existing.method === 'google' ? 'Sign in with Google' : 'Sign in'}
+              </Button>
+              {existing.method !== 'google' && (
+                <Button
+                  type="button"
+                  onClick={() => { setSignInPrefill({ email: existing.email ?? null, forgot: true }); onNavigate('signin'); }}
+                  className="w-full h-11 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-200"
+                >
+                  Reset my password
+                </Button>
+              )}
+              <button
+                type="button"
+                onClick={() => setExisting(null)}
+                className="text-gray-500 text-xs underline mt-1"
+              >
+                Go back and change what I typed
+              </button>
+            </div>
+            <p className="text-gray-500 text-xs mt-3">Each person may have one account. If you think this is a mistake, write to admin@dates.care.</p>
+          </div>
+        )}
+
+        {!existing && deviceAccount && (
+          <div className="mb-6 p-3 bg-white/15 border border-white/30 rounded-lg text-white text-sm">
+            This device was last signed in as <strong>{deviceAccount.hint}</strong>. If that is you,{' '}
+            <button type="button" className="underline font-semibold" onClick={() => onNavigate('signin')}>sign in</button>{' '}
+            instead of making a new account.
+          </div>
+        )}
+
         {/* Social Auth Error */}
         {socialError && (
           <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
@@ -343,7 +422,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
                 required
               />
             </div>
-            <p className="text-white/60 text-xs mt-1">You must be 18 or older. Your age is verified; your birth date is never shown publicly.</p>
+            <p className="text-white/60 text-xs mt-1">You must be 18 or older. Your age is worked out from this date and cannot be changed later. Members see your age, never your birth date.</p>
           </div>
 
           <div>

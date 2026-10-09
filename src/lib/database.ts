@@ -1,5 +1,6 @@
 import { supabaseClient } from './supabase';
 import type { Database } from './supabase';
+import { PROFILE_COLUMNS } from './profileColumns';
 
 // Database types
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
@@ -27,7 +28,7 @@ export class ProfileManager {
         ...profileData,
         first_name: profileData.full_name.split(' ')[0]
       })
-      .select()
+      .select(PROFILE_COLUMNS)
       .single();
 
     if (error) throw error;
@@ -37,12 +38,21 @@ export class ProfileManager {
   static async getProfile(userId: string) {
     const { data, error } = await supabaseClient
       .from('user_profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .eq('user_id', userId)
       .maybeSingle();
 
     if (error) throw error;
     if (!data) return data;
+
+    // A member's own email and birth date are not readable through the table
+    // (nobody else's are either). Fetched separately, only for yourself.
+    let privateFields: { email?: string | null; date_of_birth?: string | null } = {};
+    const { data: auth } = await supabaseClient.auth.getUser();
+    if (auth?.user?.id === userId) {
+      const { data: priv } = await supabaseClient.rpc('my_private_profile');
+      if (priv && typeof priv === 'object') privateFields = priv as typeof privateFields;
+    }
 
     // user_profiles has no photo_url column - a person's pictures live in
     // user_photos, one row each, with is_primary marking the one they chose
@@ -68,7 +78,7 @@ export class ProfileManager {
       .limit(1)
       .maybeSingle();
 
-    return { ...data, photo_url: photo?.photo_url ?? null };
+    return { ...(data as any), ...privateFields, photo_url: photo?.photo_url ?? null };
   }
 
   static async updateProfile(userId: string, updates: Partial<UserProfile>) {
@@ -89,7 +99,7 @@ export class ProfileManager {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .select()
+        .select(PROFILE_COLUMNS)
         .single();
 
       if (error) throw error;
@@ -101,7 +111,7 @@ export class ProfileManager {
       .from('user_profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('user_id', userId)
-      .select()
+      .select(PROFILE_COLUMNS)
       .maybeSingle();
 
     if (error) throw error;
@@ -126,19 +136,25 @@ export class ProfileManager {
     let profilesQuery = supabaseClient
       .from('user_profiles')
       .select('user_id, first_name, full_name, age, location, occupation, education, bio, interests, is_online, is_verified, relationship_status, looking_for, profile_visibility, last_active, created_at, gender, country_code')
-      .or('profile_visibility.eq.public,profile_visibility.is.null');
+      .or('profile_visibility.eq.public,profile_visibility.is.null')
+      // Only finished profiles: a real age (which exists only when a birth
+      // date is on file), gender, who they seek and a country. The app used
+      // to show people with no birth date as 25.
+      .not('age', 'is', null)
+      .not('gender', 'is', null)
+      .not('seeking', 'is', null)
+      .not('country_code', 'is', null)
+      .neq('verification_status', 'deleted');
 
     // The member's saved search, applied by the database rather than after
     // the fact, so a page of twenty is twenty people who fit.
     if (filters?.gender) profilesQuery = profilesQuery.eq('gender', filters.gender);
     if (filters?.country_code) profilesQuery = profilesQuery.eq('country_code', filters.country_code);
-    // Age: members who joined before a date of birth was required have no
-    // age on file. They are not outside the range, they are unknown, so
-    // they stay in until they add one. (PostgREST ANDs repeated or= params.)
+    // Age: everyone shown has a real one now, so the range is a plain range.
     if (filters?.age_min != null && filters?.age_max != null) {
-      const lo = Math.floor(filters.age_min);
-      const hi = Math.floor(filters.age_max);
-      profilesQuery = profilesQuery.or(`age.is.null,and(age.gte.${lo},age.lte.${hi})`);
+      profilesQuery = profilesQuery
+        .gte('age', Math.floor(filters.age_min))
+        .lte('age', Math.floor(filters.age_max));
     }
 
     profilesQuery = profilesQuery
@@ -188,8 +204,8 @@ export class MatchManager {
       .from('matches')
       .select(`
         *,
-        user1:user_profiles!matches_user1_id_fkey(*),
-        user2:user_profiles!matches_user2_id_fkey(*)
+        user1:user_profiles!matches_user1_id_fkey(${PROFILE_COLUMNS}),
+        user2:user_profiles!matches_user2_id_fkey(${PROFILE_COLUMNS})
       `)
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
       .eq('is_active', true)
@@ -205,7 +221,7 @@ export class MatchManager {
       .from('user_likes')
       .select(`
         *,
-        user_profile:user_profiles!user_likes_user_id_fkey(*)
+        user_profile:user_profiles!user_likes_user_id_fkey(${PROFILE_COLUMNS})
       `)
       .eq('target_user_id', userId)
       .in('like_type', ['like', 'super_like'])
