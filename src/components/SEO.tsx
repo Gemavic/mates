@@ -8,9 +8,9 @@ interface SEOProps {
 }
 
 export const SEO: React.FC<SEOProps> = ({
-  title = 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
-  description = 'Verified profiles, thoughtful matching, and real conversations. Free to join, and chatting is free — no limits, no first-message catch.',
-  keywords = 'dating app, online dating, meet singles, verified profiles, video chat dating, couple therapy, relationship counseling',
+  title = 'Dates.care (Date Care) – Free Dating, Free Chat, No Subscription',
+  description = 'Meet people in Canada, Nigeria and around the world. Free to join and free to chat, every photo screened, no subscription. Built in Scarborough, Ontario.',
+  keywords = 'dates.care, date care, free dating site, dating app, online dating, meet singles, verified profiles, video chat dating, couple therapy, relationship counseling',
   canonicalUrl = 'https://dates.care/'
 }) => {
   useEffect(() => {

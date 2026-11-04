@@ -405,8 +405,8 @@ const App: React.FC = () => {
     switch (currentScreen) {
       case 'welcome':
         return {
-          title: 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
-          description: 'Verified profiles, thoughtful matching, and real conversations. Free to join, and chatting is free — no limits, no first-message catch.',
+          title: 'Dates.care (Date Care) – Free Dating, Free Chat, No Subscription',
+          description: 'Meet people in Canada, Nigeria and around the world. Free to join and free to chat, every photo screened, no subscription. Built in Scarborough, Ontario.',
           canonicalUrl: baseUrl
         };
       case 'signin':
@@ -483,8 +483,8 @@ const App: React.FC = () => {
         };
       default:
         return {
-          title: 'Dates.care - Dating, Done Properly | Verified, Trusted Matches',
-          description: 'Verified profiles, thoughtful matching, and real conversations — built for people who are serious about connection.',
+          title: 'Dates.care (Date Care) – Free Dating, Free Chat, No Subscription',
+          description: 'Meet people in Canada, Nigeria and around the world. Free to join and free to chat, every photo screened, no subscription. Built in Scarborough, Ontario.',
           canonicalUrl: baseUrl
         };
     }
