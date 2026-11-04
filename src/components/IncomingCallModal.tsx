@@ -44,6 +44,14 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
   // outlive the call.
   useEffect(() => startRingtone('incoming'), []);
 
+  // Fetch the call screen while it rings. It is a separate download, the
+  // largest in the app (the video library), and fetching it only after Accept
+  // meant the caller sometimes gave up before the callee's screen had loaded.
+  useEffect(() => {
+    if (invite.kind === 'audio') void import('@/screens/AudioChat/AudioChat').catch(() => {});
+    else void import('@/screens/VideoChat/VideoChat').catch(() => {});
+  }, [invite.kind]);
+
   // Stop ringing on the callee's side too. The caller runs its own timeout, but
   // this side must not be left with a dead modal if the caller's tab is closed.
   useEffect(() => {

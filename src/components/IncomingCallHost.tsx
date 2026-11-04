@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { subscribeToIncomingCalls, fetchRingingInviteFor, type CallInvite } from '@/lib/callSignals';
 import { IncomingCallModal } from './IncomingCallModal';
+import { primeRingtone } from '@/lib/ringtone';
 import {
   primeNotificationSettings,
   currentNotificationSettings,
@@ -19,6 +20,10 @@ interface IncomingCallHostProps {
 export const IncomingCallHost: React.FC<IncomingCallHostProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [invite, setInvite] = useState<CallInvite | null>(null);
+
+  // Unlock sound on the first tap anywhere, so a call that arrives later can
+  // ring at once instead of waiting for the callee to touch the screen.
+  useEffect(() => primeRingtone(), []);
 
   useEffect(() => {
     if (!user?.id) return;

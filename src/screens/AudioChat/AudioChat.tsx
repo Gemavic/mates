@@ -1,3 +1,4 @@
+import { CallAlertsBanner } from '@/components/CallAlertsBanner';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -471,6 +472,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         {/* Online Matches */}
         <div className="mb-8">
           <h3 className="text-white font-semibold text-lg mb-4">Available for Voice Chat</h3>
+          <CallAlertsBanner />
           
           {/* Audio System Controls */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-4">

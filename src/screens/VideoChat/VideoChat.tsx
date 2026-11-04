@@ -1,3 +1,4 @@
+import { CallAlertsBanner } from '@/components/CallAlertsBanner';
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,10 @@ import {
   watchInvite,
   type CallInvite,
 } from '@/lib/callSignals';
+
+// After the other person accepts, how long their phone gets to load the call
+// screen, start the camera and join, before the caller gives up.
+const ACCEPTED_JOIN_GRACE_MS = 60_000;
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVideoManager } from '@/lib/twilioVideo';
 import { watchCallSession } from '@/lib/callMeter';
@@ -49,6 +54,8 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradePromptData, setUpgradePromptData] = useState<any>(null);
   const [callError, setCallError] = useState<string | null>(null);
+  // Shown to the caller between "they accepted" and "they are in the room".
+  const [connectingNote, setConnectingNote] = useState<string | null>(null);
   const { user } = useAuth();
   const { checkAccess, recordUpgradePrompt, daysRemaining } = useSubscription();
   const [userBalance, setUserBalance] = useState(creditManager.getTotalCredits(user?.id || 'demo-user'));
@@ -210,6 +217,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
   }, []);
 
   const clearSignalling = () => {
+    setConnectingNote(null);
     if (ringTimeoutRef.current) {
       clearTimeout(ringTimeoutRef.current);
       ringTimeoutRef.current = null;
@@ -411,7 +419,27 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       stopRingbackRef.current = startRingtone('outgoing');
 
       unwatchInviteRef.current = watchInvite(invite.id, (status) => {
-        if (status === 'accepted') return; // they will appear as a participant
+        if (status === 'accepted') {
+          // They said yes. Their screen, camera and the room still have to
+          // load on their phone, which on a slow connection can take longer
+          // than what was left of the ring timeout - and the caller used to
+          // hang up on someone who had already answered. Stop the ringback,
+          // say what is happening, and give the join its own minute.
+          if (stopRingbackRef.current) {
+            stopRingbackRef.current();
+            stopRingbackRef.current = null;
+          }
+          if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+          setCallError(null);
+          setConnectingNote(`${matchName} answered. Connecting...`);
+          ringTimeoutRef.current = setTimeout(() => {
+            inviteRef.current = null;
+            setConnectingNote(null);
+            setCallError(`${matchName} answered but could not connect. Their connection may be weak - try again in a moment.`);
+            endCall();
+          }, ACCEPTED_JOIN_GRACE_MS);
+          return; // they will appear as a participant
+        }
         clearSignalling();
         inviteRef.current = null;
         setCallError(
@@ -714,6 +742,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         {/* Online Matches */}
         <div className="mb-8">
           <h3 className="text-white font-semibold text-lg mb-4">Available for Video Chat</h3>
+          <CallAlertsBanner />
           
           {/* Video/Audio System Controls */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-4">
@@ -776,6 +805,12 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
             )}
           </div>
           
+          {connectingNote && !callError && (
+            <div className="mb-3 rounded-2xl border border-emerald-300/40 bg-emerald-500/20 p-4" role="status">
+              <p className="text-sm text-white">{connectingNote}</p>
+            </div>
+          )}
+
           {callError && (
             <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-red-400/40 bg-red-500/20 p-4">
               <p className="text-sm text-white">{callError}</p>

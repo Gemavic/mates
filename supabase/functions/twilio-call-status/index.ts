@@ -168,7 +168,7 @@ Deno.serve(async (req: Request) => {
       });
       console.log('video room-ended', { session, info });
     }
-    return new Response('', { status: 204 });
+    return new Response(null, { status: 204 });
   }
 
   // ----- Voice --------------------------------------------------------------
@@ -206,9 +206,9 @@ Deno.serve(async (req: Request) => {
       });
       console.log('voice client leg ended', { session, status, duration, info });
     }
-    return new Response('', { status: 204 });
+    return new Response(null, { status: 204 });
   }
 
   console.log('call-status: unrecognised callback shape', { session, leg, keys: Object.keys(params) });
-  return new Response('', { status: 204 });
+  return new Response(null, { status: 204 });
 });
