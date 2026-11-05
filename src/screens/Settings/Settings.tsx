@@ -78,6 +78,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
   const [pushSupported, setPushSupported] = useState(true);
+  const [pushUnavailable, setPushUnavailable] = useState<string | null>(null);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -176,6 +177,18 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     if (!isPushSupported()) {
+      // Not "coming soon": push works today. It is this browser that cannot
+      // receive it - most often an iPhone using the site in Safari, where
+      // Apple only allows notifications for sites added to the Home Screen.
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const standalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+      setPushUnavailable(
+        ios && !standalone
+          ? 'On iPhone, notifications only work after you add Dates.care to your Home Screen: in Safari tap Share, then "Add to Home Screen", open Dates.care from the new icon and turn this on.'
+          : ios
+            ? 'Update your iPhone to iOS 16.4 or later to get notifications from Dates.care.'
+            : 'This browser cannot receive notifications. Open Dates.care in Chrome, Edge or Firefox to turn them on.'
+      );
       setPushSupported(false);
       return;
     }
@@ -397,7 +410,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           : {
               icon: Bell,
               label: 'Push Notifications',
-              comingSoon: true,
+              unavailable: pushUnavailable,
             },
         {
           icon: MessageSquare,
@@ -880,13 +893,22 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Icon className="w-5 h-5 text-white/80" />
-                      <span className={`font-medium ${item.comingSoon ? 'text-white/50' : 'text-white'}`}>
-                        {item.label}
-                      </span>
+                      <Icon className="w-5 h-5 text-white/80 shrink-0" />
+                      <div className="min-w-0">
+                        <span className={`font-medium ${item.comingSoon ? 'text-white/50' : 'text-white'}`}>
+                          {item.label}
+                        </span>
+                        {item.unavailable && (
+                          <p className="text-xs text-white/75 mt-1 leading-snug">{item.unavailable}</p>
+                        )}
+                      </div>
                     </div>
 
-                    {item.comingSoon ? (
+                    {item.unavailable ? (
+                      <span className="ml-3 shrink-0 text-xs font-medium text-white/70 bg-white/10 px-2.5 py-1 rounded-full">
+                        Off
+                      </span>
+                    ) : item.comingSoon ? (
                       <span className="text-xs font-medium text-white/50 bg-white/10 px-2.5 py-1 rounded-full">
                         Coming Soon
                       </span>
