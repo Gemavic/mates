@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./components/ui/toast";
 import { initializeConfig } from "./lib/config";
 import { logEnvironmentStatus } from "./lib/debug";
+import { startUpdateWatcher } from "./lib/appUpdate";
 import "./tailwind.css";
 
 // Log environment status for debugging
@@ -14,6 +15,10 @@ logEnvironmentStatus();
 
 // Initialize configuration on app start
 initializeConfig();
+
+// Reload onto a newly published version at a safe moment, so a phone that
+// keeps Dates.care open for days still gets every fix.
+startUpdateWatcher();
 
 // NOTE: a clearStaleSession() helper used to call supabase.auth.getSession()
 // here at module load. AuthContext already performs that call and already

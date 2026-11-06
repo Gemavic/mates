@@ -1,10 +1,27 @@
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+import { mkdirSync, writeFileSync } from "fs";
+
+// One id per build. The app compares it with /version.json to notice that a
+// newer version has been published (see src/lib/appUpdate.ts).
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now());
+
+const writeVersionFile = (): Plugin => ({
+  name: "write-version-file",
+  apply: "build",
+  closeBundle() {
+    mkdirSync("dist", { recursive: true });
+    writeFileSync("dist/version.json", JSON.stringify({ id: BUILD_ID }));
+  },
+});
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), writeVersionFile()],
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
   base: "/",
   server: {
     host: true,
