@@ -27,6 +27,8 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
 
   const { signIn } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Bumped after every attempt: a captcha token can only be used once.
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   // Sent here from sign-up because this person already has an account:
   // the email is filled in, and the reset form is open if they asked for it.
@@ -101,6 +103,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
       let signInResult;
       try {
         signInResult = await signIn(formData.email, formData.password, captchaToken ?? undefined);
+        setCaptchaReset((n) => n + 1);
       } catch (networkError: any) {
         console.error('Network error during signin:', networkError);
         setErrors(['Unable to connect to server. Please check your internet connection and try again.']);
@@ -327,7 +330,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
             )}
 
             {/* Renders nothing until VITE_TURNSTILE_SITE_KEY is set. */}
-            <Captcha onToken={setCaptchaToken} className="mb-3" />
+            <Captcha onToken={setCaptchaToken} resetSignal={captchaReset} className="mb-3" />
 
             <Button
               type="submit"

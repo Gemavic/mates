@@ -12,6 +12,28 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
+// Notifications are ON by default. The only thing that keeps this device
+// from being subscribed is the member switching them off in Settings, which
+// is remembered here (per device, because a push subscription is per device).
+const OPT_OUT_KEY = 'push-opt-out';
+
+export function isPushOptedOut(): boolean {
+  try {
+    return localStorage.getItem(OPT_OUT_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setPushOptOut(optedOut: boolean): void {
+  try {
+    if (optedOut) localStorage.setItem(OPT_OUT_KEY, 'true');
+    else localStorage.removeItem(OPT_OUT_KEY);
+  } catch {
+    /* private mode: nothing to remember */
+  }
+}
+
 export function isPushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && !!VAPID_PUBLIC_KEY;
 }

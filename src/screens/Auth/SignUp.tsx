@@ -43,6 +43,8 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
 
   const { signUp } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Bumped after every attempt: a captcha token can only be used once.
+  const [captchaReset, setCaptchaReset] = useState(0);
   const { toast } = useToast();
 
   const validatePassword = (password: string) => {
@@ -173,6 +175,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       let signUpResult;
       try {
         signUpResult = await signUp(formData.email, formData.password, formData.name, formData.dateOfBirth, captchaToken ?? undefined);
+        setCaptchaReset((n) => n + 1);
       } catch (networkError: any) {
         console.error('Network error during signup:', networkError);
         toast({
@@ -508,7 +511,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           </div>
 
           {/* Renders nothing until VITE_TURNSTILE_SITE_KEY is set. */}
-          <Captcha onToken={setCaptchaToken} className="mb-3" />
+          <Captcha onToken={setCaptchaToken} resetSignal={captchaReset} className="mb-3" />
 
           <Button
             type="submit"

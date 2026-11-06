@@ -775,7 +775,7 @@ const App: React.FC = () => {
                 <DeletionPendingGate
                   request={deletionRequest}
                   onKept={() => { setDeletionRequest(null); setCurrentScreen('discovery'); }}
-                  onSignOut={() => { void supabaseClient.auth.signOut().finally(() => setCurrentScreen('welcome')); }}
+                  onSignOut={() => { void supabaseClient.auth.signOut({ scope: 'local' }).finally(() => setCurrentScreen('welcome')); }}
                 />
               ) : renderScreen()}
             </React.Suspense>

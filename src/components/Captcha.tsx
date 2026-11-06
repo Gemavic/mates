@@ -68,9 +68,17 @@ interface CaptchaProps {
   /** Receives the token, or null when it expires or fails. */
   onToken: (token: string | null) => void;
   className?: string;
+  /**
+   * Change this number after every sign-in or sign-up attempt. A Turnstile
+   * token is single-use: sending it a second time fails with
+   * "captcha protection: request disallowed (timeout-or-duplicate)", so
+   * anyone who mistyped their password once could not sign in again
+   * without reloading the page.
+   */
+  resetSignal?: number;
 }
 
-export const Captcha: React.FC<CaptchaProps> = ({ onToken, className = '' }) => {
+export const Captcha: React.FC<CaptchaProps> = ({ onToken, className = '', resetSignal = 0 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -116,6 +124,17 @@ export const Captcha: React.FC<CaptchaProps> = ({ onToken, className = '' }) => 
     // parent render would reset the challenge mid-attempt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!resetSignal) return;
+    onToken(null);
+    try {
+      if (widgetIdRef.current && window.turnstile) window.turnstile.reset(widgetIdRef.current);
+    } catch {
+      // widget not ready yet; it will issue a fresh token when it is
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetSignal]);
 
   if (!TURNSTILE_SITE_KEY) return null;
 

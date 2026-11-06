@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
-import { isPushSupported, hasActivePushSubscription, subscribeToPush, unsubscribeFromPush } from '@/lib/pushNotifications';
+import { isPushSupported, hasActivePushSubscription, subscribeToPush, unsubscribeFromPush, setPushOptOut } from '@/lib/pushNotifications';
 import {
   loadNotificationSettings,
   saveNotificationSetting,
@@ -198,6 +198,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
   const togglePushNotifications = async (value: boolean) => {
     if (!user) return;
     setPushSaving(true);
+    // On by default; switching off here is remembered on this device so it
+    // is never switched back on automatically.
+    setPushOptOut(!value);
     const success = value ? await subscribeToPush(user.id) : await unsubscribeFromPush();
     if (success) {
       setPushEnabled(value);
@@ -515,12 +518,36 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
           </div>
 
           <div>
+            <h3 className="text-white font-semibold text-lg mb-3 px-2">Phone notifications</h3>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden divide-y divide-white/10">
+              <AlertToggle
+                icon={Mail}
+                label="New messages"
+                hint="A notification when someone messages you while you are away from Dates.care. It shows who, never what they wrote. Only if push notifications are on above."
+                settingKey="push_messages"
+                value={notif.push_messages}
+                saving={savingNotifKey === 'push_messages'}
+                onChange={updateNotif}
+              />
+              <AlertToggle
+                icon={Heart}
+                label="New likes"
+                hint="A notification when someone likes you - at most one every 30 minutes."
+                settingKey="push_likes"
+                value={notif.push_likes}
+                saving={savingNotifKey === 'push_likes'}
+                onChange={updateNotif}
+              />
+            </div>
+          </div>
+
+          <div>
             <h3 className="text-white font-semibold text-lg mb-3 px-2">Care Blog</h3>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden divide-y divide-white/10">
               <AlertToggle
                 icon={BookOpen}
                 label="New articles"
-                hint="A notification when a new piece is published - about twice a week. Only if you have allowed push notifications above."
+                hint="A notification when a new piece is published - one a day at most. Only if push notifications are on above."
                 settingKey="push_articles"
                 value={notif.push_articles}
                 saving={savingNotifKey === 'push_articles'}

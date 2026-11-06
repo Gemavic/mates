@@ -16,6 +16,8 @@ export interface NotificationSettings {
   sound_requests: boolean;
   sound_calls: boolean;
   push_articles: boolean;
+  push_messages: boolean;
+  push_likes: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -28,9 +30,14 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   sound_requests: true,
   sound_calls: true,
   push_articles: true,
+  push_messages: true,
+  push_likes: true,
 };
 
 const COLUMNS = Object.keys(DEFAULT_NOTIFICATION_SETTINGS).join(', ');
+const LEGACY_COLUMNS = Object.keys(DEFAULT_NOTIFICATION_SETTINGS)
+  .filter((k) => k !== 'push_messages' && k !== 'push_likes')
+  .join(', ');
 
 export async function loadNotificationSettings(
   userId: string
@@ -41,7 +48,18 @@ export async function loadNotificationSettings(
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error || !data) return { ...DEFAULT_NOTIFICATION_SETTINGS };
+  if (error) {
+    // The phone-notification columns arrive with a database update. Until it
+    // has run, read the older columns rather than losing everyone's choices.
+    const legacy = await supabaseClient
+      .from('user_notification_settings')
+      .select(LEGACY_COLUMNS)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (legacy.error || !legacy.data) return { ...DEFAULT_NOTIFICATION_SETTINGS };
+    return { ...DEFAULT_NOTIFICATION_SETTINGS, ...(legacy.data as Partial<NotificationSettings>) };
+  }
+  if (!data) return { ...DEFAULT_NOTIFICATION_SETTINGS };
   return { ...DEFAULT_NOTIFICATION_SETTINGS, ...(data as Partial<NotificationSettings>) };
 }
 

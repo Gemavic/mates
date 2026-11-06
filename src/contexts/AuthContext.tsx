@@ -54,6 +54,24 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * The user saved on this device by the Supabase client, without asking the
+ * server. Used only when the server cannot be reached in time, so a slow
+ * connection does not look like a sign-out. Anything the app then asks of the
+ * server still needs a valid token, which the client keeps trying to refresh.
+ */
+function storedSessionUser(): User | null {
+  try {
+    const raw = localStorage.getItem('dates-auth-token');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const user = parsed?.user ?? parsed?.currentSession?.user ?? null;
+    return user && typeof user.id === 'string' && parsed?.refresh_token ? (user as User) : null;
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,23 +110,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (cancelled || resolvedRef.current) return;
 
         if (error && error.message?.includes('refresh_token_not_found')) {
+          // The server has really forgotten this session. Clear it on THIS
+          // device only - a global sign-out here would also end the
+          // member's sessions on their other devices.
           console.warn('Session has stale refresh token, clearing:', error.message);
-          await supabaseClient.auth.signOut();
+          await supabaseClient.auth.signOut({ scope: 'local' });
           setUser(null);
           setIsAnonymous(false);
-        } else if (error) {
-          console.warn('Session error (not clearing):', error.message);
-          setUser(null);
-          setIsAnonymous(false);
+        } else if (error || !session) {
+          // No answer yet is not the same as signed out. Coming back to the
+          // app after a while means the access token has expired and must be
+          // refreshed over the network; on a slow or dropped mobile
+          // connection that refresh fails or outlasts the timeout above, and
+          // the app used to treat the member as signed out and send them to
+          // the sign-in screen. If a session is stored on this device, keep
+          // them signed in and let the client keep retrying the refresh.
+          if (error) console.warn('Session check failed, keeping stored session:', error.message);
+          const stored = storedSessionUser();
+          setUser(stored);
+          setIsAnonymous(stored?.is_anonymous || false);
         } else {
-          setUser(session?.user ?? null);
-          setIsAnonymous(session?.user?.is_anonymous || false);
+          setUser(session.user ?? null);
+          setIsAnonymous(session.user?.is_anonymous || false);
         }
       } catch (error) {
         console.warn('Failed to initialize auth:', error);
         if (!cancelled) {
-          setUser(null);
-          setIsAnonymous(false);
+          const stored = storedSessionUser();
+          setUser(stored);
+          setIsAnonymous(stored?.is_anonymous || false);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -277,7 +307,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     try {
-      await supabaseClient.auth.signOut();
+      // This device only. Signing out on the phone must not sign the member
+      // out of their laptop too.
+      await supabaseClient.auth.signOut({ scope: 'local' });
     } catch (error) {
       console.warn('Sign out error:', error);
     } finally {

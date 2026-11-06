@@ -82,13 +82,14 @@ export const supabase = createClient(
   }
 );
 
-// Add global error handler for auth issues
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'TOKEN_REFRESHED' && !session) {
-    console.warn('Token refresh failed, clearing session');
-    supabase.auth.signOut().catch(console.warn);
-  }
-});
+// This used to call signOut() whenever a token refresh came back without a
+// session. signOut() with no scope is GLOBAL: it revokes the member's
+// sessions on every device. One flaky refresh on one phone therefore logged
+// the person out of their laptop, their Home Screen app and every other
+// browser - members reported being signed out "without signing out".
+// A refresh that fails is retried by the client on its own; and if the
+// session is really gone the client already reports SIGNED_OUT for this
+// device only. Nothing to do here.
 
 // Export supabase as supabaseClient for backward compatibility
 export const supabaseClient = supabase;
