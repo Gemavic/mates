@@ -64,13 +64,17 @@ export default async function handler(req, res) {
     //
     // Without this, "notify any user" would be an open spam relay: anyone with
     // an account could push arbitrary text to any member's lock screen.
+    //
+    // One more, narrower reason: replacing your own ringing alert with a quiet
+    // "Missed call" once your call to them went unanswered or you hung up.
+    const missedNotice = req.body?.purpose === 'call-missed';
     if (targetUserId !== caller.id) {
       const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       const inviteResp = await fetch(
         `${SUPABASE_URL}/rest/v1/call_invites` +
           `?caller_id=eq.${caller.id}` +
           `&callee_id=eq.${targetUserId}` +
-          `&status=eq.ringing` +
+          (missedNotice ? `&status=in.(missed,cancelled)` : `&status=eq.ringing`) +
           `&created_at=gt.${encodeURIComponent(twoMinutesAgo)}` +
           `&select=id&limit=1`,
         {
@@ -107,14 +111,15 @@ export default async function handler(req, res) {
     // tag/requireInteraction/vibrate let a ringing call behave like a call -
     // it stays on screen until acted on, and replaces itself rather than
     // stacking one notification per retry.
-    const { tag, requireInteraction, vibrate } = req.body || {};
+    const { tag, requireInteraction, vibrate, silent } = req.body || {};
     const payload = JSON.stringify({
       title,
       body: body || '',
       url: url || '/',
       tag,
-      requireInteraction: !!requireInteraction,
-      vibrate,
+      requireInteraction: missedNotice ? false : !!requireInteraction,
+      vibrate: missedNotice ? undefined : vibrate,
+      silent: missedNotice || !!silent,
     });
     let sent = 0;
 

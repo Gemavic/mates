@@ -156,6 +156,10 @@ export async function sendPushToUser(
     /** Keeps the notification on screen until acted on - use for calls. */
     requireInteraction?: boolean;
     vibrate?: number[];
+    /** No sound or vibration (e.g. turning a ringing call into "Missed call"). */
+    silent?: boolean;
+    /** Why a member is notifying someone else; the server checks it. */
+    purpose?: 'call-missed';
   }
 ): Promise<boolean> {
   try {

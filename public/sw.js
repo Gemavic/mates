@@ -32,9 +32,16 @@ self.addEventListener('push', (event) => {
     // A call has to stay on screen until it is answered or dismissed; a normal
     // notification is free to auto-dismiss after a few seconds.
     requireInteraction: !!payload.requireInteraction,
-    vibrate: payload.vibrate || undefined,
-    renotify: payload.tag ? true : undefined,
+    vibrate: payload.silent ? undefined : payload.vibrate || undefined,
+    // A ringing call is re-sent every few seconds with the same tag: renotify
+    // makes each one sound and vibrate again, so the phone keeps ringing
+    // instead of beeping once. "Missed call" replaces it silently.
+    renotify: payload.tag && !payload.silent ? true : undefined,
+    silent: !!payload.silent,
   };
+  if (payload.requireInteraction) {
+    options.actions = [{ action: 'answer', title: 'Answer' }];
+  }
 
   event.waitUntil(self.registration.showNotification(title, options));
 });

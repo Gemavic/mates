@@ -78,31 +78,76 @@ export async function ringUser(
   // Fire-and-forget on purpose: the caller should not wait on a notification
   // round-trip before their own call screen appears, and a failed push must
   // never abort a call that is otherwise working.
-  void notifyCalleeByPush(callerId, calleeId, kind);
+  void notifyCalleeByPush(callerId, calleeId, kind, (data as CallInvite).id);
 
   return data as CallInvite;
 }
 
-/** Best-effort lock-screen alert for a call that is ringing right now. */
+/** How often the callee's phone is alerted again while a call keeps ringing. */
+const RE_RING_EVERY_MS = 7_000;
+
+/**
+ * Lock-screen alerts for a call that is ringing right now - repeated, so a
+ * phone in a pocket rings like a call instead of beeping once.
+ *
+ * A website cannot play its own ringtone once it is closed; the only thing
+ * that reaches a closed app or a locked phone is a notification, and each one
+ * makes a single sound. So while the call is still ringing the alert is sent
+ * again every few seconds (same tag: it replaces itself rather than stacking,
+ * and sounds and vibrates each time). It stops the moment the call is
+ * answered, declined, cancelled or times out - the server also refuses any
+ * repeat once the invite is no longer ringing. If nobody answered, the alert
+ * is replaced by a quiet "Missed call".
+ */
 async function notifyCalleeByPush(
   callerId: string,
   calleeId: string,
-  kind: CallKind
+  kind: CallKind,
+  inviteId: string
 ): Promise<void> {
   try {
     const { name } = await fetchCallerPreview(callerId);
-    await sendPushToUser(calleeId, {
-      title: `${name} is calling`,
-      body: kind === 'audio' ? 'Incoming voice call' : 'Incoming video call',
-      // The app routes on the URL hash, so this opens straight into the call
-      // screen rather than dumping them on the home screen.
-      url: kind === 'audio' ? '/#audio-chat' : '/#video-chat',
-      // One notification per caller, replaced rather than stacked if they
-      // try again, and it stays put until answered or dismissed.
-      tag: `call-${callerId}`,
-      requireInteraction: true,
-      vibrate: [600, 400, 600],
-    });
+    const tag = `call-${callerId}`;
+    const ring = () =>
+      sendPushToUser(calleeId, {
+        title: `${name} is calling`,
+        body: kind === 'audio' ? 'Incoming voice call - tap to answer' : 'Incoming video call - tap to answer',
+        // The app routes on the URL hash, so this opens straight into the call
+        // screen rather than dumping them on the home screen.
+        url: kind === 'audio' ? '/#audio-chat' : '/#video-chat',
+        tag,
+        requireInteraction: true,
+        vibrate: [800, 400, 800, 400, 800],
+      });
+
+    const startedAt = Date.now();
+    await ring();
+
+    // Keep watching a little past the ring time, so a call that times out
+    // (marked missed at RING_TIMEOUT_MS) still gets its "Missed call".
+    while (Date.now() - startedAt < RING_TIMEOUT_MS + 2 * RE_RING_EVERY_MS) {
+      await new Promise((r) => setTimeout(r, RE_RING_EVERY_MS));
+      const { data: row } = await supabaseClient
+        .from('call_invites')
+        .select('status')
+        .eq('id', inviteId)
+        .maybeSingle();
+      const status = (row as { status?: string } | null)?.status;
+      if (status && status !== 'ringing') {
+        if (status === 'missed' || status === 'cancelled') {
+          await sendPushToUser(calleeId, {
+            title: `Missed call from ${name}`,
+            body: 'Open Dates.care to call back.',
+            url: '/#mail',
+            tag,
+            purpose: 'call-missed',
+            silent: true,
+          });
+        }
+        return;
+      }
+      if (Date.now() - startedAt < RING_TIMEOUT_MS - RE_RING_EVERY_MS / 2) await ring();
+    }
   } catch (err) {
     console.error('Could not send call push notification:', err);
   }
@@ -257,8 +302,21 @@ export interface AcceptedCall {
 
 let acceptedCall: AcceptedCall | null = null;
 
+/**
+ * Bumped every time a new call is handed to the call screens. The app uses it
+ * as the call screen's key, so a call answered while the call screen is
+ * already open (straight after an earlier call, say) starts a fresh screen.
+ * Without it the screen was already mounted, never read the new call, and the
+ * answered call never connected - the caller just kept "Ringing".
+ */
+let callEpoch = 0;
+export function getCallEpoch(): number {
+  return callEpoch;
+}
+
 export function setAcceptedCall(call: AcceptedCall): void {
   acceptedCall = call;
+  callEpoch += 1;
 }
 
 /** Read-once: consuming it prevents rejoining a stale room on a later visit. */
@@ -283,6 +341,7 @@ let pendingCall: PendingCall | null = null;
 
 export function setPendingCall(call: PendingCall): void {
   pendingCall = call;
+  callEpoch += 1;
 }
 
 /** Read-once, so returning to the screen later does not redial. */

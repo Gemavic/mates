@@ -77,6 +77,7 @@ import { Invite } from '@/screens/Invite/Invite';
 import { AlertTriangle } from 'lucide-react';
 import { isReturningAfterAbsence, markSeen } from '@/lib/lastSeen';
 import { rememberAccountOnDevice } from '@/lib/accountGuard';
+import { getCallEpoch } from '@/lib/callSignals';
 
 function ScreenLoadingFallback() {
   const { theme } = useTheme();
@@ -651,10 +652,10 @@ const App: React.FC = () => {
         return <ModerationQueue onNavigate={handleNavigate} />;
 
       case 'video-chat':
-        return <VideoChat onNavigate={handleNavigate} />;
+        return <VideoChat key={`call-${getCallEpoch()}`} onNavigate={handleNavigate} />;
       
       case 'audio-chat':
-        return <AudioChat onNavigate={handleNavigate} />;
+        return <AudioChat key={`call-${getCallEpoch()}`} onNavigate={handleNavigate} />;
       
       case 'relationship-services':
         return <RelationshipServices onNavigate={handleNavigate} />;
