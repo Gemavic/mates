@@ -119,6 +119,15 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
 
         if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('connect')) {
           errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if ((error as any).code === 'invalid_credentials' || /invalid login credentials/i.test(error.message || '')) {
+          // Most failed sign-ins in the logs were Google accounts being tried
+          // with a password. Those accounts have no password at all, so no
+          // password can ever work - say so. (Said to everyone, so it does
+          // not reveal whether an email is registered.)
+          errorMessage =
+            'That email and password do not match. If you joined with Google, your account has no password - tap the Google button instead. Otherwise check the password or tap "Forgot Password?".';
+        } else if ((error as any).code === 'captcha_failed' || /captcha/i.test(error.message || '')) {
+          errorMessage = 'The security check expired. Please wait for it to refresh, then try again.';
         }
 
         setErrors([errorMessage]);
@@ -292,8 +301,8 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
                         reset request succeeds silently either way - so say so here rather
                         than leave someone waiting for an email that will never arrive. */}
                     <p className="text-green-200/80 text-xs">
-                      Signed up with Google? There is no password on that account — use
-                      Continue with Google instead.
+                      Signed up with Google? There is no password on that account — use the
+                      Google button instead.
                     </p>
                   </div>
                 ) : (
