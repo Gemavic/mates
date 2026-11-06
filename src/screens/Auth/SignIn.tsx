@@ -42,9 +42,12 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
     if (p.forgot) setShowForgotPassword(true);
   }, []);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Not a <form> of its own: it sits inside the sign-in form, and a form
+  // inside a form is invalid HTML - browsers sent "Send Reset Link" to the
+  // sign-in form instead, so no reset email was ever requested.
+  const handleForgotPassword = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
 
     if (!resetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
       setErrors(['Please enter a valid email address']);
@@ -55,9 +58,13 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
     setErrors([]);
 
     try {
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`
+      // Supabase's bot protection covers reset requests too: without the
+      // captcha token every request was refused.
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+        ...(captchaToken ? { captchaToken } : {}),
       });
+      setCaptchaReset((n) => n + 1);
 
       if (error) {
         setErrors([error.message]);
@@ -295,7 +302,7 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
                 {resetSent ? (
                   <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3 space-y-2">
                     <p className="text-green-200 text-sm">
-                      If that email has a password, a reset link is on its way. Check your inbox.
+                      If that email has an account, a reset link is on its way. Check your inbox and spam folder.
                     </p>
                     {/* An account created with Google has no password to reset, and the
                         reset request succeeds silently either way - so say so here rather
@@ -306,15 +313,15 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
                     </p>
                   </div>
                 ) : (
-                  <form onSubmit={handleForgotPassword} className="space-y-3">
+                  <div className="space-y-3">
                     <div>
                       <Input
                         type="email"
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') void handleForgotPassword(e); }}
                         placeholder="Enter your email"
                         className="bg-white/90 h-11"
-                        required
                       />
                     </div>
                     <div className="flex space-x-2">
@@ -326,14 +333,18 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
                         Cancel
                       </Button>
                       <Button
-                        type="submit"
-                        disabled={isLoading}
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={isLoading || (isCaptchaEnabled() && !captchaToken)}
                         className="flex-1 h-10 bg-pink-500 text-white rounded-xl hover:bg-pink-600"
                       >
                         {isLoading ? 'Sending...' : 'Send Reset Link'}
                       </Button>
                     </div>
-                  </form>
+                    {isCaptchaEnabled() && !captchaToken && (
+                      <p className="text-white/80 text-xs">Wait a moment for the security check below to finish, then tap Send Reset Link.</p>
+                    )}
+                  </div>
                 )}
               </div>
             )}

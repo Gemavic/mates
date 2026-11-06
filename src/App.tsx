@@ -171,6 +171,13 @@ const App: React.FC = () => {
       || search.get('error') || hash.get('error');
     if (!description && !code) return null;
     console.error('Auth error returned to the app:', { code, description });
+    // "access_denied" is Google (or Facebook) answering "no" before the
+    // member ever reached Dates.care: Cancel or Back was pressed on Google's
+    // page, a different Google account was picked and then closed, or Google
+    // itself blocked the sign-in. The bare code meant nothing to anyone.
+    if (code === 'access_denied' && !description) {
+      return 'Google did not complete the sign-in - it was cancelled or blocked on Google\'s page. Tap Google again, choose the account you joined with, and tap Continue.';
+    }
     return [code, description && decodeURIComponent(description.split('+').join(' '))]
       .filter(Boolean).join(' — ');
   });
