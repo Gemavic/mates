@@ -54,6 +54,88 @@ export function primePushPermission(): void {
   }
 }
 
+// "Not now" on the soft question: wait a few days before asking again.
+// Unlike the browser's own "Block", this can always be asked again.
+const LAST_ASKED_KEY = 'push-last-asked';
+export const ASK_AGAIN_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
+
+export function deferPushAsk(): void {
+  try { localStorage.setItem(LAST_ASKED_KEY, String(Date.now())); } catch { /* private mode */ }
+}
+
+export function canAskForPushNow(): boolean {
+  try {
+    const last = Number(localStorage.getItem(LAST_ASKED_KEY) || 0);
+    return Date.now() - last >= ASK_AGAIN_AFTER_MS;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Calls back whenever this site's notification permission changes - most
+ * usefully when a member who had blocked notifications switches them back on
+ * in the browser's settings. Uses the Permissions API where it exists, and
+ * re-checks whenever the tab regains focus (Safari has no change event).
+ * Returns a stop function.
+ */
+export function watchNotificationPermission(onChange: (p: NotificationPermission) => void): () => void {
+  if (typeof Notification === 'undefined') return () => {};
+  let last = Notification.permission;
+  const check = () => {
+    const now = Notification.permission;
+    if (now !== last) {
+      last = now;
+      onChange(now);
+    }
+  };
+  let status: PermissionStatus | null = null;
+  try {
+    void navigator.permissions
+      ?.query({ name: 'notifications' as PermissionName })
+      .then((st) => {
+        status = st;
+        st.onchange = check;
+      })
+      .catch(() => {});
+  } catch {
+    /* no Permissions API */
+  }
+  const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+  window.addEventListener('focus', check);
+  document.addEventListener('visibilitychange', onVisible);
+  const timer = setInterval(check, 5000);
+  return () => {
+    if (status) status.onchange = null;
+    window.removeEventListener('focus', check);
+    document.removeEventListener('visibilitychange', onVisible);
+    clearInterval(timer);
+  };
+}
+
+/** How to un-block notifications for dates.care in this particular browser. */
+export function notificationUnblockSteps(): string {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const ios = /iPhone|iPad|iPod/i.test(ua);
+  const android = /Android/i.test(ua);
+  if (ios) {
+    return 'Open your iPhone Settings → Notifications → Dates.care, and turn on Allow Notifications. Then come back here.';
+  }
+  if (/SamsungBrowser/i.test(ua)) {
+    return 'In Samsung Internet, tap the menu (three lines) → Settings → Sites and downloads → Notifications, find dates.care and allow it. Then come back here.';
+  }
+  if (android) {
+    return 'Tap the icon to the left of the web address → Permissions (or Site settings) → Notifications → Allow. If it is still off, open your phone Settings → Apps → your browser → Notifications and turn them on. Then come back here.';
+  }
+  if (/Firefox/i.test(ua)) {
+    return 'Click the icon to the left of the web address, find Notifications marked "Blocked" and clear it (the ×), then reload the page and choose Allow when asked.';
+  }
+  if (/Safari/i.test(ua) && !/Chrome|Chromium|Edg/i.test(ua)) {
+    return 'Open Safari → Settings → Websites → Notifications, find dates.care and choose Allow. Then come back here.';
+  }
+  return 'Click the icon to the left of the web address (a padlock or sliders) → Site settings, set Notifications to Allow, then come back to this tab.';
+}
+
 export function isPushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && !!VAPID_PUBLIC_KEY;
 }

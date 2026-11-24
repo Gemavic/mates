@@ -6,6 +6,8 @@ import {
   getPushPermissionState,
   hasActivePushSubscription,
   subscribeToPush,
+  watchNotificationPermission,
+  notificationUnblockSteps,
 } from '@/lib/pushNotifications';
 
 /**
@@ -45,7 +47,14 @@ export const CallAlertsBanner: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user?.id) void check();
+    if (!user?.id) return;
+    void check();
+    // When a blocked member allows notifications again in the browser's
+    // settings, subscribe this device straight away and clear the banner.
+    return watchNotificationPermission(async (p) => {
+      if (p === 'granted') await subscribeToPush(user.id);
+      await check();
+    });
   }, [user?.id]);
 
   const enable = async () => {
@@ -80,7 +89,8 @@ export const CallAlertsBanner: React.FC = () => {
         {state === 'blocked' && (
           <>
             <p className="font-semibold">Call alerts are blocked</p>
-            <p className="mt-1 text-white/85">Notifications for dates.care are switched off in this browser, so calls only ring while the app is open. Allow notifications for dates.care in your browser or phone settings, then come back to this screen.</p>
+            <p className="mt-1 text-white/85">Notifications for dates.care are switched off in this browser, so calls only ring while the app is open. {notificationUnblockSteps()}</p>
+            <p className="mt-1 text-white/70 text-xs">This banner will clear by itself as soon as you allow them.</p>
           </>
         )}
         {state === 'ios-install' && (

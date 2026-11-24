@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { primePushPermission } from '@/lib/pushNotifications';
+import { primePushPermission, deferPushAsk } from '@/lib/pushNotifications';
 import { trackSignup } from '@/lib/analytics';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Call alerts are on by default; the member can untick before signing up.
+  const [callAlerts, setCallAlerts] = useState(true);
   const [socialError, setSocialError] = useState<string>('');
   // Set when this person already has an account. The form is replaced by
   // the way back in: sign in, or reset the password. Never a second account.
@@ -146,10 +148,13 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         return;
       }
 
-      // Notifications are on by default: ask the browser now, while this tap
-      // still counts as the member's own action (it stops counting after the
-      // first await). The subscription is saved once they are signed in.
-      primePushPermission();
+      // Call alerts are on by default (the ticked box above the button, which
+      // the member has seen). Ask the browser now, while this tap still counts
+      // as the member's own action - it stops counting after the first await.
+      // The subscription is saved once they are signed in. Unticked: no
+      // browser question now, and the in-app card asks again in a few days.
+      if (callAlerts) primePushPermission();
+      else deferPushAsk();
 
       // Does this person already have an account - this email, or the same
       // name and birth date under another email? Asked before anything is
@@ -516,6 +521,19 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
             </div>
           </div>
 
+          <label className="flex items-start gap-2 text-white/85 text-xs sm:text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={callAlerts}
+              onChange={(e) => setCallAlerts(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-pink-500"
+            />
+            <span>
+              Alert me about calls, messages and likes when I'm not on Dates.care (recommended). Your browser will ask
+              once: tap Allow. You can switch this off any time in Settings.
+            </span>
+          </label>
+
           {/* Renders nothing until VITE_TURNSTILE_SITE_KEY is set. */}
           <Captcha onToken={setCaptchaToken} resetSignal={captchaReset} className="mb-3" />
 
@@ -526,10 +544,6 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </Button>
-          <p className="text-center text-white/70 text-xs">
-            Notifications are on, so calls and messages reach you after you leave. Your browser will ask once: tap
-            Allow. You can switch them off any time in Settings.
-          </p>
         </form>
 
         {/* Terms */}

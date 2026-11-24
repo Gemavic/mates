@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { takeSignInPrefill } from '@/lib/accountGuard';
-import { primePushPermission } from '@/lib/pushNotifications';
 
 interface SignInProps {
   onNavigate: (screen: string) => void;
@@ -106,10 +105,6 @@ export const SignIn: React.FC<SignInProps> = ({ onNavigate }) => {
         setIsLoading(false);
         return;
       }
-
-      // Notifications are on by default: ask now, while this tap still counts
-      // as the member's own action. Does nothing if already answered.
-      primePushPermission();
 
       // Attempt sign in
       let signInResult;
