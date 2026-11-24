@@ -404,7 +404,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
         pushSupported
           ? {
               icon: Bell,
-              label: 'Push Notifications',
+              label: 'Notifications for calls, messages and likes',
               toggle: true,
               value: pushEnabled,
               onChange: togglePushNotifications,

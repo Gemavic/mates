@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { primePushPermission } from '@/lib/pushNotifications';
 import { trackSignup } from '@/lib/analytics';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -144,6 +145,11 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
         setIsLoading(false);
         return;
       }
+
+      // Notifications are on by default: ask the browser now, while this tap
+      // still counts as the member's own action (it stops counting after the
+      // first await). The subscription is saved once they are signed in.
+      primePushPermission();
 
       // Does this person already have an account - this email, or the same
       // name and birth date under another email? Asked before anything is
@@ -520,6 +526,10 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </Button>
+          <p className="text-center text-white/70 text-xs">
+            Notifications are on, so calls and messages reach you after you leave. Your browser will ask once: tap
+            Allow. You can switch them off any time in Settings.
+          </p>
         </form>
 
         {/* Terms */}
@@ -562,4 +572,4 @@ export const SignUp: React.FC<SignUpProps> = ({ onNavigate = () => {} }) => {
       </div>
     </Layout>
   );
-};
+};

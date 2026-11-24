@@ -34,6 +34,26 @@ export function setPushOptOut(optedOut: boolean): void {
   }
 }
 
+/**
+ * Asks the browser's "Allow notifications?" question during the tap that
+ * creates the account or signs in, so call alerts work from the very first
+ * visit. Browsers only show that question from a tap, and only once the
+ * question has not been answered, so this must be called synchronously at
+ * the start of the tap handler, before anything is awaited.
+ *
+ * It only asks; the subscription itself is saved by EnablePushPrompt as soon
+ * as the member is signed in and permission is "granted". Never throws.
+ */
+export function primePushPermission(): void {
+  try {
+    if (!isPushSupported() || isPushOptedOut()) return;
+    if (Notification.permission !== 'default') return;
+    void Notification.requestPermission();
+  } catch {
+    /* some browsers throw outside a tap; nothing to do */
+  }
+}
+
 export function isPushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && !!VAPID_PUBLIC_KEY;
 }
