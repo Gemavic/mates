@@ -1,5 +1,5 @@
 import { supabaseClient } from './supabase';
-import { isOnlineFrom } from './presence';
+import { isOnlineFrom, isRecentlyActive } from './presence';
 // One implementation, in one place. There were two - this file's and the one
 // the profile screens used - which is exactly how a fix lands in the copy
 // nobody opens.
@@ -10,7 +10,14 @@ export interface CallableMatch {
   id: string;
   name: string;
   image: string;
-  status: 'online' | 'offline';
+  /**
+   * online: has dates.care open now (the in-app ringtone will sound).
+   * reachable: away, but active in the last 24 hours with call notifications
+   *   switched on, so the call arrives on their phone or computer.
+   * offline: neither; the call only reaches them if they open dates.care
+   *   while it is still ringing.
+   */
+  status: 'online' | 'reachable' | 'offline';
   hasRealPhoto: boolean;
 }
 
@@ -58,6 +65,17 @@ export async function loadCallableMatches(
     )
     .eq('is_primary', true);
 
+  // Who can be rung while away: a push subscription exists for them. The
+  // function returns ids only, never the subscription details.
+  const { data: pushRows } = await supabaseClient.rpc('push_reachable', {
+    p_user_ids: profiles.map((p: any) => p.user_id),
+  });
+  const canPush = new Set<string>(
+    ((pushRows as Array<string | { push_reachable?: string }> | null) ?? []).map((r) =>
+      typeof r === 'string' ? r : String(r?.push_reachable ?? '')
+    )
+  );
+
   const photoFor = new Map<string, string>();
   for (const row of photos ?? []) {
     if (row.photo_url) photoFor.set(row.user_id, row.photo_url);
@@ -68,13 +86,14 @@ export async function loadCallableMatches(
       const { name, isReal } = displayName(profile);
       const photo = photoFor.get(profile.user_id);
       const online = isOnlineFrom(profile.last_active);
+      const reachable = !online && canPush.has(profile.user_id) && isRecentlyActive(profile.last_active);
       return {
         id: profile.user_id,
         name,
         image: photo ?? initialsAvatar(name),
-        status: online ? ('online' as const) : ('offline' as const),
+        status: online ? ('online' as const) : reachable ? ('reachable' as const) : ('offline' as const),
         hasRealPhoto: !!photo,
-        _rank: (online ? 4 : 0) + (photo ? 2 : 0) + (isReal ? 1 : 0),
+        _rank: (online ? 8 : reachable ? 4 : 0) + (photo ? 2 : 0) + (isReal ? 1 : 0),
       };
     })
     .sort((a: any, b: any) => b._rank - a._rank)

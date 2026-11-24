@@ -25,6 +25,7 @@ import {
 const ACCEPTED_JOIN_GRACE_MS = 60_000;
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVideoManager } from '@/lib/twilioVideo';
+import { checkMediaAccess, describeMediaError } from '@/lib/mediaAccess';
 import { watchCallSession } from '@/lib/callMeter';
 import { useHideBottomNav } from '@/contexts/BottomNavContext';
 import type {
@@ -140,7 +141,7 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
         twilioVideoManager.leaveRoom();
         localTrackRef.current = null;
         setIsConnecting(false);
-        setCallError(error?.message || 'Could not join the call.');
+        setCallError(describeMediaError(error, 'video') || error?.message || 'Could not join the call.');
       }
     })();
 
@@ -409,6 +410,15 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       setCallError(null);
       setCurrentMatchName(matchName);
 
+      // Check our own camera and microphone BEFORE ringing anyone. A blocked
+      // camera used to ring the other person's phone and then cancel.
+      const mediaProblem = await checkMediaAccess('video');
+      if (mediaProblem) {
+        setIsConnecting(false);
+        setCallError(mediaProblem);
+        return;
+      }
+
       // Ring them first. Without this the callee is never told anything and the
       // caller just sits alone in a room the other side never opens.
       const invite = await ringUser(matchId, 'video');
@@ -485,7 +495,13 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
 
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-md';
-      const errorText = error.message || 'Failed to start video call. Please try again.';
+      const friendly = describeMediaError(error, 'video');
+      const errorText = friendly || error.message || 'Failed to start video call. Please try again.';
+      if (friendly) {
+        // The full explanation and steps are in the panel above the list.
+        setCallError(friendly);
+        return;
+      }
 
       // Also keep the reason on screen after the toast auto-dismisses, so the
       // user is not left with a Call button that silently did nothing.
@@ -839,12 +855,16 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                       <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                        match.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
+                        match.status === 'online' ? 'bg-green-500' : match.status === 'reachable' ? 'bg-sky-400' : 'bg-gray-400'
                       }`}></div>
                     </div>
                     <div>
                       <h4 className="text-white font-medium">{match.name}</h4>
-                      <p className="text-white/70 text-sm">{match.status === 'online' ? 'Online' : 'Away · we will ring their phone'}</p>
+                      <p className="text-white/70 text-sm">{match.status === 'online'
+                          ? 'Online'
+                          : match.status === 'reachable'
+                            ? 'Reachable · we will alert their phone or computer'
+                            : 'Away · may not answer right now'}</p>
                     </div>
                   </div>
                   
@@ -910,4 +930,4 @@ export const VideoChat: React.FC<VideoChatProps> = ({ onNavigate }) => {
       )}
     </Layout>
   );
-};
+};

@@ -19,6 +19,7 @@ import {
 } from '@/lib/callSignals';
 import { startRingtone } from '@/lib/ringtone';
 import { twilioVoiceManager } from '@/lib/twilioVoice';
+import { checkMediaAccess, describeMediaError } from '@/lib/mediaAccess';
 import { watchCallSession } from '@/lib/callMeter';
 import { useHideBottomNav } from '@/contexts/BottomNavContext';
 
@@ -233,6 +234,15 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       setIsConnecting(true);
       setCurrentMatchName(matchName);
 
+      // Check the microphone BEFORE ringing anyone. Otherwise a blocked mic
+      // only showed up after they answered, as "the call could not connect".
+      const mediaProblem = await checkMediaAccess('audio');
+      if (mediaProblem) {
+        setIsConnecting(false);
+        alert(mediaProblem);
+        return;
+      }
+
       // The meter starts on answer, not on dial. device.connect() resolves as
       // soon as the call is placed, so it used to run while the other phone was
       // still ringing - and charged in full for calls nobody picked up.
@@ -266,7 +276,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
         } catch (dialError) {
           console.error('Audio dial failed after accept:', dialError);
           setIsConnecting(false);
-          alert('They answered, but the call could not connect. Please try again.');
+          alert(describeMediaError(dialError, 'audio') || 'They answered, but the call could not connect. Please try again.');
         }
       };
 
@@ -300,7 +310,7 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
     } catch (error: any) {
       console.error('Error starting audio call:', error);
       setIsConnecting(false);
-      const errorText = error.message || 'Failed to start audio call. Please try again.';
+      const errorText = describeMediaError(error, 'audio') || error.message || 'Failed to start audio call. Please try again.';
 
       if (errorText.includes('credentials not configured')) {
         alert('Twilio Not Configured\n\nThe calling system needs to be configured by an administrator. Please check TWILIO_TROUBLESHOOTING.md or contact support.');
@@ -550,12 +560,16 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                       <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                        match.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
+                        match.status === 'online' ? 'bg-green-500' : match.status === 'reachable' ? 'bg-sky-400' : 'bg-gray-400'
                       }`}></div>
                     </div>
                     <div>
                       <h4 className="text-white font-medium">{match.name}</h4>
-                      <p className="text-white/70 text-sm">{match.status === 'online' ? 'Online' : 'Away · we will ring their phone'}</p>
+                      <p className="text-white/70 text-sm">{match.status === 'online'
+                          ? 'Online'
+                          : match.status === 'reachable'
+                            ? 'Reachable · we will alert their phone or computer'
+                            : 'Away · may not answer right now'}</p>
                     </div>
                   </div>
                   
@@ -609,4 +623,4 @@ export const AudioChat: React.FC<AudioChatProps> = ({ onNavigate }) => {
       </div>
     </Layout>
   );
-};
+};

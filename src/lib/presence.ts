@@ -12,10 +12,28 @@ import { supabaseClient } from './supabase';
  *
  * Presence is now derived from a heartbeat: the app stamps last_active while it
  * is open, and anyone stamped within ONLINE_WINDOW_MS counts as online.
+ *
+ * "Open" includes a tab in the background: dates.care is still running there
+ * and its ringtone still sounds, so the person really can take a call. It
+ * stops when the tab or browser is closed, or when a phone freezes the page
+ * after the screen locks or another app comes to the front.
+ *
+ * Away members who were active within REACHABLE_WINDOW_MS and have call
+ * notifications switched on are shown as "Reachable": a call reaches their
+ * phone or computer as a notification (see callMatches.ts).
  */
 
 /** Someone is "online" if they were active this recently. */
 export const ONLINE_WINDOW_MS = 3 * 60 * 1000;
+
+/** Away, but recently active and set up to receive call notifications. */
+export const REACHABLE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export function isRecentlyActive(lastActive: string | null | undefined, windowMs = REACHABLE_WINDOW_MS): boolean {
+  if (!lastActive) return false;
+  const seen = new Date(lastActive).getTime();
+  return !Number.isNaN(seen) && Date.now() - seen < windowMs;
+}
 
 /** Comfortably inside the window, so a live session never flickers offline. */
 const HEARTBEAT_MS = 60 * 1000;
@@ -43,8 +61,11 @@ async function stamp(userId: string, online: boolean): Promise<void> {
 export function startPresenceHeartbeat(userId: string): () => void {
   let stopped = false;
 
+  // Beats in a background tab too. Browsers slow background timers to about
+  // once a minute, which still sits inside the three-minute window; a page a
+  // phone has frozen does not beat at all, and drops to Away as it should.
   const beat = () => {
-    if (stopped || document.visibilityState === 'hidden') return;
+    if (stopped) return;
     void stamp(userId, true);
   };
 
